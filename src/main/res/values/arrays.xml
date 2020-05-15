@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <array name="text_size_list">
+        <item>Default</item>
+        <item>Small</item>
+        <item>Medium</item>
+        <item>Large</item>
+    </array>
+</resources>

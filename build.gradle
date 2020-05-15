@@ -1,0 +1,48 @@
+buildscript {
+    repositories {
+        google()
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:3.6.1'
+    }
+}
+apply plugin: 'com.android.application'
+
+repositories {
+        google()
+    mavenCentral()
+    jcenter()
+}
+
+android {
+    compileSdkVersion 28
+    buildToolsVersion '28.0.1'
+    viewBinding.enabled = true
+
+    defaultConfig {
+        applicationId 'com.cdot.lists'
+        minSdkVersion 23
+        targetSdkVersion 28
+        versionCode 1
+        versionName "1.0"
+    }
+
+    lintOptions {
+        abortOnError false
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.0.0'
+
+    implementation 'com.google.android.gms:play-services-auth:11.6.0'
+    implementation 'com.google.android.gms:play-services-drive:11.6.0'
+}
+
+allprojects {
+    repositories {
+        google()      //and here
+        jcenter()
+    }
+}
