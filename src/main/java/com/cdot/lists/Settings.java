@@ -22,7 +22,6 @@ public class Settings {
     static String showListInFrontOfLockScreen = "showListInFrontOfLockScreen";
     static String openLatestListAtStartup = "openLatestListAtStartup";
     static String warnAboutDuplicates = "warnAboutDuplicates";
-    static String darkBackground = "darkBackground";
     static String textSizeIndex = "textSizeIndex";
     static String currentList = "currentList";
     static String backingStore = "backingStore";
@@ -48,7 +47,6 @@ public class Settings {
         put(warnAboutDuplicates, true);
 
         put(checkBoxOnLeftSide, false);
-        put(darkBackground, false);
     }};
 
     private static Map<String, Integer> mIntPrefs = new HashMap<String, Integer>() {{

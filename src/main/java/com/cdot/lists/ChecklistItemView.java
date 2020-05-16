@@ -70,8 +70,6 @@ class ChecklistItemView extends LinearLayout implements View.OnClickListener, Vi
         DisplayMetrics displayMetrics = new DisplayMetrics();
         ((AppCompatActivity) cxt).getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
         mItemText.setMaxWidth(displayMetrics.widthPixels - ((int) (displayMetrics.scaledDensity * 80.0f)));
-        if (Settings.getBool(Settings.darkBackground))
-            mItemText.setTextColor(Color.WHITE);
 
         setOnClickListener(this);
         setOnLongClickListener(this);
@@ -86,7 +84,7 @@ class ChecklistItemView extends LinearLayout implements View.OnClickListener, Vi
         if (!mMovingViewPreview) {
             View view = new View(cxt);
             view.setLayoutParams(new ViewGroup.LayoutParams(-1, 1));
-            view.setBackgroundColor(Settings.getBool(Settings.darkBackground) ? Color.WHITE : Color.BLACK);
+            view.setBackgroundColor(Color.BLACK);
             addView(view);
         }
 
@@ -123,8 +121,6 @@ class ChecklistItemView extends LinearLayout implements View.OnClickListener, Vi
         mUpButton.setBackgroundResource(R.drawable.ic_action_collapse);
         mDownButton.setBackgroundResource(R.drawable.ic_action_expand);
         mMoveButton.setBackgroundResource(R.drawable.action_move);
-        if (Settings.getBool(Settings.darkBackground))
-            mMoveButton.setBackgroundResource(R.drawable.action_move_dark);
         mDeleteButton.setBackgroundResource(R.drawable.ic_action_discard);
         if (!mMovingViewPreview) {
             mCheckBox.setOnClickListener(this);
@@ -189,7 +185,7 @@ class ChecklistItemView extends LinearLayout implements View.OnClickListener, Vi
         setAlpha();
         setStrikeThrough();
         if (mMovingViewPreview)
-            setBackgroundColor(Settings.getBool(Settings.darkBackground) ? Color.BLACK : Color.WHITE);
+            setBackgroundColor(Color.WHITE);
     }
 
     public boolean onTouch(View view, MotionEvent motionEvent) {

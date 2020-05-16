@@ -9,8 +9,7 @@
         android:theme="@style/AppTheme">
         <activity
             android:name="com.cdot.lists.ChecklistsActivity"
-            android:label="@string/app_name"
-            android:theme="@style/Theme.AppCompat.Light.DarkActionBar">
+            android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -77,22 +76,18 @@
         </activity>
         <activity
             android:name="com.cdot.lists.ChecklistActivity"
-            android:label="@string/app_name"
-            android:theme="@style/Theme.AppCompat.DayNight" />
+            android:label="@string/app_name" />
         <activity
             android:name="com.cdot.lists.SettingsActivity"
-            android:theme="@style/Theme.AppCompat.DayNight"
             android:label="@string/settings" />
         <activity
             android:name="com.cdot.lists.HelpActivity"
-            android:theme="@style/Theme.AppCompat.DayNight"
             android:label="@string/app_name" />
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="com.cdot.lists.provider"
             android:exported="false"
             android:grantUriPermissions="true">
-            <!-- ressource file to create -->
             <meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/internal_file_paths">

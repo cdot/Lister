@@ -99,13 +99,6 @@
             android:onClick="warnAboutDuplicatesCBClicked"
             android:text="@string/warn_about_duplicates" />
 
-        <CheckBox
-            android:id="@+id/DarkBackgroundCB"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:onClick="darkBackgroundCBClicked"
-            android:text="@string/dark_background" />
-
         <Spinner
             android:id="@+id/TextSizeSpinner"
             android:layout_width="200dp"

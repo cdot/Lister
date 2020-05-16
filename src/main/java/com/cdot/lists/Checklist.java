@@ -1,7 +1,6 @@
 package com.cdot.lists;
 
 import android.content.Context;
-import android.net.Uri;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,18 +14,13 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.Iterator;
-import java.util.Objects;
 import java.util.Stack;
 
 class Checklist extends ArrayList<Checklist.ChecklistItem> {
@@ -46,26 +40,23 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
             mDone = clone.mDone;
         }
 
-        /* access modifiers changed from: package-private */
         Checklist getChecklist() {
             return Checklist.this;
         }
 
         private void setDone(boolean z) {
             mDone = z;
-            saveToCache();
+            mParent.save();
             mArrayAdapter.notifyDataSetChanged();
         }
 
-        /* access modifiers changed from: package-private */
         String getText() {
             return mText;
         }
 
-        /* access modifiers changed from: package-private */
         void setText(String str) {
             mText = str;
-            saveToCache();
+            mParent.save();
             mArrayAdapter.notifyDataSetChanged();
         }
     }
@@ -75,7 +66,7 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
      */
     private class ItemsArrayAdapter extends ArrayAdapter<String> {
         ItemsArrayAdapter() {
-            super(mContext, 0, new ArrayList<String>());
+            super(mParent.mContext, 0, new ArrayList<String>());
         }
 
         @Override
@@ -92,7 +83,7 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
                 item = Checklist.this.get(i);
             if (view == null) {
                 assert item != null;
-                itemView = new ChecklistItemView(item, mContext);
+                itemView = new ChecklistItemView(item, mParent.mContext);
             } else {
                 itemView = (ChecklistItemView) view;
                 itemView.setItem(item);
@@ -108,7 +99,6 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
     }
     ItemsArrayAdapter mArrayAdapter;
 
-    private Context mContext;
     private boolean mIsEditMode = false;
     private String mListName;
     private transient ChecklistItem mMovingItem = null;
@@ -116,29 +106,18 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
     private Stack<ChecklistItem> mRemovedItems;
     private Stack<Integer> mRemovedItemsId;
     private Stack<Integer> mRemovedItemsIndex;
+    private Checklists mParent;
+    
+    long mTimestamp = 0;
 
     /**
      * Construct and load from cache
      * @param name private file list is stored in
-     * @param cxt context
+     * @param parent container
      */
-    Checklist(String name, Context cxt) {
-        initMembers(cxt);
+    Checklist(String name, Checklists parent) {
+        initMembers(parent);
         mListName = name;
-        loadFromCache();
-    }
-
-    Checklist(Uri uri, Context cxt) throws Exception {
-        initMembers(cxt);
-        InputStream stream;
-        if (Objects.equals(uri.getScheme(), "file")) {
-            stream = new FileInputStream(new File(uri.getPath()));
-        } else if (Objects.equals(uri.getScheme(), "content")) {
-            stream = mContext.getContentResolver().openInputStream(uri);
-        } else {
-            throw new IOException("Failed to load external list. Unknown uri scheme: " + uri.getScheme());
-        }
-        loadFromStream(stream);
     }
 
     /**
@@ -146,25 +125,31 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
      * @param job the JSON object
      * @throws JSONException if something goes wrong
      */
-    Checklist(JSONObject job) throws JSONException {
-        loadFromJSON(job);
+    Checklist(JSONObject job, Checklists parent) throws JSONException {
+        mParent = parent;
+        fromJSON(job);
+    }
+
+    Checklist(InputStream stream, Checklists parent) throws Exception {
+        mParent = parent;
+        fromStream(stream);
     }
 
     /**
      * Construct by copying an existing list and saving it to a new list
      * @param copy list to clone
      */
-    Checklist(Checklist copy) {
-        initMembers(copy.mContext);
-        mListName = copy.getListName() + " (copy)";
+    Checklist(Checklist copy, Checklists parent) {
+        initMembers(parent);
+        mListName = copy.getListName();
         mIsEditMode = copy.isEditMode();
         for (ChecklistItem item : copy) {
             add(new ChecklistItem(item));
         }
     }
 
-    private void initMembers(Context cxt) {
-        mContext = cxt;
+    private void initMembers(Checklists parent) {
+        mParent = parent;
         mRemovedItems = new Stack<>();
         mRemovedItemsIndex = new Stack<>();
         mRemovedItemsId = new Stack<>();
@@ -224,7 +209,7 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
     void setEditMode(boolean z) {
         mIsEditMode = z;
         mArrayAdapter.notifyDataSetChanged();
-        saveToCache();
+        mParent.save();
     }
 
     /**
@@ -249,19 +234,22 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
         return size() - getCheckedCount();
     }
 
-    String find(String str, boolean z) {
+    /**
+     * Find an item in the list
+     * @param str item to find  
+     * @param matchCase true to match case
+     * @return item or null if not found
+     */
+    ChecklistItem find(String str, boolean matchCase) {
         for (ChecklistItem next : this) {
-            if (next.mText.equalsIgnoreCase(str)) {
-                return next.mText;
-            }
+            if (next.mText.equalsIgnoreCase(str))
+                return next;
         }
-        if (z) {
+        if (matchCase)
             return null;
-        }
         for (ChecklistItem next2 : this) {
-            if (next2.mText.toLowerCase().contains(str.toLowerCase())) {
-                return next2.mText;
-            }
+            if (next2.mText.toLowerCase().contains(str.toLowerCase()))
+                return next2;
         }
         return null;
     }
@@ -271,7 +259,7 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
             remove(item);
             add(i, item);
             mArrayAdapter.notifyDataSetChanged();
-            saveToCache();
+            mParent.save();
         }
     }
 
@@ -283,7 +271,7 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
             add(new ChecklistItem(str, false));
         }
         mArrayAdapter.notifyDataSetChanged();
-        saveToCache();
+        mParent.save();
     }
 
     void remove(ChecklistItem item) {
@@ -294,12 +282,12 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
         super.remove(item);
         mRemoveIdCount++;
         mArrayAdapter.notifyDataSetChanged();
-        saveToCache();
+        mParent.save();
     }
 
     void undoRemove() {
         if (mRemovedItemsIndex.size() == 0) {
-            Toast.makeText(mContext, R.string.no_deleted_items, Toast.LENGTH_SHORT).show();
+            Toast.makeText(mParent.mContext, R.string.no_deleted_items, Toast.LENGTH_SHORT).show();
             return;
         }
         int intValue = mRemovedItemsId.peek();
@@ -310,8 +298,8 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
             i++;
         }
         mArrayAdapter.notifyDataSetChanged();
-        saveToCache();
-        Toast.makeText(mContext, mContext.getString(R.string.x_items_restored, i), Toast.LENGTH_SHORT).show();
+        mParent.save();
+        Toast.makeText(mParent.mContext, mParent.mContext.getString(R.string.x_items_restored, i), Toast.LENGTH_SHORT).show();
     }
 
     void checkAll() {
@@ -319,7 +307,7 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
             item.setDone(true);
         }
         mArrayAdapter.notifyDataSetChanged();
-        saveToCache();
+        mParent.save();
     }
 
     void uncheckAll() {
@@ -327,7 +315,7 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
             item.setDone(false);
         }
         mArrayAdapter.notifyDataSetChanged();
-        saveToCache();
+        mParent.save();
     }
 
     /**
@@ -335,7 +323,7 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
      */
     void notifyItemChecked() {
         mArrayAdapter.notifyDataSetChanged();
-        saveToCache();
+        mParent.save();
     }
 
     void deleteAllChecked() {
@@ -353,8 +341,7 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
         }
         mRemoveIdCount++;
         mArrayAdapter.notifyDataSetChanged();
-        saveToCache();
-        Toast.makeText(mContext, mContext.getString(R.string.x_items_deleted, i), Toast.LENGTH_SHORT).show();
+        Toast.makeText(mParent.mContext, mParent.mContext.getString(R.string.x_items_deleted, i), Toast.LENGTH_SHORT).show();
     }
 
     void sort() {
@@ -377,42 +364,15 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
         mArrayAdapter.notifyDataSetChanged();
     }
 
-    void saveToCache() {
-        try {
-            FileOutputStream stream = mContext.openFileOutput(URLEncoder.encode(mListName, "UTF-8"), Context.MODE_PRIVATE);
-            stream.write(this.toJSON().toString().getBytes());
-            stream.close();
-            Log.d(TAG, "Save list " + mListName + " " + size());
-        } catch (Exception e) {
-            Log.d(TAG, "Save list exception " + e.getMessage());
-            e.printStackTrace();
-        }
-        // TODO: signal the backup store to queue a save
-    }
-
-    private void loadFromCache() {
-        try {
-            FileInputStream stream = mContext.openFileInput(URLEncoder.encode(mListName, "UTF-8"));
-            loadFromStream(stream);
-            Log.d(TAG, "Load list " + mListName + " " + size());
-        } catch (Exception e) {
-            Log.e(TAG, mListName + " could not be loaded from cache: " + e.getMessage());
-        }
-    }
-
-    private void loadFromStream(InputStream stream) throws Exception {
-        StringBuilder sb = new StringBuilder();
-        String line;
-        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(stream));
-        while ((line = bufferedReader.readLine()) != null)
-            sb.append(line);
-        loadFromJSON(new JSONObject(sb.toString()));
-    }
-
-    // JSON handling
-    private void loadFromJSON(JSONObject job) throws JSONException {
+    /**
+     * Load from a JSON object
+     * @param job JSON object
+     * @throws JSONException if anything goes wrong
+     */
+    private void fromJSON(JSONObject job) throws JSONException {
         clear();
         mListName = job.getString("name");
+        mTimestamp = job.getLong("time");
         mIsEditMode = job.getBoolean("editmode");
         JSONArray items = job.getJSONArray("items");
         for (int i = 0; i < items.length(); i++) {
@@ -421,14 +381,24 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
         }
     }
 
+    void fromStream(InputStream stream) throws Exception {
+        StringBuilder sb = new StringBuilder();
+        String line;
+        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(stream));
+        while ((line = bufferedReader.readLine()) != null)
+            sb.append(line);
+        fromJSON(new JSONObject(sb.toString()));
+    }
+
     /**
-     * Save the checklist to a json string
+     * Save the checklist to a json object
      * @return a String
      * @throws JSONException if something goes wrong
      */
     JSONObject toJSON() throws JSONException {
         JSONObject job = new JSONObject();
         job.put("name", mListName);
+        job.put("time", new Date().getTime());
         job.put("editmode", mIsEditMode);
         JSONArray items = new JSONArray();
         for (ChecklistItem item : this) {

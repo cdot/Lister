@@ -18,6 +18,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -51,6 +52,8 @@ public class ChecklistActivity extends AppCompatActivity implements TextView.OnE
 
     private ChecklistActivityBinding mBinding;
 
+    private Checklists mChecklists;
+
     /**
      * Construct the checklist name passed in the Intent
      */
@@ -60,18 +63,26 @@ public class ChecklistActivity extends AppCompatActivity implements TextView.OnE
         super.onCreate(bundle);
         mBinding = ChecklistActivityBinding.inflate(getLayoutInflater());
         setContentView(mBinding.getRoot());
+        setSupportActionBar(mBinding.checklistToolbar);
 
         EditText editText = mBinding.AddItemText;
         editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_AUTO_COMPLETE | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
         editText.setOnEditorActionListener(this);
         editText.addTextChangedListener(this);
-        editText.setImeOptions(6);
+        editText.setImeOptions(EditorInfo.IME_ACTION_DONE);
         ImageButton imageButton = mBinding.AddItemButton;
         imageButton.setAlpha(0.5f);
         imageButton.setOnLongClickListener(this);
 
+        mChecklists = new Checklists(this, true);
+
         String listName = getIntent().getStringExtra("list");
-        mList = new Checklist(listName, this);
+        mList = mChecklists.find(listName);
+
+        if (mList == null)
+            // Create the list
+            mList = mChecklists.createList(listName);
+
         Settings.setString(Settings.currentList, listName);
         Objects.requireNonNull(getSupportActionBar()).setTitle(mList.getListName());
 
@@ -83,10 +94,6 @@ public class ChecklistActivity extends AppCompatActivity implements TextView.OnE
             invalidateOptionsMenu();
         }
 
-        if (Settings.getBool(Settings.darkBackground)) {
-            getWindow().getDecorView().setBackgroundColor(Color.BLACK);
-            editText.setTextColor(-1);
-        }
         setEditMode(false);//mList.isEditMode());
     }
 
@@ -198,19 +205,24 @@ public class ChecklistActivity extends AppCompatActivity implements TextView.OnE
         addNewItem(true);
     }
 
-    private void addNewItem(boolean z) {
+    /**
+     * @param addToDictionary true to add the item to the dictionary
+     */
+    private void addNewItem(boolean addToDictionary) {
         String obj = mBinding.AddItemText.getText().toString();
         if (obj.trim().length() != 0) {
-            String find = mList.find(obj, false);
+            Checklist.ChecklistItem find = mList.find(obj, false);
             if (find == null || !Settings.getBool(Settings.warnAboutDuplicates)) {
                 addItem(obj);
-                if (z) {
-                    new Checklist(Settings.DICTIONARY_LISTNAME, this).add(obj);
-                    return;
+                if (addToDictionary) {
+                    Checklist dict = mChecklists.find(Settings.DICTIONARY_LISTNAME);
+                    if (dict == null)
+                        dict = mChecklists.createList(Settings.DICTIONARY_LISTNAME);
+                    dict.add(obj);
                 }
                 return;
             }
-            promptSimilarItem(obj, find);
+            promptSimilarItem(obj, find.mText);
         }
     }
 
@@ -232,9 +244,11 @@ public class ChecklistActivity extends AppCompatActivity implements TextView.OnE
         builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialogInterface, int i) {
                 addItem(str);
-                Checklist dict = new Checklist(Settings.DICTIONARY_LISTNAME, ChecklistActivity.this);
+                Checklist dict = mChecklists.find(Settings.DICTIONARY_LISTNAME);
+                if (dict == null)
+                    dict = mChecklists.createList(Settings.DICTIONARY_LISTNAME);
                 dict.add(str);
-                dict.saveToCache();
+                mChecklists.save();
             }
         });
         builder.setNegativeButton(R.string.cancel, null);
@@ -243,8 +257,8 @@ public class ChecklistActivity extends AppCompatActivity implements TextView.OnE
 
     private void addSuggestions(String str) {
         Log.d(TAG, "addSuggestions " + str);
-        Checklist dict = new Checklist(Settings.DICTIONARY_LISTNAME, ChecklistActivity.this);
-        if (dict.size() > 0) {
+        Checklist dict = mChecklists.find(Settings.DICTIONARY_LISTNAME);
+        if (dict != null && dict.size() > 0) {
             mBinding.SuggestionsContainer.removeAllViews();
             if (str.length() != 0) {
                 ArrayList<String> arrayList = new ArrayList<>();

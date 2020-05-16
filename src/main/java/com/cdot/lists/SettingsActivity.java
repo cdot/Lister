@@ -50,7 +50,6 @@ public class SettingsActivity extends Activity implements AdapterView.OnItemSele
         mShowListInFrontOfLockScreenCB = binding.ShowListInFrontOfLockScreenCB;
         mOpenLatestListAtStartupCB = binding.OpenLatestListAtStartupCB;
         mWarnAboutDuplicatesCB = binding.WarnAboutDuplicatesCB;
-        mDarkBackgroundCB = binding.DarkBackgroundCB;
         Spinner spinner = binding.TextSizeSpinner;
         mTextSizeSpinner = spinner;
         spinner.setOnItemSelectedListener(this);
@@ -65,7 +64,6 @@ public class SettingsActivity extends Activity implements AdapterView.OnItemSele
         mShowListInFrontOfLockScreenCB.setChecked(Settings.getBool(Settings.showListInFrontOfLockScreen));
         mOpenLatestListAtStartupCB.setChecked(Settings.getBool(Settings.openLatestListAtStartup));
         mWarnAboutDuplicatesCB.setChecked(Settings.getBool(Settings.warnAboutDuplicates));
-        mDarkBackgroundCB.setChecked(Settings.getBool(Settings.darkBackground));
         mTextSizeSpinner.setSelection(Settings.getInt(Settings.textSizeIndex));
     }
 
@@ -139,10 +137,6 @@ public class SettingsActivity extends Activity implements AdapterView.OnItemSele
 
     public void warnAboutDuplicatesCBClicked(View view) {
         Settings.setBool(Settings.warnAboutDuplicates, mWarnAboutDuplicatesCB.isChecked());
-    }
-
-    public void darkBackgroundCBClicked(View view) {
-        Settings.setBool(Settings.darkBackground, mDarkBackgroundCB.isChecked());
     }
 
     public void onItemSelected(AdapterView<?> adapterView, View view, int i, long j) {

@@ -5,9 +5,11 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
 
 import android.text.InputType;
 import android.util.Log;
@@ -22,6 +24,12 @@ import android.widget.PopupMenu;
 import android.widget.TextView;
 
 import com.cdot.lists.databinding.ChecklistsActivityBinding;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Objects;
 
 /**
  * Activity that displays a list of checklists
@@ -42,22 +50,27 @@ public class ChecklistsActivity extends AppCompatActivity implements AdapterView
     @Override
     public void onCreate(Bundle bundle) {
         super.onCreate(bundle);
-
         Settings.setContext(this);
 
-        mChecklists = new Checklists(this);
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_AUTO);
+
+        mChecklists = new Checklists(this, true);
         mChecklists.setToaster(this);
 
         mBinding = ChecklistsActivityBinding.inflate(getLayoutInflater());
         View view = mBinding.getRoot();
         setContentView(view);
+        setSupportActionBar(mBinding.checklistsToolbar);
 
         ListView listView = mBinding.ListList;
         listView.setAdapter(mChecklists.getArrayAdapter());
         listView.setOnItemClickListener(this);
         listView.setOnItemLongClickListener(this);
 
-/*        Uri data = getIntent().getData();
+        // Refresh after UI feature change
+        getSharedPreferences(Settings.UI_PREFERENCES, Context.MODE_PRIVATE).registerOnSharedPreferenceChangeListener(this);
+
+        /*        Uri data = getIntent().getData();
         if (data != null) {
             Log.d(TAG, "onCreate data: " + data.toString());
             importList(data);
@@ -66,16 +79,13 @@ public class ChecklistsActivity extends AppCompatActivity implements AdapterView
 
         if (Settings.getBool(Settings.openLatestListAtStartup)) {
             String currentList = Settings.getString(Settings.currentList);
-            if (currentList == null) {
-                Log.d(TAG, "no list to launch");
-                return;
-            }
-            Log.d(TAG, "launching " + currentList);
-            launchChecklistActivity(currentList);
+            if (currentList != null && mChecklists.find(currentList) != null) {
+                Log.d(TAG, "launching " + currentList);
+                launchChecklistActivity(currentList);
+            } else
+                Log.d(TAG, "no list to launch " + currentList);
         }
 
-        // Refresh after UI feature change
-        getSharedPreferences(Settings.UI_PREFERENCES, Context.MODE_PRIVATE).registerOnSharedPreferenceChangeListener(this);
     }
 
     @Override
@@ -142,9 +152,19 @@ public class ChecklistsActivity extends AppCompatActivity implements AdapterView
             case REQUEST_IMPORT_LIST:
                 if (resultCode == Activity.RESULT_OK && resultData != null) {
                     try {
-                        Checklist checklist = new Checklist(resultData.getData(), this);
+                        Uri uri = resultData.getData();
+                        if (uri == null)
+                            return;
+                        InputStream stream;
+                        if (Objects.equals(uri.getScheme(), "file")) {
+                            stream = new FileInputStream(new File((uri.getPath())));
+                        } else if (Objects.equals(uri.getScheme(), "content")) {
+                            stream = getContentResolver().openInputStream(uri);
+                        } else {
+                            throw new IOException("Failed to load lists. Unknown uri scheme: " + uri.getScheme());
+                        }
+                        Checklist checklist = mChecklists.createList(stream);
                         Log.d(TAG, "import list: " + checklist.getListName());
-                        mChecklists.add(checklist);
                         launchChecklistActivity(checklist.getListName());
                     } catch (Exception e) {
                         Log.d(TAG, "import failed to create list. " + e.getMessage());
@@ -224,9 +244,8 @@ public class ChecklistsActivity extends AppCompatActivity implements AdapterView
         builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialogInterface, int i) {
                 String listname = editText.getText().toString();
-                Checklist checkList = mChecklists.newList(listname);
-                mChecklists.add(checkList);
-                launchChecklistActivity(listname);
+                Checklist checkList = mChecklists.createList(listname);
+                launchChecklistActivity(checkList.getListName());
             }
         });
         builder.setNegativeButton(R.string.cancel, null);
