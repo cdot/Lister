@@ -116,8 +116,7 @@ class ChecklistItemView extends LinearLayout implements View.OnClickListener, Vi
         mDownButton = new ImageButton(cxt);
         mMoveButton = new ImageButton(cxt);
         mDeleteButton = new ImageButton(cxt);
-        View view = new View(cxt);
-        view.setLayoutParams(new ViewGroup.LayoutParams(30, -1));
+        // setBackgroundResource to keep the image button size default
         mUpButton.setBackgroundResource(R.drawable.ic_action_collapse);
         mDownButton.setBackgroundResource(R.drawable.ic_action_expand);
         mMoveButton.setBackgroundResource(R.drawable.action_move);
@@ -206,15 +205,12 @@ class ChecklistItemView extends LinearLayout implements View.OnClickListener, Vi
      */
     public void onClick(View view) {
         Log.d(TAG, "OnClick");
-        if (view == mUpButton) {
+        if (view == mUpButton)
             moveUp();
-        }
-        if (view == mDownButton) {
+        if (view == mDownButton)
             moveDown();
-        }
-        if (view == mDeleteButton) {
+        if (view == mDeleteButton)
             discardItem();
-        }
         CheckBox checkBox = mCheckBox;
         if (view == checkBox)
             setChecked(checkBox.isChecked());
@@ -229,12 +225,11 @@ class ChecklistItemView extends LinearLayout implements View.OnClickListener, Vi
         } else if (view == mDownButton) {
             moveBottom();
             return true;
-        } else if (view != this) {
-            return false;
-        } else {
+        } else if (view == this) {
             showMenu();
             return true;
         }
+        return false;
     }
 
     private void showMenu() {

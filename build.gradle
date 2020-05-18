@@ -4,20 +4,20 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.6.1'
+        classpath 'com.android.tools.build:gradle:3.6.3'
     }
 }
 apply plugin: 'com.android.application'
 
 repositories {
-        google()
+    google()
     mavenCentral()
     jcenter()
 }
 
 android {
     compileSdkVersion 28
-    buildToolsVersion '28.0.1'
+    buildToolsVersion '28.0.3'
     viewBinding.enabled = true
 
     defaultConfig {
@@ -34,15 +34,16 @@ android {
 }
 
 dependencies {
-    implementation 'androidx.appcompat:appcompat:1.0.0'
+    implementation 'androidx.appcompat:appcompat:1.1.0'
+    implementation 'com.google.android.material:material:1.1.0'
 
-    implementation 'com.google.android.gms:play-services-auth:11.6.0'
-    implementation 'com.google.android.gms:play-services-drive:11.6.0'
+    implementation 'com.google.android.gms:play-services-auth:18.0.0'
+    implementation 'com.google.android.gms:play-services-drive:17.0.0'
 }
 
 allprojects {
     repositories {
-        google()      //and here
+        google()
         jcenter()
     }
 }

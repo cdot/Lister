@@ -1,6 +1,5 @@
 package com.cdot.lists;
 
-import android.content.Context;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,6 +13,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
@@ -23,6 +23,9 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.Stack;
 
+/**
+ * A checklist of checkable items
+ */
 class Checklist extends ArrayList<Checklist.ChecklistItem> {
     private static final String TAG = "Checklist";
 
@@ -74,7 +77,7 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
         View getView(int i, View view, @NonNull ViewGroup viewGroup) {
             ChecklistItem item;
             ChecklistItemView itemView;
-            if (Settings.getBool(Settings.moveCheckedItemsToBottom) && !isEditMode()) {
+            if (Settings.getBool(Settings.moveCheckedItemsToBottom) && !mIsBeingEdited) {
                  if (i < getUncheckedCount())
                     item = getUnchecked(i);
                  else
@@ -99,16 +102,17 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
     }
     ItemsArrayAdapter mArrayAdapter;
 
-    private boolean mIsEditMode = false;
-    private String mListName;
-    private transient ChecklistItem mMovingItem = null;
-    private transient int mRemoveIdCount = 0;
+    String mListName;
+    boolean mIsBeingEdited = false;
+    long mTimestamp = 0;
+
     private Stack<ChecklistItem> mRemovedItems;
     private Stack<Integer> mRemovedItemsId;
     private Stack<Integer> mRemovedItemsIndex;
     private Checklists mParent;
-    
-    long mTimestamp = 0;
+
+    private transient ChecklistItem mMovingItem = null;
+    private transient int mRemoveIdCount = 0;
 
     /**
      * Construct and load from cache
@@ -121,7 +125,7 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
     }
 
     /**
-     * Parse the JSON given and load from it
+     * Process the JSON given and load from it
      * @param job the JSON object
      * @throws JSONException if something goes wrong
      */
@@ -130,8 +134,14 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
         fromJSON(job);
     }
 
-    Checklist(InputStream stream, Checklists parent) throws Exception {
-        mParent = parent;
+    /**
+     * Load from JSON read from the given stream
+     * @param stream source of JSON
+     * @param parent the container object
+     * @throws Exception IOException or JSONException
+     */
+    Checklist(InputStream stream, Checklists parent) throws IOException, JSONException {
+        initMembers(parent);
         fromStream(stream);
     }
 
@@ -141,20 +151,24 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
      */
     Checklist(Checklist copy, Checklists parent) {
         initMembers(parent);
-        mListName = copy.getListName();
-        mIsEditMode = copy.isEditMode();
+        mListName = copy.mListName;
+        mIsBeingEdited = copy.mIsBeingEdited;
         for (ChecklistItem item : copy) {
             add(new ChecklistItem(item));
         }
     }
 
+    /**
+     * Initiailise fields, shared between constructors
+     * @param parent
+     */
     private void initMembers(Checklists parent) {
         mParent = parent;
         mRemovedItems = new Stack<>();
         mRemovedItemsIndex = new Stack<>();
         mRemovedItemsId = new Stack<>();
         mArrayAdapter = new ItemsArrayAdapter();
-        mIsEditMode = false;
+        mIsBeingEdited = false;
     }
 
     /**
@@ -191,23 +205,9 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
         return null;
     }
 
-    String getListName() {
-        return mListName;
-    }
-
-    /* access modifiers changed from: package-private */
-    void setListName(String str) {
-        mListName = str;
-    }
-
-    /* access modifiers changed from: package-private */
-    boolean isEditMode() {
-        return mIsEditMode;
-    }
-
     /* access modifiers changed from: package-private */
     void setEditMode(boolean z) {
-        mIsEditMode = z;
+        mIsBeingEdited = z;
         mArrayAdapter.notifyDataSetChanged();
         mParent.save();
     }
@@ -373,7 +373,7 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
         clear();
         mListName = job.getString("name");
         mTimestamp = job.getLong("time");
-        mIsEditMode = job.getBoolean("editmode");
+        mIsBeingEdited = job.getBoolean("editmode");
         JSONArray items = job.getJSONArray("items");
         for (int i = 0; i < items.length(); i++) {
             JSONObject item = items.getJSONObject(i);
@@ -381,7 +381,7 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
         }
     }
 
-    void fromStream(InputStream stream) throws Exception {
+    void fromStream(InputStream stream) throws IOException, JSONException {
         StringBuilder sb = new StringBuilder();
         String line;
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(stream));
@@ -399,7 +399,7 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
         JSONObject job = new JSONObject();
         job.put("name", mListName);
         job.put("time", new Date().getTime());
-        job.put("editmode", mIsEditMode);
+        job.put("editmode", mIsBeingEdited);
         JSONArray items = new JSONArray();
         for (ChecklistItem item : this) {
             JSONObject iob = new JSONObject();

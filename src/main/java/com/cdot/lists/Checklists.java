@@ -10,6 +10,8 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 
+import com.cdot.lists.databinding.ChecklistActivityBinding;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 
@@ -64,7 +66,7 @@ class Checklists extends ArrayList<Checklist> {
                     //mVerticalPadding = 10;
                     break;
             }
-            itemView.setText(get(i).getListName());
+            itemView.setText(get(i).mListName);
             return itemView;
         }
 
@@ -74,12 +76,30 @@ class Checklists extends ArrayList<Checklist> {
         }
     }
 
+    /**
+     * Create a new instance of the array adapter for this list
+     * @return a new array adapter
+     */
+    ItemsArrayAdapter createArrayAdapter() {
+        mArrayAdapter = new ItemsArrayAdapter();
+        return mArrayAdapter;
+    }
+
+    /**
+     * Constructor
+     * @param cxt Context (Activity) the lists are being used in
+     * @param load true to load the list from backing store anc cache
+     */
     Checklists(Context cxt, boolean load) {
         mContext = cxt;
         if (load)
             load();
     }
 
+    /**
+     * Create a new checklist
+     * @param name name of the new checklist
+     */
     Checklist createList(String name) {
         Checklist checkList = new Checklist(name, this);
         add(checkList);
@@ -87,6 +107,12 @@ class Checklists extends ArrayList<Checklist> {
         return checkList;
     }
 
+    /**
+     * Create a new checklist from JSON data read from the stream
+     * @param stream where to get the data
+     * @return the new list
+     * @throws Exception IOException or JSONException
+     */
     Checklist createList(InputStream stream) throws Exception {
         Checklist checkList = new Checklist(stream, this);
         add(checkList);
@@ -94,19 +120,39 @@ class Checklists extends ArrayList<Checklist> {
         return checkList;
     }
 
-    void cloneChecklistAtIndex(int i) {
+    /**
+     * Make a copy of the list at the given index
+     * @param i index of the list to clone
+     */
+    void cloneListAtIndex(int i) {
+        Checklist checklist = null;
+            checklist = new Checklist(get(i), this);
+            checklist.mListName += " (copy)";
+            add(checklist);
         try {
-            Checklist checkList = new Checklist(get(i), this);
-            checkList.setListName(checkList.getListName()  + " (copy)");
-            add(checkList);
             save();
         } catch (Exception ignored) {
+            Log.d(TAG, "Exception while saving " + ignored.getMessage());
         }
     }
 
-    Checklist find(String name) {
+    /**
+     * Remove the list at the given index
+     * @param i index of the list to remove
+     */
+    void removeListAtIndex(int i) {
+        remove(i);
+        save();
+    }
+
+    /**
+     * Find the named list
+     * @param name list to search for
+     * @return the list if found, or null otherwise
+     */
+    Checklist findListByName(String name) {
         for (Checklist cl : this)
-            if (cl.getListName().equals(name))
+            if (cl.mListName.equals(name))
                 return cl;
         return null;
     }
@@ -143,7 +189,7 @@ class Checklists extends ArrayList<Checklist> {
             FileInputStream fis = mContext.openFileInput("checklists.json");
             cache.loadFromStream(fis);
             for (Checklist cl : cache) {
-                Checklist known = find(cl.getListName());
+                Checklist known = findListByName(cl.mListName);
                 if (known == null || cl.mTimestamp > known.mTimestamp) {
                     add(new Checklist(cl, this));
                 }
@@ -155,6 +201,9 @@ class Checklists extends ArrayList<Checklist> {
             mArrayAdapter.notifyDataSetChanged();
     }
 
+    /**
+     * Save the lists to backing store, if one is configured.
+     */
     private void saveToBackingStore() {
         final Uri uri = Settings.getUri("backingStore");
         if (uri == null)
@@ -180,6 +229,11 @@ class Checklists extends ArrayList<Checklist> {
         }).start();
     }
 
+    /**
+     * Load the checklists from JSON read from the stream
+     * @param stream source of the JSON
+     * @throws Exception IOException or JSONException
+     */
     private void loadFromStream(InputStream stream) throws Exception {
         StringBuilder sb = new StringBuilder();
         String line;
@@ -189,6 +243,11 @@ class Checklists extends ArrayList<Checklist> {
         loadFromJSON(new JSONArray(sb.toString()));
     }
 
+    /**
+     * Process a JSON array object and load the lists found therein
+     * @param lists array of checklists in JSON format
+     * @throws JSONException if it can't be analysed e.g. missing fields
+     */
     private void loadFromJSON(JSONArray lists) throws JSONException {
         clear();
         for (int i = 0; i < lists.length(); i++) {
@@ -196,6 +255,11 @@ class Checklists extends ArrayList<Checklist> {
         }
     }
 
+    /**
+     * Construct a JSON array object from the checklists we manage
+     * @return an array of JSON checklist objects
+     * @throws JSONException
+     */
     private JSONArray toJSON() throws JSONException {
         JSONArray json = new JSONArray();
         for (Checklist cl : this) {
@@ -204,20 +268,9 @@ class Checklists extends ArrayList<Checklist> {
         return json;
     }
 
-    ItemsArrayAdapter getArrayAdapter() {
-        mArrayAdapter = new ItemsArrayAdapter();
-        return mArrayAdapter;
-    }
-
-    void setToaster(Context t) {
-        mContext = t;
-    }
-
-    void removeChecklistAtIndex(int i) {
-        remove(i);
-        save();
-    }
-
+    /**
+     * Save the checklists. Saves to the cache first, and then the backing store (if configured)
+     */
     void save() {
         // Save to the cache, then refresh the backing store. That way the
         // cache will always be older than the backing store if the backing store save
