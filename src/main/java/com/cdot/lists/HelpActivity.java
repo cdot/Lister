@@ -17,7 +17,7 @@ public class HelpActivity extends AppCompatActivity {
     /* access modifiers changed from: protected */
     public void onCreate(Bundle bundle) {
         super.onCreate(bundle);
-        getSupportActionBar().setTitle((int) R.string.action_help);
+        setTitle((int) R.string.action_help);
         WebView webView = new WebView(this);
         this.mWebView = webView;
         webView.getSettings().setBuiltInZoomControls(true);

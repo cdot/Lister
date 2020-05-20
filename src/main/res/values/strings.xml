@@ -29,10 +29,8 @@
     <string name="create_new_list">Create New List</string>
     <string name="dark_background">Dark background</string>
     <string name="dim_checked_items">Grey out checked items</string>
-    <string name="edit_dictionary">Edit Local Dictionary</string>
     <string name="edit_list_item">Edit list item</string>
     <string name="enable_auto_backup">Enable Automatic Backup</string>
-    <string name="enable_dictionary">Enable Local Dictionary</string>
     <string name="enter_name_of_new_list">Enter name of new list:</string>
     <string name="enter_new_name_of_list">Enter new name of list:</string>
     <string name="entire_row_toggles_check_box">Entire row toggles check box</string>

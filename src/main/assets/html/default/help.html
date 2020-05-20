@@ -1,111 +1,61 @@
 <html>
 <head>
-<title>Lister Help</title>
+    <title>Lister Help</title>
+    <style>
+        dt { font-weight: bold; vertical-align: middle; }
+        dd { margin: 0; padding: 0 0 0.5em 0; }
+        img { display:inline }
+    </style>
 </head>
 <body>
 <h1>Main Page</h1>
-The main page contains a list of all the lists you have created.<br/>
-<br/>
-A list is opened by clicking the name of the list.<br/>
-<br/>
-A long click on the list name will bring up a context menu that lets you<br/>
+<p>The main page contains a list of all the lists you have created.</p>
+<p>A list is opened by clicking the name of the list.</p>
+<p>A long click on the list name will bring up a context menu that lets you
 <ul>
     <li>Rename List</li>
     <li>Delete</li>
     <li>Create Copy</li>
 </ul>
-Create copy will make an identical copy of the list. This lets you create template list with e.g. your base groceries that you always buy.<br/>
-
+</p>
+<p>Create copy will make an identical copy of the list. This lets you create template list with e.g.
+    your basic groceries that you always buy.</p>
 <h2>Action Bar</h2>
-<p>
-    <img src="../img/ic_action_new.png"><strong>New list</strong><br/>
-    Create new list.<br/>
-</p>
-<p>
-    <img src="../img/ic_action_help.png"><strong>Help</strong><br/>
-    Launch this help view.<br/>
-</p>
-<p>
-    <img src="../img/ic_action_settings.png"><strong>Settings</strong><br/>
-    Launch the settings view.<br/>
-</p>
-<p>
-    <strong>Save Backup</strong><br/>
-    Save a backup of all lists to external storage (SD card).<br/>
-</p>
-<p>
-    <strong>Import Backup</strong><br/>
-    Import files from a previously saved backup. This will add new lists, so the current lists will not be overwritten.<br/>
-    This may lead to duplicate lists in the main view.
-</p>
-
+<dl>
+    <dt><img src="../img/ic_action_new.png">New list</dt>
+    <dd>Create new list</dd>
+    <dt><img src="../img/ic_action_help.png">Help</dt>
+    <dd>Launch this help view</dd>
+    <dt>
+        <img src="../img/ic_action_settings.png">Settings
+    </dt>
+    <dd>Launch the settings view.</dd>
+</dl>
 <h1>List View</h1>
-The list view is where you manage the content of your lists.
-
-<p>
-    <img src="../img/ic_action_edit.png"><strong>Edit mode</strong><br/>
-    Toggles list editing mode.<br/>
-</p>
-<!--
-<p>
-    <img src="../img/ic_action_accept.png"><strong>Check item mode</strong><br/>
-    Exits edit mode, and turns on list 'check items' mode.<br/>
-</p>
-
-<h2>Check Item Mode</h2>
-In this mode you 'check off' items in the list.<br/>
-Items are checked by clicking the check box.<br/>
-The check box can be placed on either side of the screen, and optionally the entire row can toggle the check box.<br/>
-<br/>
-This is the default mode when the list has items in it.
--->
+<p>The list view is where you manage the content of your lists.</p>
+<dt><img src="../img/ic_action_edit.png">Edit mode</dt>
+<dd>Toggles list editing mode.</dd>
+</dl>
 <h2>Edit Mode</h2>
-In edit mode you add, remove, and move around items in the list.<br/>
-<br/>
-When edit is disabled you can't add or remove items. It is still possible to check items and move items.<br/>
-<!--
-<br/>
-This is the default mode when the list is empty.
+<p>In edit mode you can add, remove, and move around items in the list.</p>
+<p>When edit is disabled you can't add or remove items. It is still possible to check items and move
+    them.</p>
 <p>
-    <img src="../img/ic_action_new.png"><strong>Add item</strong><br/>
-    Add the item in the text box to the list.<br/>
-</p>
-
-<p>
-    <img src="../img/ic_action_discard.png"><strong>Delete item</strong><br/>
-    Delete the selected item.<br/>
+    Items are checked by clicking the check box.
+    The check box can be placed on either side of the screen, and optionally a touch anywhere on the
+    row can toggle the check box.
 </p>
 <p>
-    <img src="../img/ic_action_collapse.png"><strong>Move up</strong><br/>
-    Short click: Move up 1 row.<br/>
-    Long click: Move to top row.<br/>
+    A long click on an item lets you rename it or delete it.
 </p>
-<p>
-    <img src="../img/ic_action_expand.png"><strong>Move down</strong><br/>
-    Short click: Move down 1 row.<br/>
-    Long click: Move to bottom row.<br/>
-</p>
--->
-
-<p>
-    Items are checked by clicking the check box.<br/>
-    The check box can be placed on either side of the screen, and optionally the entire row can toggle the check box.<br/>
-</p>
-
-<p>
-A long click on an item lets you rename it or delete it.<br/>
-</p>
-
-<p>
-    <img src="../img/ic_action_new.png"><strong>Add item</strong><br/>
-    Add the item in the text box to the list.<br/>
-</p>
-
-<p>
-    <img src="../img/action_move.png"><strong>Move item</strong><br/>
-    Drag item to new place in list.<br/>
-</p>
-
+<dl>
+    <dt><img src="../img/ic_action_new.png">Add item</dt>
+    <dd>Add the item in the text box to the list.</dd>
+    <dt>
+        <img src="../img/action_move.png">Move item
+    </dt>
+    <dd>Drag item to new place in list.</dd>
+</dl>
 <h2>Menu</h2>
 <ul>
     <li>Rename List</li>
@@ -113,61 +63,50 @@ A long click on an item lets you rename it or delete it.<br/>
     <li>Uncheck All Items</li>
     <li>Delete All Checked Items</li>
     <li>Undo Delete Item</li>
-    <li>Save Backup</li>
-    <li>Restore Backup</li>
 </ul>
-Undo will let you put back any deleted item as long as the list is active.<br/>
-When you exit the list view the history of the list is lost<br/>
-<br/>
-Save Backup will write the current list out to the SD card.<br/>
-Restore Backup will restore the current list to the state it had when the latest Save Backup was performed.<br/>
-
+<p>Undo will let you put back any deleted item as long as the list is active.
+    When you exit the list view the undo history of the list is lost</p>
 <h1>Settings</h1>
-<strong>Dim checked items</strong><br/>
-Lower contrast on checked items so it is easier to see the items that are left to do.<br/>
-<br/>
-<strong>Strike through checked items</strong><br/>
-Checked items gets crossed out with a line through them.<br/>
-<br/>
-<strong>Move checked items to bottom</strong><br/>
-The checked items are shown after the unchecked items. This only effects the view. The list is not really re-ordered.<br/>
-Note: When this is enabled, moving items may not work as expected.<br/>
-<br/>
-<strong>Left hand operation</strong><br/>
-Default behavior is that the check box and move button is on the right side. This option moves them to the left side.<br/>
-This allows both left and right handed people to manage the list items with one hand.<br/>
-<br/>
-<strong>Auto-delete checked items</strong><br/>
-Delete items automatically when they are checked. It is still possible to do un-delete as usual.<br/>
-<br/>
-<strong>Entire row toggles check box</strong><br/>
-To make it even easier to check items, this option allows the entire row to toggle the check box.<br/>
-<br/>
-<strong>Add new items at top of list</strong><br/>
-By default items are added at the bottom of the list.<br/>
-<br/>
-<strong>Show list in front of lock screen</strong><br/>
-If the screen is locked, this option lets you continue using the list without unlocking it.<br/>
-Note: You still need to unlock the screen before you can access any other app.<br/>
-<br/>
-<strong>Open latest list when app is started</strong><br/>
-When the app is started it will automatically launch the last open list from the previous session, if it still exists.<br/>
-<br/>
-<strong>Warning before adding duplicate item to list</strong><br/>
-When a newly entered item has a similar item already in the list; this shows a popup asking for confirmation before the new item is added to the list.<br/>
-<br/>
-<strong>Dark background</strong><br/>
-When in a list view, this shows screen with white text on dark background. This saves battery on AMOLED displays.<br/>
-<br/>
-<strong>Enable local dictionary</strong><br/>
-When this is enabled, entered items are remembered and used as suggestions for new items.<br/>
-<br/>
-<strong>Enable automatic backup</strong><br/>
-When this is enabled, the list is automatically saved to external storage when you exit the list view.<br/>
-
-<br/>
-<strong>Text size</strong><br/>
-Set the text size of the list items. Use the system default or manually set Small, Medium or Large<br/>
-<br/>
+<dl>
+    <dt>Grey out checked items</dt>
+    <dd>Grey out checked items so it is easier to see the items that are left to do</dd>
+    <dt>Strike through checked items</dt>
+    <dd>Strike through checked items with a line</dd>
+    <dt>Move checked items to bottom</dt>
+    <dd>The checked items are shown after the unchecked items. This only effects the view, and
+        moving items
+        may not work as expected
+    </dd>
+    <dt>Left hand operation
+    <dt/>
+    <dd>Move the check box and move button to the left side.
+        This makes it easier to manage the list with either hand
+    </dd>
+    <dt>Auto-delete checked items</dt>
+    <dd>Delete items automatically when they are checked. You can undo the delete if necessary.</dd>
+    <dt>Entire row toggles check box</dt>
+    <dd>A touch anywhere on the row will toggle the check box</dd>
+    <dt>Add new items at top of list</dt>
+    <dd>By default items are added at the bottom of the list</dd>
+    <dt>Show list in front of lock screen</dt>
+    <dd>Lets you continue using the list even when the screen is locked.
+        You will still need to unlock the screen before you can access any other app
+    </dd>
+    <dt>Open latest list when app is started</dt>
+    <dd>When the app is started it will automatically launch the last open list from the previous
+        session,
+        if it still exists.
+    </dd>
+    <dt>Warning before adding duplicate item to list
+    <dt/>
+    <dd>When a newly entered item has a similar item already in the list, it will show a popup
+        asking for
+        confirmation before the new item is added to the list.
+    </dd>
+    <dt>Text size</dt>
+    <dd>Set the text size of the list items. Use the system default or manually set Small, Medium or
+        Large
+    </dd>
+</dl>
 </body>
 </html>

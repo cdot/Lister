@@ -22,15 +22,12 @@ import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.cdot.lists.databinding.ChecklistActivityBinding;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Objects;
 
 public class ChecklistActivity extends AppCompatActivity implements TextView.OnEditorActionListener, TextWatcher, View.OnLongClickListener {
@@ -91,11 +88,10 @@ public class ChecklistActivity extends AppCompatActivity implements TextView.OnE
         mView.setAdapter(mList.mArrayAdapter);
 
         if (mList.size() == 0) {
-            showSoftKeyboard(true);
+            showNewItemPrompt(true);
             invalidateOptionsMenu();
-        }
-
-        setEditMode(false);//mList.mIsEditMode);
+        } else
+            showNewItemPrompt(false);
     }
 
     @Override
@@ -130,14 +126,14 @@ public class ChecklistActivity extends AppCompatActivity implements TextView.OnE
                 mList.deleteAllChecked();
                 if (mList.size() == 0) {
                     mList.setEditMode(true);
-                    setEditMode(mList.mIsBeingEdited);
+                    showNewItemPrompt(mList.mIsBeingEdited);
                     invalidateOptionsMenu();
                 }
                 return true;
             case R.id.action_edit:
                 Checklist checkList = mList;
                 checkList.setEditMode(!checkList.mIsBeingEdited);
-                setEditMode(mList.mIsBeingEdited);
+                showNewItemPrompt(mList.mIsBeingEdited);
                 invalidateOptionsMenu();
                 return true;
             case R.id.action_rename_list:
@@ -174,63 +170,50 @@ public class ChecklistActivity extends AppCompatActivity implements TextView.OnE
         }
     }
 
-    private void setEditMode(boolean z) {
-        Log.d(TAG, "setEditMode " + z);
+    private void showNewItemPrompt(boolean z) {
+        Log.d(TAG, "showNewItemPrompt " + z);
         mBinding.NewItemContainer.setVisibility(z ? View.VISIBLE : View.INVISIBLE);
-        showSoftKeyboard(z);
-    }
 
-    private void showSoftKeyboard(boolean z) {
+        // Show/hide soft keyboard
         InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
         if (z) {
             mBinding.AddItemText.setFocusable(true);
             mBinding.AddItemText.setFocusableInTouchMode(true);
             mBinding.AddItemText.requestFocus();
-            inputMethodManager.showSoftInput(mBinding.AddItemText, 1);
-            return;
-        }
-        View currentFocus = getCurrentFocus();
-        if (currentFocus != null) {
-            inputMethodManager.hideSoftInputFromWindow(currentFocus.getWindowToken(), 2);
+            inputMethodManager.showSoftInput(mBinding.AddItemText, InputMethodManager.SHOW_IMPLICIT);
+        } else {
+            View currentFocus = getCurrentFocus();
+            if (currentFocus == null)
+                currentFocus = mBinding.AddItemText;
+            inputMethodManager.hideSoftInputFromWindow(currentFocus.getWindowToken(), 0);
         }
     }
 
     @Override
     public boolean onLongClick(View view) {
-        addNewItem(false);
+        addNewItem();
         return true;
     }
 
     // Invoked from checklist_activity.xml
     public void onClickAddItem(View view) {
-        addNewItem(true);
+        addNewItem();
     }
 
-    /**
-     * @param addToDictionary true to add the item to the dictionary
-     */
-    private void addNewItem(boolean addToDictionary) {
+    private void addNewItem() {
         String obj = mBinding.AddItemText.getText().toString();
         if (obj.trim().length() != 0) {
             Checklist.ChecklistItem find = mList.find(obj, false);
-            if (find == null || !Settings.getBool(Settings.warnAboutDuplicates)) {
+            if (find == null || !Settings.getBool(Settings.warnAboutDuplicates))
                 addItem(obj);
-                if (addToDictionary) {
-                    Checklist dict = mChecklists.findListByName(Settings.DICTIONARY_LISTNAME);
-                    if (dict == null)
-                        dict = mChecklists.createList(Settings.DICTIONARY_LISTNAME);
-                    dict.add(obj);
-                }
-                return;
-            }
-            promptSimilarItem(obj, find.mText);
+            else
+                promptSimilarItem(obj, find.mText);
         }
     }
 
     private void addItem(String str) {
         mList.add(str);
         mBinding.AddItemText.setText("");
-        mBinding.SuggestionsContainer.removeAllViews();
         if (Settings.getBool(Settings.addNewItemsAtTopOfList)) {
             mView.smoothScrollToPosition(0);
         } else {
@@ -245,56 +228,10 @@ public class ChecklistActivity extends AppCompatActivity implements TextView.OnE
         builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialogInterface, int i) {
                 addItem(str);
-                Checklist dict = mChecklists.findListByName(Settings.DICTIONARY_LISTNAME);
-                if (dict == null)
-                    dict = mChecklists.createList(Settings.DICTIONARY_LISTNAME);
-                dict.add(str);
-                mChecklists.save();
             }
         });
         builder.setNegativeButton(R.string.cancel, null);
         builder.show();
-    }
-
-    private void addSuggestions(String str) {
-        Log.d(TAG, "addSuggestions " + str);
-        Checklist dict = mChecklists.findListByName(Settings.DICTIONARY_LISTNAME);
-        if (dict != null && dict.size() > 0) {
-            mBinding.SuggestionsContainer.removeAllViews();
-            if (str.length() != 0) {
-                ArrayList<String> arrayList = new ArrayList<>();
-                for (Checklist.ChecklistItem next : dict) {
-                    Log.d(TAG, "item " + next.getText());
-                    if (next.getText().toLowerCase().indexOf(str.toLowerCase()) == 0 && mList.find(next.getText(), true) == null) {
-                        arrayList.add(next.getText());
-                        if (arrayList.size() == 5) {
-                            break;
-                        }
-                    }
-                }
-                Collections.sort(arrayList);
-                for (String s : arrayList) {
-                    addSuggestion(s);
-                }
-            }
-        }
-    }
-
-    private void addSuggestion(CharSequence charSequence) {
-        TextView textView = new TextView(this);
-        textView.setText(charSequence);
-        textView.setGravity(17);
-        textView.setPadding(0, 10, 0, 10);
-        textView.setBackgroundColor(-1);
-        textView.setMinimumWidth(300);
-        textView.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View view) {
-                addItem(((TextView) view).getText().toString());
-            }
-        });
-        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(-2, -2);
-        layoutParams.topMargin = 3;
-        mBinding.SuggestionsContainer.addView(textView, layoutParams);
     }
 
     private void showRenameListDialog() {
@@ -320,7 +257,7 @@ public class ChecklistActivity extends AppCompatActivity implements TextView.OnE
         if (i != 6) {
             return false;
         }
-        addNewItem(true);
+        addNewItem();
         return true;
     }
 
@@ -396,6 +333,5 @@ public class ChecklistActivity extends AppCompatActivity implements TextView.OnE
         } else {
             mBinding.AddItemButton.setAlpha(1f);
         }
-        addSuggestions(mBinding.AddItemText.getText().toString());
     }
 }

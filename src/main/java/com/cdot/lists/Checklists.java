@@ -35,7 +35,7 @@ import java.util.Objects;
 class Checklists extends ArrayList<Checklist> {
     private static final String TAG = "Checklists";
 
-    private ItemsArrayAdapter mArrayAdapter;
+    ItemsArrayAdapter mArrayAdapter;
     Context mContext;
 
     /**
@@ -50,6 +50,7 @@ class Checklists extends ArrayList<Checklist> {
         @Override
         public @NonNull
         View getView(int i, View view, @NonNull ViewGroup viewGroup) {
+            // Simple text view, so don't muck about with resources
             TextView itemView = (view == null) ? new TextView(mContext) : (TextView) view;
             switch (Settings.getInt("textSizeIndex")) {
                 case Settings.TEXT_SIZE_SMALL:
@@ -77,21 +78,13 @@ class Checklists extends ArrayList<Checklist> {
     }
 
     /**
-     * Create a new instance of the array adapter for this list
-     * @return a new array adapter
-     */
-    ItemsArrayAdapter createArrayAdapter() {
-        mArrayAdapter = new ItemsArrayAdapter();
-        return mArrayAdapter;
-    }
-
-    /**
      * Constructor
      * @param cxt Context (Activity) the lists are being used in
      * @param load true to load the list from backing store anc cache
      */
     Checklists(Context cxt, boolean load) {
         mContext = cxt;
+        mArrayAdapter = new ItemsArrayAdapter();
         if (load)
             load();
     }

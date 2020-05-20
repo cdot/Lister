@@ -9,7 +9,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Settings {
-    static final String DICTIONARY_LISTNAME = "Dictionary";
     static final String UI_PREFERENCES = "UIPreferences";
 
     static String greyCheckedItems = "greyCheckedItems";

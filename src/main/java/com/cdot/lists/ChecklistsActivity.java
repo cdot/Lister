@@ -62,7 +62,7 @@ public class ChecklistsActivity extends AppCompatActivity implements AdapterView
         setSupportActionBar(mBinding.checklistsToolbar);
 
         ListView listView = mBinding.ListList;
-        listView.setAdapter(mChecklists.createArrayAdapter());
+        listView.setAdapter(mChecklists.mArrayAdapter);
         listView.setOnItemClickListener(this);
         listView.setOnItemLongClickListener(this);
 
@@ -104,7 +104,7 @@ public class ChecklistsActivity extends AppCompatActivity implements AdapterView
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
         //if (key == "textSizeIndex")
         //    mChecklists.reload();
-        if (key == "backingStore") {
+        if (key.equals("backingStore")) {
             Log.d(TAG, "BACKING STORE " + Settings.getUri("backingStore"));
         }
     }
@@ -147,6 +147,7 @@ public class ChecklistsActivity extends AppCompatActivity implements AdapterView
      * @param resultData  and what's the data?
      */
     public void onActivityResult(int requestCode, int resultCode, Intent resultData) {
+        super.onActivityResult(requestCode, resultCode, resultData);
         switch (requestCode) {
             case REQUEST_IMPORT_LIST:
                 if (resultCode == Activity.RESULT_OK && resultData != null) {

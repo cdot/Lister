@@ -152,7 +152,6 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
     Checklist(Checklist copy, Checklists parent) {
         initMembers(parent);
         mListName = copy.mListName;
-        mIsBeingEdited = copy.mIsBeingEdited;
         for (ChecklistItem item : copy) {
             add(new ChecklistItem(item));
         }
@@ -207,6 +206,7 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
 
     /* access modifiers changed from: package-private */
     void setEditMode(boolean z) {
+        Log.d(TAG, "setEditMode " + z);
         mIsBeingEdited = z;
         mArrayAdapter.notifyDataSetChanged();
         mParent.save();
@@ -321,7 +321,7 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
     /**
      * The "checked" status of an item has changed
      */
-    void notifyItemChecked() {
+    void notifyItemChanged() {
         mArrayAdapter.notifyDataSetChanged();
         mParent.save();
     }
@@ -373,7 +373,6 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
         clear();
         mListName = job.getString("name");
         mTimestamp = job.getLong("time");
-        mIsBeingEdited = job.getBoolean("editmode");
         JSONArray items = job.getJSONArray("items");
         for (int i = 0; i < items.length(); i++) {
             JSONObject item = items.getJSONObject(i);
@@ -399,7 +398,6 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
         JSONObject job = new JSONObject();
         job.put("name", mListName);
         job.put("time", new Date().getTime());
-        job.put("editmode", mIsBeingEdited);
         JSONArray items = new JSONArray();
         for (ChecklistItem item : this) {
             JSONObject iob = new JSONObject();
