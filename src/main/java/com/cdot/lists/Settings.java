@@ -4,11 +4,10 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.net.Uri;
 
-import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.Map;
 
-public class Settings {
+class Settings {
     static final String UI_PREFERENCES = "UIPreferences";
 
     static String greyCheckedItems = "greyCheckedItems";
@@ -25,13 +24,15 @@ public class Settings {
     static String currentList = "currentList";
     static String backingStore = "backingStore";
 
+    static String cacheFile = "checklists.json";
+
     // Must match res/values/arrays.xml/text_size_list
     static final int TEXT_SIZE_DEFAULT = 0;
     static final int TEXT_SIZE_SMALL = 1;
     static final int TEXT_SIZE_MEDIUM = 2;
     static final int TEXT_SIZE_LARGE = 3;
 
-    static SharedPreferences mPrefs;
+    private static SharedPreferences mPrefs;
 
     private static Map<String, Boolean> mBoolPrefs = new HashMap<String, Boolean>() {{
         put(autoDeleteCheckedItems, false);
@@ -78,8 +79,7 @@ public class Settings {
         }
         for (Map.Entry<String, Uri> entry : mUriPrefs.entrySet()) {
             Uri ev = entry.getValue();
-            if (ev != null)
-                entry.setValue(Uri.parse(mPrefs.getString(entry.getKey(), ev.toString())));
+            entry.setValue(Uri.parse(mPrefs.getString(entry.getKey(), ev == null ? null : ev.toString())));
         }
     }
 

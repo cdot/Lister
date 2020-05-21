@@ -4,164 +4,55 @@ import android.content.Context;
 import android.content.DialogInterface;
 
 import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
 
-import android.graphics.Color;
 import android.graphics.Paint;
-import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.CheckBox;
 import android.widget.EditText;
-import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.PopupMenu;
-import android.widget.RelativeLayout;
-import android.widget.TextView;
 
+import com.cdot.lists.databinding.ChecklistItemViewBinding;
+
+/**
+ * View for a single item in a checklist, and for moving same.
+ */
 class ChecklistItemView extends LinearLayout implements View.OnClickListener, View.OnLongClickListener, View.OnTouchListener {
     private static final String TAG = "ChecklistItemView";
-    private CheckBox mCheckBox;
-    //private ImageButton mDeleteButton;
-    //private ImageButton mUpButton;
-    //private ImageButton mDownButton;
     private Checklist.ChecklistItem mItem;
-    private LinearLayout mRight;
-    private LinearLayout mLeft;
-    private TextView mItemText;
-    private ImageButton mMoveButton;
-    private boolean mMovingViewPreview = false;
+    private boolean mIsMoving = false;
     private int mVerticalPadding = 0;
     private Context mContext;
+    private ChecklistItemViewBinding mBinding;
+    private boolean mControlsOnRight = true;
 
-    ChecklistItemView(Checklist.ChecklistItem item, Context cxt) {
+    /**
+     * @param item     the item being viewed
+     * @param isMoving true if this is to be used as a view for dragging an item to a new position, false for an item in a fixed list
+     * @param cxt      activity
+     */
+    ChecklistItemView(Checklist.ChecklistItem item, boolean isMoving, Context cxt) {
         super(cxt);
-        init(item, cxt);
-    }
 
-    ChecklistItemView(Checklist.ChecklistItem item, boolean previewing, Context cxt) {
-        super(cxt);
-        mMovingViewPreview = previewing;
-        init(item, cxt);
-    }
+        mBinding = ChecklistItemViewBinding.inflate((LayoutInflater) cxt.getSystemService(Context.LAYOUT_INFLATER_SERVICE));
 
-    private void init(Checklist.ChecklistItem item, Context cxt) {
+        mIsMoving = isMoving;
         mContext = cxt;
         mItem = item;
 
-        setOnClickListener(this);
-        setOnLongClickListener(this);
+        addView(mBinding.rowLayout);
 
-        // We are subclassing LinearLayout
-        setOrientation(LinearLayout.VERTICAL);
-
-        // Why do we need this additional layout? Why not make the container (which is a LinearLayout)
-        // horizontal? It doesn't work without the inner layout, but unclear why.
-        LinearLayout rowLayout = new LinearLayout(cxt);
-        addView(rowLayout);
-
-        rowLayout.setOrientation(LinearLayout.HORIZONTAL);
-        rowLayout.setVerticalGravity(Gravity.CENTER_VERTICAL);
-
-        if (!mMovingViewPreview) {
-            // TODO: Assume this is just to carry a background colour?
-            View view = new View(cxt);
-            view.setLayoutParams(new ViewGroup.LayoutParams(-1, 1));
-            view.setBackgroundColor(Color.BLACK); // TODO: theme?
-            addView(view);
+        if (!mIsMoving) {
+            setOnClickListener(this);
+            setOnLongClickListener(this);
+            mBinding.checkbox.setOnClickListener(this);
+            mBinding.moveButton.setOnTouchListener(this);
         }
-
-        mCheckBox = new CheckBox(cxt); // Added to mLeft or mRight in updateView
-        mMoveButton = new ImageButton(cxt); // Added to mLeft or mRight in updateView
-
-        //mUpButton = new ImageButton(cxt); // never used AFAICT
-        //mDownButton = new ImageButton(cxt); // never used AFAICT
-        //mDeleteButton = new ImageButton(cxt); // never used AFAICT
-
-        // setBackgroundResource to keep the image button size default
-        //mUpButton.setBackgroundResource(R.drawable.ic_action_collapse);
-        //mDownButton.setBackgroundResource(R.drawable.ic_action_expand);
-        mMoveButton.setBackgroundResource(R.drawable.action_move);
-        //mDeleteButton.setBackgroundResource(R.drawable.ic_action_discard);
-        if (!mMovingViewPreview) {
-            mCheckBox.setOnClickListener(this);
-            //mUpButton.setOnClickListener(this);
-            //mUpButton.setOnLongClickListener(this);
-            //mDownButton.setOnClickListener(this);
-            //mDownButton.setOnLongClickListener(this);
-            //mDeleteButton.setOnClickListener(this);
-            mMoveButton.setOnTouchListener(this);
-        }
-
-        // A view for whatever is on the left side of the text
-        mLeft = new LinearLayout(cxt);
-        mLeft.setOrientation(LinearLayout.HORIZONTAL);
-        rowLayout.addView(mLeft);
-
-        // Now add the text
-        mItemText = new TextView(cxt);
-        switch (Settings.getInt("textSizeIndex")) {
-            case Settings.TEXT_SIZE_SMALL:
-                mItemText.setTextAppearance(android.R.style.TextAppearance_DeviceDefault_Small);
-                mVerticalPadding = 0;
-                break;
-            case Settings.TEXT_SIZE_MEDIUM:
-            case Settings.TEXT_SIZE_DEFAULT:
-                mItemText.setTextAppearance(android.R.style.TextAppearance_DeviceDefault_Medium);
-                mVerticalPadding = 5;
-                break;
-            case Settings.TEXT_SIZE_LARGE:
-                mItemText.setTextAppearance(android.R.style.TextAppearance_DeviceDefault_Large);
-                mVerticalPadding = 10;
-                break;
-        }
-
-        // TODO: Shouldn't MATCH_PARENT achieve this?
-        DisplayMetrics displayMetrics = new DisplayMetrics();
-        ((AppCompatActivity) cxt).getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-        mItemText.setMaxWidth(displayMetrics.widthPixels - ((int) (displayMetrics.scaledDensity * 80.0f)));
-
-        LinearLayout.LayoutParams textLayoutParams = new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
-        textLayoutParams.setMargins(0, mVerticalPadding, 0, mVerticalPadding);
-        rowLayout.addView(mItemText, textLayoutParams);
-
-        // Finally whatever is on the right
-        mRight = new LinearLayout(cxt);
-        mRight.setOrientation(LinearLayout.HORIZONTAL);
-        RelativeLayout.LayoutParams iorp = new RelativeLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
-        iorp.setMargins(0, 0, 5, 0);
-        iorp.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
-        RelativeLayout iorl = new RelativeLayout(cxt);
-        iorl.addView(mRight, iorp);
-        rowLayout.addView(iorl);
 
         updateView();
-    }
-
-    private void setTextFormatting() {
-        // Transparency
-        float f = 1; // Completely opague
-
-        if (mItem.mDone && Settings.getBool(Settings.greyCheckedItems))
-            // Greyed out
-            f = 0.5f;
-        else if (mItem == mItem.getChecklist().getMovingItem() && !mMovingViewPreview)
-            // Moving item
-            f = 0.2f;
-
-        mItemText.setAlpha(f);
-        mRight.setAlpha(f);
-        mLeft.setAlpha(f);
-
-        // Strike through
-        if (!mItem.mDone || !Settings.getBool(Settings.strikeThroughCheckedItems))
-            mItemText.setPaintFlags(mItemText.getPaintFlags() & ~Paint.STRIKE_THRU_TEXT_FLAG);
-        else
-            mItemText.setPaintFlags(mItemText.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
     }
 
     void setItem(Checklist.ChecklistItem item) {
@@ -172,39 +63,76 @@ class ChecklistItemView extends LinearLayout implements View.OnClickListener, Vi
         return mItem;
     }
 
+    private void setTextFormatting() {
+        // Size
+        switch (Settings.getInt("textSizeIndex")) {
+            case Settings.TEXT_SIZE_SMALL:
+                mBinding.itemText.setTextAppearance(android.R.style.TextAppearance_DeviceDefault_Small);
+                mVerticalPadding = 0;
+                break;
+            case Settings.TEXT_SIZE_MEDIUM:
+            case Settings.TEXT_SIZE_DEFAULT:
+                mBinding.itemText.setTextAppearance(android.R.style.TextAppearance_DeviceDefault_Medium);
+                mVerticalPadding = 5;
+                break;
+            case Settings.TEXT_SIZE_LARGE:
+                mBinding.itemText.setTextAppearance(android.R.style.TextAppearance_DeviceDefault_Large);
+                mVerticalPadding = 10;
+                break;
+        }
+        mBinding.itemText.setPadding(0, mVerticalPadding, 0, mVerticalPadding);
+
+        // Transparency
+        float f = 1; // Completely opague
+
+        if (mItem.mDone && Settings.getBool(Settings.greyCheckedItems))
+            // Greyed out
+            f = 0.5f;
+        else if (!mIsMoving && mItem == mItem.getChecklist().mMovingItem)
+            // Moving item
+            f = 0.2f;
+
+        mBinding.itemText.setAlpha(f);
+        mBinding.rightLayout.setAlpha(f);
+        mBinding.leftLayout.setAlpha(f);
+
+        // Strike through
+        if (!mItem.mDone || !Settings.getBool(Settings.strikeThroughCheckedItems))
+            mBinding.itemText.setPaintFlags(mBinding.itemText.getPaintFlags() & ~Paint.STRIKE_THRU_TEXT_FLAG);
+        else
+            mBinding.itemText.setPaintFlags(mBinding.itemText.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+    }
+
     public void updateView() {
         // Update the item text
-        mItemText.setText(mItem.getText());
+        mBinding.itemText.setText(mItem.getText());
         setTextFormatting();
 
-        // Rebuild the view based on left and right
-        mRight.removeAllViews();
-        mLeft.removeAllViews();
-        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
-        layoutParams.setMargins(0, mVerticalPadding, 0, mVerticalPadding);
-        if (Settings.getBool(Settings.checkBoxOnLeftSide)) {
-            mLeft.addView(mMoveButton, layoutParams);
-            mLeft.addView(mCheckBox, layoutParams);
-        } else {
-            mRight.addView(mCheckBox, layoutParams);
-            mRight.addView(mMoveButton, layoutParams);
+        if (Settings.getBool(Settings.checkBoxOnLeftSide) && mControlsOnRight) {
+            // Move controls to left panel
+            mBinding.rightLayout.removeAllViews();
+            mBinding.leftLayout.addView(mBinding.moveButton);
+            mBinding.leftLayout.addView(mBinding.checkbox);
+            mControlsOnRight = false;
+        } else if (!Settings.getBool(Settings.checkBoxOnLeftSide) && !mControlsOnRight) {
+            // Move controls to right panel
+            mBinding.leftLayout.removeAllViews();
+            mBinding.rightLayout.addView(mBinding.checkbox);
+            mBinding.rightLayout.addView(mBinding.moveButton);
+            mControlsOnRight = true;
         }
 
-        mCheckBox.setChecked(mItem.mDone);
-
-        if (mMovingViewPreview)
-            setBackgroundColor(Color.WHITE);
+        mBinding.checkbox.setChecked(mItem.mDone);
     }
 
     public boolean onTouch(View view, MotionEvent motionEvent) {
         Log.d(TAG, "OnTouch " + motionEvent.getAction() + " " + Integer.toHexString(System.identityHashCode(this)));
-        if (view != mMoveButton) {
+        if (view != mBinding.moveButton)
             return false;
-        }
         if (motionEvent.getAction() != 0) {
             return true;
         }
-        Log.d(TAG, "MoveButton Down " + mItemText.getText());
+        Log.d(TAG, "onTouch moveButton " + mBinding.itemText.getText());
         mItem.getChecklist().setMovingItem(mItem);
         return true;
     }
@@ -214,27 +142,13 @@ class ChecklistItemView extends LinearLayout implements View.OnClickListener, Vi
      */
     public void onClick(View view) {
         Log.d(TAG, "OnClick");
-        //if (view == mUpButton)
-        //    moveUp();
-        //if (view == mDownButton)
-        //    moveDown();
-        //if (view == mDeleteButton)
-        //    mItem.getChecklist().remove(mItem);
-        if (view == mCheckBox)
-            setChecked(mCheckBox.isChecked());
+        if (view == mBinding.checkbox)
+            setChecked(mBinding.checkbox.isChecked());
         else if (view == this && Settings.getBool(Settings.entireRowTogglesItem))
-            setChecked(!mCheckBox.isChecked());
+            setChecked(!mBinding.checkbox.isChecked());
     }
 
     public boolean onLongClick(View view) {
-        //if (view == mUpButton) {
-        //    moveTop();
-        //    return true;
-        //}
-        // if (view == mDownButton) {
-        //    moveBottom();
-        //    return true;
-        //}
         if (view == this) {
             showMenu();
             return true;
@@ -265,7 +179,7 @@ class ChecklistItemView extends LinearLayout implements View.OnClickListener, Vi
         if (Settings.getBool(Settings.autoDeleteCheckedItems) && isChecked)
             mItem.getChecklist().remove(mItem);
         else {
-            mCheckBox.setChecked(isChecked);
+            mBinding.checkbox.setChecked(isChecked);
             mItem.mDone = isChecked;
         }
         // Update the list!
@@ -273,28 +187,12 @@ class ChecklistItemView extends LinearLayout implements View.OnClickListener, Vi
         mItem.getChecklist().notifyItemChanged();
     }
 
-    private void moveUp() {
-        mItem.getChecklist().moveItemToPosition(mItem, mItem.getChecklist().indexOf(mItem) - 1);
-    }
-
-    private void moveDown() {
-        mItem.getChecklist().moveItemToPosition(mItem, mItem.getChecklist().indexOf(mItem) + 1);
-    }
-
-    private void moveTop() {
-        mItem.getChecklist().moveItemToPosition(mItem, 0);
-    }
-
-    private void moveBottom() {
-        mItem.getChecklist().moveItemToPosition(mItem, mItem.getChecklist().size() - 1);
-    }
-
     private void showRenameItemDialog() {
         androidx.appcompat.app.AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
         builder.setTitle(R.string.edit_list_item);
         final EditText editText = new EditText(mContext);
         builder.setView(editText);
-        editText.setText(mItemText.getText());
+        editText.setText(mBinding.itemText.getText());
         builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialogInterface, int i) {
                 renameItem(editText.getText().toString());

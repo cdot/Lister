@@ -69,13 +69,6 @@ public class ChecklistsActivity extends AppCompatActivity implements AdapterView
         // Refresh after UI feature change
         getSharedPreferences(Settings.UI_PREFERENCES, Context.MODE_PRIVATE).registerOnSharedPreferenceChangeListener(this);
 
-        /*        Uri data = getIntent().getData();
-        if (data != null) {
-            Log.d(TAG, "onCreate data: " + data.toString());
-            importList(data);
-            return;
-        }*/
-
         if (Settings.getBool(Settings.openLatestListAtStartup)) {
             String currentList = Settings.getString(Settings.currentList);
             if (currentList != null && mChecklists.findListByName(currentList) != null) {

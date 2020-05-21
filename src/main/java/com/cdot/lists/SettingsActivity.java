@@ -8,8 +8,6 @@ import android.os.Bundle;
 import android.provider.DocumentsContract;
 import android.view.View;
 import android.widget.AdapterView;
-import android.widget.CheckBox;
-import android.widget.Spinner;
 
 import com.cdot.lists.databinding.SettingsActivityBinding;
 
@@ -17,19 +15,8 @@ public class SettingsActivity extends Activity implements AdapterView.OnItemSele
     private static final int REQUEST_CHANGE_STORE = 1;
     private static final int REQUEST_CREATE_STORE = 2;
 
-    CheckBox mAddNewItemsAtTopOfListCB;
-    CheckBox mAutoDeleteCB;
-    CheckBox mCheckBoxOnLeftSideCB;
-    CheckBox mDarkBackgroundCB;
-    CheckBox mDimCheckedItemsCB;
-    CheckBox mEntireRowTogglesCheckboxCB;
-    CheckBox mMoveCheckedItemsToBottomCB;
-    CheckBox mOpenLatestListAtStartupCB;
-    CheckBox mShowListInFrontOfLockScreenCB;
-    CheckBox mStrikeThroughCheckedItemsCB;
-    Spinner mTextSizeSpinner;
-    CheckBox mWarnAboutDuplicatesCB;
-
+    SettingsActivityBinding mBinding;
+    
     @Override
     public void onNothingSelected(AdapterView<?> adapterView) {
     }
@@ -37,43 +24,43 @@ public class SettingsActivity extends Activity implements AdapterView.OnItemSele
     @Override
     public void onCreate(Bundle bundle) {
         super.onCreate(bundle);
-        SettingsActivityBinding binding = SettingsActivityBinding.inflate(getLayoutInflater());
-        View view = binding.getRoot();
-        setContentView(view);
-        mDimCheckedItemsCB = binding.DimCheckedItemsCB;
-        mStrikeThroughCheckedItemsCB = binding.StrikeThroughCheckedItemsCB;
-        mMoveCheckedItemsToBottomCB = binding.MoveCheckedItemsToBottomCB;
-        mCheckBoxOnLeftSideCB = binding.CheckBoxOnLeftSideCB;
-        mAutoDeleteCB = binding.AutoDeleteCB;
-        mEntireRowTogglesCheckboxCB = binding.EntireRowTogglesCheckboxCB;
-        mAddNewItemsAtTopOfListCB = binding.AddNewItemsAtTopOfListCB;
-        mShowListInFrontOfLockScreenCB = binding.ShowListInFrontOfLockScreenCB;
-        mOpenLatestListAtStartupCB = binding.OpenLatestListAtStartupCB;
-        mWarnAboutDuplicatesCB = binding.WarnAboutDuplicatesCB;
-        Spinner spinner = binding.TextSizeSpinner;
-        mTextSizeSpinner = spinner;
-        spinner.setOnItemSelectedListener(this);
+        mBinding = SettingsActivityBinding.inflate(getLayoutInflater());
+        setContentView(mBinding.getRoot());
 
-        mDimCheckedItemsCB.setChecked(Settings.getBool(Settings.greyCheckedItems));
-        mStrikeThroughCheckedItemsCB.setChecked(Settings.getBool(Settings.strikeThroughCheckedItems));
-        mMoveCheckedItemsToBottomCB.setChecked(Settings.getBool(Settings.moveCheckedItemsToBottom));
-        mCheckBoxOnLeftSideCB.setChecked(Settings.getBool(Settings.checkBoxOnLeftSide));
-        mAutoDeleteCB.setChecked(Settings.getBool(Settings.autoDeleteCheckedItems));
-        mEntireRowTogglesCheckboxCB.setChecked(Settings.getBool(Settings.entireRowTogglesItem));
-        mAddNewItemsAtTopOfListCB.setChecked(Settings.getBool(Settings.addNewItemsAtTopOfList));
-        mShowListInFrontOfLockScreenCB.setChecked(Settings.getBool(Settings.showListInFrontOfLockScreen));
-        mOpenLatestListAtStartupCB.setChecked(Settings.getBool(Settings.openLatestListAtStartup));
-        mWarnAboutDuplicatesCB.setChecked(Settings.getBool(Settings.warnAboutDuplicates));
-        mTextSizeSpinner.setSelection(Settings.getInt(Settings.textSizeIndex));
+        mBinding.TextSizeSpinner.setOnItemSelectedListener(this);
+        mBinding.DimCheckedItemsCB.setChecked(Settings.getBool(Settings.greyCheckedItems));
+        mBinding.StrikeThroughCheckedItemsCB.setChecked(Settings.getBool(Settings.strikeThroughCheckedItems));
+        mBinding.MoveCheckedItemsToBottomCB.setChecked(Settings.getBool(Settings.moveCheckedItemsToBottom));
+        mBinding.CheckBoxOnLeftSideCB.setChecked(Settings.getBool(Settings.checkBoxOnLeftSide));
+        mBinding.AutoDeleteCB.setChecked(Settings.getBool(Settings.autoDeleteCheckedItems));
+        mBinding.EntireRowTogglesCheckboxCB.setChecked(Settings.getBool(Settings.entireRowTogglesItem));
+        mBinding.AddNewItemsAtTopOfListCB.setChecked(Settings.getBool(Settings.addNewItemsAtTopOfList));
+        mBinding.ShowListInFrontOfLockScreenCB.setChecked(Settings.getBool(Settings.showListInFrontOfLockScreen));
+        mBinding.OpenLatestListAtStartupCB.setChecked(Settings.getBool(Settings.openLatestListAtStartup));
+        mBinding.WarnAboutDuplicatesCB.setChecked(Settings.getBool(Settings.warnAboutDuplicates));
+        mBinding.TextSizeSpinner.setSelection(Settings.getInt(Settings.textSizeIndex));
+        mBinding.BackingStoreURI.setText(Settings.getUri(Settings.backingStore).toString());
     }
 
     public void onActivityResult(int requestCode, int resultCode, Intent resultData) {
         if (resultCode == Activity.RESULT_OK && resultData != null) {
-            if (requestCode == REQUEST_CHANGE_STORE) {
+            if (requestCode == REQUEST_CHANGE_STORE || requestCode == REQUEST_CREATE_STORE) {
                 Uri bs = Settings.getUri(Settings.backingStore);
                 Uri nbs = resultData.getData();
                 if (!nbs.equals(bs))
                     Settings.setUri(Settings.backingStore, nbs);
+
+                // Clear the cache
+                deleteFile(Settings.cacheFile);
+
+                // Persist granted access across reboots
+                if (requestCode == REQUEST_CREATE_STORE) {
+                    final int takeFlags = resultData.getFlags()
+                            & (Intent.FLAG_GRANT_READ_URI_PERMISSION
+                            | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                    getContentResolver().takePersistableUriPermission(bs, takeFlags);
+                }
+                mBinding.BackingStoreURI.setText(nbs.toString());
             }
         }
     }
@@ -82,6 +69,7 @@ public class SettingsActivity extends Activity implements AdapterView.OnItemSele
         Uri bs = Settings.getUri(Settings.backingStore);
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
         if (bs != null && Build.VERSION.SDK_INT >= 26)
             intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, bs);
         intent.setType("application/json");
@@ -91,56 +79,57 @@ public class SettingsActivity extends Activity implements AdapterView.OnItemSele
     public void createStoreClicked(View view) {
         Uri bs = Settings.getUri(Settings.backingStore);
         Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        intent.setFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
         if (bs != null && Build.VERSION.SDK_INT >= 26)
             intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, bs);
         intent.setType("application/json");
-        startActivityForResult(intent, REQUEST_CHANGE_STORE);
+        startActivityForResult(intent, REQUEST_CREATE_STORE);
     }
 
     // Checkbox click handlers, invoked from resource
 
     public void dimCheckedItemsCBClicked(View view) {
-        Settings.setBool(Settings.greyCheckedItems, mDimCheckedItemsCB.isChecked());
+        Settings.setBool(Settings.greyCheckedItems, mBinding.DimCheckedItemsCB.isChecked());
     }
 
     public void moveCheckedItemsToBottomCBClicked(View view) {
-        Settings.setBool(Settings.moveCheckedItemsToBottom, mMoveCheckedItemsToBottomCB.isChecked());
+        Settings.setBool(Settings.moveCheckedItemsToBottom, mBinding.MoveCheckedItemsToBottomCB.isChecked());
     }
 
     public void checkBoxOnLeftSideCBClicked(View view) {
-        Settings.setBool(Settings.checkBoxOnLeftSide, mCheckBoxOnLeftSideCB.isChecked());
+        Settings.setBool(Settings.checkBoxOnLeftSide, mBinding.CheckBoxOnLeftSideCB.isChecked());
     }
 
     public void autoDeleteCBClicked(View view) {
-        Settings.setBool(Settings.autoDeleteCheckedItems, mAutoDeleteCB.isChecked());
+        Settings.setBool(Settings.autoDeleteCheckedItems, mBinding.AutoDeleteCB.isChecked());
     }
 
     public void entireRowTogglesCheckboxCBClicked(View view) {
-        Settings.setBool(Settings.entireRowTogglesItem, mEntireRowTogglesCheckboxCB.isChecked());
+        Settings.setBool(Settings.entireRowTogglesItem, mBinding.EntireRowTogglesCheckboxCB.isChecked());
     }
 
     public void strikeThroughCheckedItemsCBClicked(View view) {
-        Settings.setBool(Settings.strikeThroughCheckedItems, mStrikeThroughCheckedItemsCB.isChecked());
+        Settings.setBool(Settings.strikeThroughCheckedItems, mBinding.StrikeThroughCheckedItemsCB.isChecked());
     }
 
     public void addNewItemsAtTopOfListCBClicked(View view) {
-        Settings.setBool(Settings.addNewItemsAtTopOfList, mAddNewItemsAtTopOfListCB.isChecked());
+        Settings.setBool(Settings.addNewItemsAtTopOfList, mBinding.AddNewItemsAtTopOfListCB.isChecked());
     }
 
     public void showListInFrontOfLockScreenCBClicked(View view) {
-        Settings.setBool(Settings.showListInFrontOfLockScreen, mShowListInFrontOfLockScreenCB.isChecked());
+        Settings.setBool(Settings.showListInFrontOfLockScreen, mBinding.ShowListInFrontOfLockScreenCB.isChecked());
     }
 
     public void openLatestListAtStartupCBClicked(View view) {
-        Settings.setBool(Settings.openLatestListAtStartup, mOpenLatestListAtStartupCB.isChecked());
+        Settings.setBool(Settings.openLatestListAtStartup, mBinding.OpenLatestListAtStartupCB.isChecked());
     }
 
     public void warnAboutDuplicatesCBClicked(View view) {
-        Settings.setBool(Settings.warnAboutDuplicates, mWarnAboutDuplicatesCB.isChecked());
+        Settings.setBool(Settings.warnAboutDuplicates, mBinding.WarnAboutDuplicatesCB.isChecked());
     }
 
     public void onItemSelected(AdapterView<?> adapterView, View view, int i, long j) {
-        if (adapterView == mTextSizeSpinner)
+        if (adapterView == mBinding.TextSizeSpinner)
             Settings.setInt(Settings.textSizeIndex, i);
     }
 }

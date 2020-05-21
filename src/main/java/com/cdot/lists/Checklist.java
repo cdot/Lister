@@ -1,10 +1,10 @@
 package com.cdot.lists;
 
+import android.content.Context;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 
@@ -68,8 +68,8 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
      * Adapter for the array of items in the list
      */
     private class ItemsArrayAdapter extends ArrayAdapter<String> {
-        ItemsArrayAdapter() {
-            super(mParent.mContext, 0, new ArrayList<String>());
+        ItemsArrayAdapter(Context cxt) {
+            super(cxt, 0, new ArrayList<String>());
         }
 
         @Override
@@ -86,7 +86,7 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
                 item = Checklist.this.get(i);
             if (view == null) {
                 assert item != null;
-                itemView = new ChecklistItemView(item, mParent.mContext);
+                itemView = new ChecklistItemView(item, false, mParent.mContext);
             } else {
                 itemView = (ChecklistItemView) view;
                 itemView.setItem(item);
@@ -111,7 +111,7 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
     private Stack<Integer> mRemovedItemsIndex;
     private Checklists mParent;
 
-    private transient ChecklistItem mMovingItem = null;
+    transient ChecklistItem mMovingItem = null;
     private transient int mRemoveIdCount = 0;
 
     /**
@@ -130,7 +130,7 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
      * @throws JSONException if something goes wrong
      */
     Checklist(JSONObject job, Checklists parent) throws JSONException {
-        mParent = parent;
+        initMembers(parent);
         fromJSON(job);
     }
 
@@ -138,7 +138,8 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
      * Load from JSON read from the given stream
      * @param stream source of JSON
      * @param parent the container object
-     * @throws Exception IOException or JSONException
+     * @throws IOException IOException or JSONException
+     * @throws JSONException IOException or JSONException
      */
     Checklist(InputStream stream, Checklists parent) throws IOException, JSONException {
         initMembers(parent);
@@ -159,14 +160,14 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
 
     /**
      * Initiailise fields, shared between constructors
-     * @param parent
+     * @param parent container
      */
     private void initMembers(Checklists parent) {
         mParent = parent;
         mRemovedItems = new Stack<>();
         mRemovedItemsIndex = new Stack<>();
         mRemovedItemsId = new Stack<>();
-        mArrayAdapter = new ItemsArrayAdapter();
+        mArrayAdapter = new ItemsArrayAdapter(mParent.mContext);
         mIsBeingEdited = false;
     }
 
@@ -285,21 +286,19 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
         mParent.save();
     }
 
-    void undoRemove() {
-        if (mRemovedItemsIndex.size() == 0) {
-            Toast.makeText(mParent.mContext, R.string.no_deleted_items, Toast.LENGTH_SHORT).show();
-            return;
-        }
+    int undoRemove() {
         int intValue = mRemovedItemsId.peek();
-        int i = 0;
+        int undos = 0;
         while (mRemovedItemsIndex.size() != 0 && intValue == mRemovedItemsId.peek()) {
             add(mRemovedItemsIndex.pop(), mRemovedItems.pop());
             mRemovedItemsId.pop();
-            i++;
+            undos++;
         }
-        mArrayAdapter.notifyDataSetChanged();
-        mParent.save();
-        Toast.makeText(mParent.mContext, mParent.mContext.getString(R.string.x_items_restored, i), Toast.LENGTH_SHORT).show();
+        if (undos > 0) {
+            mArrayAdapter.notifyDataSetChanged();
+            mParent.save();
+        }
+        return undos;
     }
 
     void checkAll() {
@@ -326,7 +325,10 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
         mParent.save();
     }
 
-    void deleteAllChecked() {
+    /**
+     * @return number of items deleted
+     */
+    int deleteAllChecked() {
         Iterator<ChecklistItem> it = iterator();
         int i = 0;
         while (it.hasNext()) {
@@ -341,7 +343,7 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
         }
         mRemoveIdCount++;
         mArrayAdapter.notifyDataSetChanged();
-        Toast.makeText(mParent.mContext, mParent.mContext.getString(R.string.x_items_deleted, i), Toast.LENGTH_SHORT).show();
+        return i;
     }
 
     void sort() {
@@ -353,14 +355,9 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
         mArrayAdapter.notifyDataSetChanged();
     }
 
-    ChecklistItem getMovingItem() {
-        return mMovingItem;
-    }
-
     void setMovingItem(ChecklistItem item) {
-        if (mMovingItem == null || item == null) {
+        if (mMovingItem == null || item == null)
             mMovingItem = item;
-        }
         mArrayAdapter.notifyDataSetChanged();
     }
 
@@ -380,7 +377,7 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
         }
     }
 
-    void fromStream(InputStream stream) throws IOException, JSONException {
+    private void fromStream(InputStream stream) throws IOException, JSONException {
         StringBuilder sb = new StringBuilder();
         String line;
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(stream));
@@ -409,8 +406,9 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
         return job;
     }
 
-    // Format the list for sending as email
-
+    /**
+     * Format the list for sending as email
+     */
     public String toPlainString() {
         StringBuilder sb = new StringBuilder();
         sb.append("List: \"").append(mListName).append("\":\n\n");

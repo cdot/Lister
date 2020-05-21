@@ -1,5 +1,6 @@
 package com.cdot.lists;
 
+import android.content.ContentResolver;
 import android.content.Context;
 import android.net.Uri;
 import android.util.Log;
@@ -79,7 +80,8 @@ class Checklists extends ArrayList<Checklist> {
 
     /**
      * Constructor
-     * @param cxt Context (Activity) the lists are being used in
+     *
+     * @param cxt  Context (Activity) the lists are being used in
      * @param load true to load the list from backing store anc cache
      */
     Checklists(Context cxt, boolean load) {
@@ -91,6 +93,7 @@ class Checklists extends ArrayList<Checklist> {
 
     /**
      * Create a new checklist
+     *
      * @param name name of the new checklist
      */
     Checklist createList(String name) {
@@ -102,6 +105,7 @@ class Checklists extends ArrayList<Checklist> {
 
     /**
      * Create a new checklist from JSON data read from the stream
+     *
      * @param stream where to get the data
      * @return the new list
      * @throws Exception IOException or JSONException
@@ -115,22 +119,23 @@ class Checklists extends ArrayList<Checklist> {
 
     /**
      * Make a copy of the list at the given index
+     *
      * @param i index of the list to clone
      */
     void cloneListAtIndex(int i) {
-        Checklist checklist = null;
-            checklist = new Checklist(get(i), this);
-            checklist.mListName += " (copy)";
-            add(checklist);
+        Checklist checklist = new Checklist(get(i), this);
+        checklist.mListName += " (copy)";
+        add(checklist);
         try {
             save();
-        } catch (Exception ignored) {
-            Log.d(TAG, "Exception while saving " + ignored.getMessage());
+        } catch (Exception e) {
+            Log.d(TAG, "Exception while saving " + e.getMessage());
         }
     }
 
     /**
      * Remove the list at the given index
+     *
      * @param i index of the list to remove
      */
     void removeListAtIndex(int i) {
@@ -140,6 +145,7 @@ class Checklists extends ArrayList<Checklist> {
 
     /**
      * Find the named list
+     *
      * @param name list to search for
      * @return the list if found, or null otherwise
      */
@@ -163,30 +169,38 @@ class Checklists extends ArrayList<Checklist> {
         if (uri != null) {
             try {
                 InputStream stream;
-                if (Objects.equals(uri.getScheme(), "file")) {
+                if (Objects.equals(uri.getScheme(), ContentResolver.SCHEME_FILE)) {
                     stream = new FileInputStream(new File((uri.getPath())));
-                } else if (Objects.equals(uri.getScheme(), "content")) {
+                } else if (Objects.equals(uri.getScheme(), ContentResolver.SCHEME_CONTENT)) {
                     stream = mContext.getContentResolver().openInputStream(uri);
                 } else {
                     throw new IOException("Failed to load lists. Unknown uri scheme: " + uri.getScheme());
                 }
-                // If we returned here, we'd be ignoring lists that are local but haven't made
-                // it to the backing store yet. So drop through and reload from the cache.
+                Log.d(TAG, "Loading lists from " + uri);
+                loadFromStream(stream);
             } catch (Exception e) {
                 Log.d(TAG, "Exception loading backing store " + e);
             }
         }
 
+        // Reload from cache any lists that are stamped more recent than what was read from
+        // the backing store; or, if the backing store wasn't available, get lists from here.
+        // Note this could result in confusion if an list is updated on the backing store
+        // asynchronously. No attempt is made to resolve conflicts
         Checklists cache = new Checklists(mContext, false);
         try {
-            FileInputStream fis = mContext.openFileInput("checklists.json");
+            FileInputStream fis = mContext.openFileInput(Settings.cacheFile);
+            Log.d(TAG, "Loading lists from cache");
             cache.loadFromStream(fis);
+            int added = 0;
             for (Checklist cl : cache) {
                 Checklist known = findListByName(cl.mListName);
                 if (known == null || cl.mTimestamp > known.mTimestamp) {
                     add(new Checklist(cl, this));
+                    added++;
                 }
             }
+            Log.d(TAG, "Added " + added + " lists from cache");
         } catch (Exception e) {
             Log.d(TAG, "Exception mergeing from cache " + e);
         }
@@ -202,21 +216,30 @@ class Checklists extends ArrayList<Checklist> {
         if (uri == null)
             return;
         // Launch a thread to do this save, so we don't block the ui thread
+        Log.d(TAG, "Saving to backing store");
+        final byte[] data;
+        try {
+            data = toJSON().toString().getBytes();
+        } catch (JSONException je) {
+            return;
+        }
         new Thread(new Runnable() {
             public void run() {
                 OutputStream stream;
                 try {
-                    if (Objects.equals(uri.getScheme(), "file"))
-                        stream = new FileOutputStream(new File((uri.getPath())));
-                    else if (Objects.equals(uri.getScheme(), "content"))
-                        stream = mContext.getContentResolver().openOutputStream(uri, "w");
+                    String scheme = uri.getScheme();
+                    if (Objects.equals(scheme, ContentResolver.SCHEME_FILE)) {
+                        String path = uri.getPath();
+                        stream = new FileOutputStream(new File(path));
+                    } else if (Objects.equals(scheme, ContentResolver.SCHEME_CONTENT))
+                        stream = mContext.getContentResolver().openOutputStream(uri);
                     else
-                        throw new IOException("Failed to save lists. Unknown uri scheme: " + uri.getScheme());
-                    stream.write(toJSON().toString().getBytes());
+                        throw new Error("Failed to save lists. Unknown uri scheme: " + uri.getScheme());
+                    stream.write(data);
                     stream.close();
                     Log.d(TAG, "Saved to backing store");
-                } catch (Exception ioe) {
-                    Log.d(TAG, "Exception while saving to backing store " + ioe.getMessage());
+                } catch (IOException ioe) {
+                    throw new Error( "Exception while saving to backing store " + ioe.getMessage());
                 }
             }
         }).start();
@@ -224,6 +247,7 @@ class Checklists extends ArrayList<Checklist> {
 
     /**
      * Load the checklists from JSON read from the stream
+     *
      * @param stream source of the JSON
      * @throws Exception IOException or JSONException
      */
@@ -238,6 +262,7 @@ class Checklists extends ArrayList<Checklist> {
 
     /**
      * Process a JSON array object and load the lists found therein
+     *
      * @param lists array of checklists in JSON format
      * @throws JSONException if it can't be analysed e.g. missing fields
      */
@@ -246,18 +271,19 @@ class Checklists extends ArrayList<Checklist> {
         for (int i = 0; i < lists.length(); i++) {
             add(new Checklist(lists.getJSONObject(i), this));
         }
+        Log.d(TAG, "Extracted " + lists.length() + " lists from JSON");
     }
 
     /**
      * Construct a JSON array object from the checklists we manage
+     *
      * @return an array of JSON checklist objects
-     * @throws JSONException
+     * @throws JSONException on a JSON error
      */
     private JSONArray toJSON() throws JSONException {
         JSONArray json = new JSONArray();
-        for (Checklist cl : this) {
+        for (Checklist cl : this)
             json.put(cl.toJSON());
-        }
         return json;
     }
 
@@ -269,14 +295,13 @@ class Checklists extends ArrayList<Checklist> {
         // cache will always be older than the backing store if the backing store save
         // succeeds
         try {
-            FileOutputStream stream = mContext.openFileOutput("checklists.json", Context.MODE_PRIVATE);
+            FileOutputStream stream = mContext.openFileOutput(Settings.cacheFile, Context.MODE_PRIVATE);
             stream.write(this.toJSON().toString().getBytes());
             stream.close();
         } catch (Exception e) {
             // Would really like to toast this
-            Log.d(TAG, "Exception saving to backing store " + e);
+            Log.d(TAG, "Exception saving to cache " + e);
         }
-        ;
         saveToBackingStore();
     }
 }
