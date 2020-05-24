@@ -395,7 +395,6 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
     /**
      * Save the checklist to a json object
      * @return a String
-     * @throws JSONException if something goes wrong
      */
     JSONObject toJSON() {
         JSONObject job = new JSONObject();

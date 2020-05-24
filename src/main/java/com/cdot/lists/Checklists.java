@@ -11,8 +11,6 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 
-import com.cdot.lists.databinding.ChecklistActivityBinding;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 

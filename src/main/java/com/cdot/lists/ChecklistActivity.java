@@ -34,7 +34,7 @@ import java.util.Objects;
 public class ChecklistActivity extends AppCompatActivity {
     private static final String TAG = "ChecklistActivity";
 
-    private static final int REQUEST_SAVE_AS = 3;
+    private static final int REQUEST_EXPORT_LIST = 4;
 
     private Checklist mList;
     private ChecklistItemView mMovingView;
@@ -120,13 +120,8 @@ public class ChecklistActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent resultData) {
         super.onActivityResult(requestCode, resultCode, resultData);
-        switch (requestCode) {
-            case REQUEST_SAVE_AS:
-                if (resultCode == Activity.RESULT_OK && resultData != null) {
-                    mList.saveToUri(resultData.getData());
-                }
-                break;
-        }
+        if (requestCode == REQUEST_EXPORT_LIST && resultCode == Activity.RESULT_OK && resultData != null)
+            mList.saveToUri(resultData.getData());
     }
 
     @Override
@@ -185,7 +180,7 @@ public class ChecklistActivity extends AppCompatActivity {
                 intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
                 intent.addCategory(Intent.CATEGORY_OPENABLE);
                 intent.setType("application/json");
-                startActivityForResult(intent, REQUEST_SAVE_AS);
+                startActivityForResult(intent, REQUEST_EXPORT_LIST);
                 return true;
         }
     }

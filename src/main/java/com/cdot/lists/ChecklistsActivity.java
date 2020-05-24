@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 
@@ -36,10 +35,8 @@ import java.util.Objects;
 public class ChecklistsActivity extends AppCompatActivity {
     private static final String TAG = "ChecklistsActivity";
 
-
     // Activity request codes
     private static final int REQUEST_IMPORT_LIST = 3;
-    private static final int REQUEST_SAVE_FILE = 4;
 
     // The actual checklists
     private Checklists mChecklists;
@@ -161,29 +158,25 @@ public class ChecklistsActivity extends AppCompatActivity {
      */
     public void onActivityResult(int requestCode, int resultCode, Intent resultData) {
         super.onActivityResult(requestCode, resultCode, resultData);
-        switch (requestCode) {
-            case REQUEST_IMPORT_LIST:
-                if (resultCode == Activity.RESULT_OK && resultData != null) {
-                    try {
-                        Uri uri = resultData.getData();
-                        if (uri == null)
-                            return;
-                        InputStream stream;
-                        if (Objects.equals(uri.getScheme(), "file")) {
-                            stream = new FileInputStream(new File((uri.getPath())));
-                        } else if (Objects.equals(uri.getScheme(), "content")) {
-                            stream = getContentResolver().openInputStream(uri);
-                        } else {
-                            throw new IOException("Failed to load lists. Unknown uri scheme: " + uri.getScheme());
-                        }
-                        Checklist checklist = mChecklists.createList(stream);
-                        Log.d(TAG, "import list: " + checklist.mListName);
-                        launchChecklistActivity(checklist.mListName);
-                    } catch (Exception e) {
-                        Log.d(TAG, "import failed to create list. " + e.getMessage());
-                    }
+        if (requestCode == REQUEST_IMPORT_LIST && resultCode == Activity.RESULT_OK && resultData != null) {
+            try {
+                Uri uri = resultData.getData();
+                if (uri == null)
+                    return;
+                InputStream stream;
+                if (Objects.equals(uri.getScheme(), "file")) {
+                    stream = new FileInputStream(new File((uri.getPath())));
+                } else if (Objects.equals(uri.getScheme(), "content")) {
+                    stream = getContentResolver().openInputStream(uri);
+                } else {
+                    throw new IOException("Failed to load lists. Unknown uri scheme: " + uri.getScheme());
                 }
-                break;
+                Checklist checklist = mChecklists.createList(stream);
+                Log.d(TAG, "import list: " + checklist.mListName);
+                launchChecklistActivity(checklist.mListName);
+            } catch (Exception e) {
+                Log.d(TAG, "import failed to create list. " + e.getMessage());
+            }
         }
     }
 

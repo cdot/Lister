@@ -24,10 +24,10 @@ import com.cdot.lists.databinding.ChecklistItemViewBinding;
 class ChecklistItemView extends LinearLayout {
     private static final String TAG = "ChecklistItemView";
     private Checklist.ChecklistItem mItem;
-    private boolean mIsMoving = false;
+    private boolean mIsMoving;
     private Context mContext;
     private ChecklistItemViewBinding mBinding;
-    private boolean mControlsOnRight = true;
+    private boolean mControlsOnRight;
 
     /**
      * @param item     the item being viewed
@@ -39,7 +39,7 @@ class ChecklistItemView extends LinearLayout {
         super(cxt);
 
         mBinding = ChecklistItemViewBinding.inflate((LayoutInflater) cxt.getSystemService(Context.LAYOUT_INFLATER_SERVICE));
-
+        mControlsOnRight = true;
         mIsMoving = isMoving;
         mContext = cxt;
         mItem = item;
