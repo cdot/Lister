@@ -33,7 +33,7 @@ import java.util.Objects;
 /**
  * Activity that displays a list of checklists
  */
-public class ChecklistsActivity extends AppCompatActivity implements AdapterView.OnItemClickListener, AdapterView.OnItemLongClickListener, SharedPreferences.OnSharedPreferenceChangeListener {
+public class ChecklistsActivity extends AppCompatActivity {
     private static final String TAG = "ChecklistsActivity";
 
 
@@ -63,11 +63,40 @@ public class ChecklistsActivity extends AppCompatActivity implements AdapterView
 
         ListView listView = mBinding.ListList;
         listView.setAdapter(mChecklists.mArrayAdapter);
-        listView.setOnItemClickListener(this);
-        listView.setOnItemLongClickListener(this);
-
-        // Refresh after UI feature change
-        getSharedPreferences(Settings.UI_PREFERENCES, Context.MODE_PRIVATE).registerOnSharedPreferenceChangeListener(this);
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long j) {
+                launchChecklistActivity(mChecklists.get(i).mListName);
+            }
+        });
+        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> adapterView, View view, final int index, long j) {
+                PopupMenu popupMenu = new PopupMenu(ChecklistsActivity.this, view);
+                popupMenu.inflate(R.menu.checklists_popup);
+                popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+                    public boolean onMenuItemClick(MenuItem menuItem) {
+                        switch (menuItem.getItemId()) {
+                            case R.id.action_copy:
+                                mChecklists.cloneListAtIndex(index);
+                                loadLists();
+                                return true;
+                            case R.id.action_delete:
+                                showDeleteConfirmDialog(index);
+                                return true;
+                            case R.id.action_rename:
+                                showRenameDialog(index);
+                                loadLists();
+                                return true;
+                            default:
+                                return false;
+                        }
+                    }
+                });
+                popupMenu.show();
+                return true;
+            }
+        });
 
         if (Settings.getBool(Settings.openLatestListAtStartup)) {
             String currentList = Settings.getString(Settings.currentList);
@@ -91,15 +120,6 @@ public class ChecklistsActivity extends AppCompatActivity implements AdapterView
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.checklists, menu);
         return true;
-    }
-
-    @Override
-    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-        //if (key == "textSizeIndex")
-        //    mChecklists.reload();
-        if (key.equals("backingStore")) {
-            Log.d(TAG, "BACKING STORE " + Settings.getUri("backingStore"));
-        }
     }
 
     @Override
@@ -164,11 +184,6 @@ public class ChecklistsActivity extends AppCompatActivity implements AdapterView
                     }
                 }
                 break;
-            case REQUEST_SAVE_FILE:
-                if (resultData != null) {
-                    Log.d(TAG, "Save " + resultData);
-                }
-                break;
         }
     }
 
@@ -181,38 +196,6 @@ public class ChecklistsActivity extends AppCompatActivity implements AdapterView
         Intent intent = new Intent(this, ChecklistActivity.class);
         intent.putExtra("list", listName);
         startActivity(intent);
-    }
-
-    @Override
-    public void onItemClick(AdapterView<?> adapterView, View view, int i, long j) {
-        launchChecklistActivity(mChecklists.get(i).mListName);
-    }
-
-    @Override
-    public boolean onItemLongClick(AdapterView<?> adapterView, View view, final int index, long j) {
-        PopupMenu popupMenu = new PopupMenu(this, view);
-        popupMenu.inflate(R.menu.checklists_popup);
-        popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
-            public boolean onMenuItemClick(MenuItem menuItem) {
-                switch (menuItem.getItemId()) {
-                    case R.id.action_copy:
-                        mChecklists.cloneListAtIndex(index);
-                        loadLists();
-                        return true;
-                    case R.id.action_delete:
-                        showDeleteConfirmDialog(index);
-                        return true;
-                    case R.id.action_rename:
-                        showRenameDialog(index);
-                        loadLists();
-                        return true;
-                    default:
-                        return false;
-                }
-            }
-        });
-        popupMenu.show();
-        return true;
     }
 
     // Load the list of known lists

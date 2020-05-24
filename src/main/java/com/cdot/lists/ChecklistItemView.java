@@ -1,5 +1,6 @@
 package com.cdot.lists;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.DialogInterface;
 
@@ -20,11 +21,10 @@ import com.cdot.lists.databinding.ChecklistItemViewBinding;
 /**
  * View for a single item in a checklist, and for moving same.
  */
-class ChecklistItemView extends LinearLayout implements View.OnClickListener, View.OnLongClickListener, View.OnTouchListener {
+class ChecklistItemView extends LinearLayout {
     private static final String TAG = "ChecklistItemView";
     private Checklist.ChecklistItem mItem;
     private boolean mIsMoving = false;
-    private int mVerticalPadding = 0;
     private Context mContext;
     private ChecklistItemViewBinding mBinding;
     private boolean mControlsOnRight = true;
@@ -34,6 +34,7 @@ class ChecklistItemView extends LinearLayout implements View.OnClickListener, Vi
      * @param isMoving true if this is to be used as a view for dragging an item to a new position, false for an item in a fixed list
      * @param cxt      activity
      */
+    @SuppressLint("ClickableViewAccessibility")
     ChecklistItemView(Checklist.ChecklistItem item, boolean isMoving, Context cxt) {
         super(cxt);
 
@@ -46,10 +47,36 @@ class ChecklistItemView extends LinearLayout implements View.OnClickListener, Vi
         addView(mBinding.rowLayout);
 
         if (!mIsMoving) {
-            setOnClickListener(this);
-            setOnLongClickListener(this);
-            mBinding.checkbox.setOnClickListener(this);
-            mBinding.moveButton.setOnTouchListener(this);
+            setOnClickListener(new View.OnClickListener() {
+                public void onClick(View view) {
+                    Log.d(TAG, "OnClick");
+                    if (Settings.getBool(Settings.entireRowTogglesItem))
+                        setChecked(!mBinding.checkbox.isChecked());
+                }
+            });
+            setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View view) {
+                    showMenu();
+                    return true;
+                }
+            });
+            mBinding.checkbox.setOnClickListener(new View.OnClickListener() {
+                public void onClick(View view) {
+                    Log.d(TAG, "OnClick");
+                    setChecked(mBinding.checkbox.isChecked());
+                }
+            });
+            mBinding.moveButton.setOnTouchListener(new View.OnTouchListener() {
+                @Override
+                public boolean onTouch(View view, MotionEvent motionEvent) {
+                    Log.d(TAG, "OnTouch " + motionEvent.getAction() + " " + Integer.toHexString(System.identityHashCode(this)));
+                    if (motionEvent.getAction() == MotionEvent.ACTION_DOWN) {
+                        mItem.getChecklist().setMovingItem(mItem);
+                    }
+                    return true;
+                }
+            });
         }
 
         updateView();
@@ -64,23 +91,23 @@ class ChecklistItemView extends LinearLayout implements View.OnClickListener, Vi
     }
 
     private void setTextFormatting() {
+        int padding;
         // Size
         switch (Settings.getInt("textSizeIndex")) {
             case Settings.TEXT_SIZE_SMALL:
                 mBinding.itemText.setTextAppearance(android.R.style.TextAppearance_DeviceDefault_Small);
-                mVerticalPadding = 0;
+                padding = 0;
                 break;
-            case Settings.TEXT_SIZE_MEDIUM:
-            case Settings.TEXT_SIZE_DEFAULT:
+            default:
                 mBinding.itemText.setTextAppearance(android.R.style.TextAppearance_DeviceDefault_Medium);
-                mVerticalPadding = 5;
+                padding = 5;
                 break;
             case Settings.TEXT_SIZE_LARGE:
                 mBinding.itemText.setTextAppearance(android.R.style.TextAppearance_DeviceDefault_Large);
-                mVerticalPadding = 10;
+                padding = 10;
                 break;
         }
-        mBinding.itemText.setPadding(0, mVerticalPadding, 0, mVerticalPadding);
+        mBinding.itemText.setPadding(0, padding, 0, padding);
 
         // Transparency
         float f = 1; // Completely opague
@@ -125,37 +152,6 @@ class ChecklistItemView extends LinearLayout implements View.OnClickListener, Vi
         mBinding.checkbox.setChecked(mItem.mDone);
     }
 
-    public boolean onTouch(View view, MotionEvent motionEvent) {
-        Log.d(TAG, "OnTouch " + motionEvent.getAction() + " " + Integer.toHexString(System.identityHashCode(this)));
-        if (view != mBinding.moveButton)
-            return false;
-        if (motionEvent.getAction() != 0) {
-            return true;
-        }
-        Log.d(TAG, "onTouch moveButton " + mBinding.itemText.getText());
-        mItem.getChecklist().setMovingItem(mItem);
-        return true;
-    }
-
-    /**
-     * Handle all the clicks on the controls in an item row
-     */
-    public void onClick(View view) {
-        Log.d(TAG, "OnClick");
-        if (view == mBinding.checkbox)
-            setChecked(mBinding.checkbox.isChecked());
-        else if (view == this && Settings.getBool(Settings.entireRowTogglesItem))
-            setChecked(!mBinding.checkbox.isChecked());
-    }
-
-    public boolean onLongClick(View view) {
-        if (view == this) {
-            showMenu();
-            return true;
-        }
-        return false;
-    }
-
     private void showMenu() {
         PopupMenu popupMenu = new PopupMenu(mContext, this);
         popupMenu.inflate(R.menu.checklist_item_popup);
@@ -183,7 +179,6 @@ class ChecklistItemView extends LinearLayout implements View.OnClickListener, Vi
             mItem.mDone = isChecked;
         }
         // Update the list!
-        // TODO: is this required?
         mItem.getChecklist().notifyItemChanged();
     }
 

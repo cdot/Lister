@@ -1,5 +1,6 @@
 package com.cdot.lists;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -30,21 +31,13 @@ import com.cdot.lists.databinding.ChecklistActivityBinding;
 
 import java.util.Objects;
 
-public class ChecklistActivity extends AppCompatActivity implements TextView.OnEditorActionListener, TextWatcher, View.OnLongClickListener {
+public class ChecklistActivity extends AppCompatActivity {
     private static final String TAG = "ChecklistActivity";
 
     private static final int REQUEST_SAVE_AS = 3;
 
     private Checklist mList;
     private ChecklistItemView mMovingView;
-
-    @Override
-    public void beforeTextChanged(CharSequence charSequence, int i, int i2, int i3) {
-    }
-
-    @Override
-    public void onTextChanged(CharSequence charSequence, int i, int i2, int i3) {
-    }
 
     private ChecklistActivityBinding mBinding;
 
@@ -64,12 +57,44 @@ public class ChecklistActivity extends AppCompatActivity implements TextView.OnE
 
         EditText editText = mBinding.AddItemText;
         editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_AUTO_COMPLETE | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
-        editText.setOnEditorActionListener(this);
-        editText.addTextChangedListener(this);
+        editText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
+                if (i == EditorInfo.IME_ACTION_DONE) {
+                    addNewItem();
+                    return true;
+                }
+                return false;
+            }
+        });
+        editText.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i2, int i3) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i2, int i3) {
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+                if (mBinding.AddItemText.getText().toString().trim().length() == 0) {
+                    mBinding.AddItemButton.setAlpha(0.5f);
+                } else {
+                    mBinding.AddItemButton.setAlpha(1f);
+                }
+            }
+        });
         editText.setImeOptions(EditorInfo.IME_ACTION_DONE);
         ImageButton imageButton = mBinding.AddItemButton;
         imageButton.setAlpha(0.5f);
-        imageButton.setOnLongClickListener(this);
+        imageButton.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View view) {
+                addNewItem();
+                return true;
+            }
+        });
 
         mChecklists = new Checklists(this, true);
 
@@ -93,14 +118,20 @@ public class ChecklistActivity extends AppCompatActivity implements TextView.OnE
     }
 
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.checklist, menu);
-        return true;
+    protected void onActivityResult(int requestCode, int resultCode, Intent resultData) {
+        super.onActivityResult(requestCode, resultCode, resultData);
+        switch (requestCode) {
+            case REQUEST_SAVE_AS:
+                if (resultCode == Activity.RESULT_OK && resultData != null) {
+                    mList.saveToUri(resultData.getData());
+                }
+                break;
+        }
     }
 
     @Override
-    public boolean onPrepareOptionsMenu(Menu menu) {
-        menu.findItem(R.id.action_check).setVisible(false);
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.checklist, menu);
         return true;
     }
 
@@ -151,7 +182,7 @@ public class ChecklistActivity extends AppCompatActivity implements TextView.OnE
                     Toast.makeText(this, getString(R.string.x_items_restored, undone), Toast.LENGTH_SHORT).show();
                 return true;
             case R.id.action_save_list_as:
-                intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
                 intent.addCategory(Intent.CATEGORY_OPENABLE);
                 intent.setType("application/json");
                 startActivityForResult(intent, REQUEST_SAVE_AS);
@@ -189,12 +220,6 @@ public class ChecklistActivity extends AppCompatActivity implements TextView.OnE
                 currentFocus = mBinding.AddItemText;
             inputMethodManager.hideSoftInputFromWindow(currentFocus.getWindowToken(), 0);
         }
-    }
-
-    @Override
-    public boolean onLongClick(View view) {
-        addNewItem();
-        return true;
     }
 
     // Invoked from checklist_activity.xml
@@ -255,15 +280,6 @@ public class ChecklistActivity extends AppCompatActivity implements TextView.OnE
     }
 
     @Override
-    public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
-        if (i != 6) {
-            return false;
-        }
-        addNewItem();
-        return true;
-    }
-
-    @Override
     public boolean dispatchTouchEvent(MotionEvent motionEvent) {
         Checklist.ChecklistItem movingItem = mList.mMovingItem;
         if (movingItem == null)
@@ -320,12 +336,12 @@ public class ChecklistActivity extends AppCompatActivity implements TextView.OnE
                 mBinding.CheckList.smoothScrollToPosition(itemIndex - 1);
             if (y > mBinding.CheckList.getHeight() - halfItemHeight)
                 mBinding.CheckList.smoothScrollToPosition(itemIndex + 1);
-            ChecklistItemView.LayoutParams lp = new ChecklistItemView.LayoutParams(ChecklistItemView.LayoutParams.MATCH_PARENT, ChecklistItemView.LayoutParams.WRAP_CONTENT);
+            // Layout params for the parent, not for this view
+            RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
             // Set the top margin to move the view to the right place relative to the Activity
             lp.setMargins(0, (listViewTop - activityTop) + y - halfItemHeight, 0, 0);
             mMovingView.setLayoutParams(lp);
         }
-
         if (motionEvent.getAction() == MotionEvent.ACTION_UP || motionEvent.getAction() == MotionEvent.ACTION_CANCEL) {
             Log.d(TAG, "ChecklistActivity Up ");
             mBinding.ActivityChecklist.removeView(mMovingView);
@@ -333,14 +349,5 @@ public class ChecklistActivity extends AppCompatActivity implements TextView.OnE
             mMovingView = null;
         }
         return true;
-    }
-
-    @Override
-    public void afterTextChanged(Editable editable) {
-        if (mBinding.AddItemText.getText().toString().trim().length() == 0) {
-            mBinding.AddItemButton.setAlpha(0.5f);
-        } else {
-            mBinding.AddItemButton.setAlpha(1f);
-        }
     }
 }

@@ -196,6 +196,8 @@ class Checklists extends ArrayList<Checklist> {
             for (Checklist cl : cache) {
                 Checklist known = findListByName(cl.mListName);
                 if (known == null || cl.mTimestamp > known.mTimestamp) {
+                    if (known != null)
+                        remove(known);
                     add(new Checklist(cl, this));
                     added++;
                 }
@@ -208,21 +210,10 @@ class Checklists extends ArrayList<Checklist> {
             mArrayAdapter.notifyDataSetChanged();
     }
 
-    /**
-     * Save the lists to backing store, if one is configured.
-     */
-    private void saveToBackingStore() {
-        final Uri uri = Settings.getUri("backingStore");
-        if (uri == null)
-            return;
+    void saveToUri(final Uri uri) {
         // Launch a thread to do this save, so we don't block the ui thread
         Log.d(TAG, "Saving to backing store");
-        final byte[] data;
-        try {
-            data = toJSON().toString().getBytes();
-        } catch (JSONException je) {
-            return;
-        }
+        final byte[] data = toJSON().toString().getBytes();
         new Thread(new Runnable() {
             public void run() {
                 OutputStream stream;
@@ -276,15 +267,23 @@ class Checklists extends ArrayList<Checklist> {
 
     /**
      * Construct a JSON array object from the checklists we manage
-     *
      * @return an array of JSON checklist objects
-     * @throws JSONException on a JSON error
      */
-    private JSONArray toJSON() throws JSONException {
+    private JSONArray toJSON()  {
         JSONArray json = new JSONArray();
         for (Checklist cl : this)
             json.put(cl.toJSON());
         return json;
+    }
+
+    /**
+     * Save the lists to backing store, if one is configured.
+     */
+    private void saveToBackingStore() {
+        final Uri uri = Settings.getUri("backingStore");
+        if (uri == null)
+            return;
+        saveToUri(uri);
     }
 
     /**

@@ -1,6 +1,8 @@
 package com.cdot.lists;
 
+import android.content.ContentResolver;
 import android.content.Context;
+import android.net.Uri;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,14 +15,18 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.Stack;
 
 /**
@@ -391,21 +397,53 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
      * @return a String
      * @throws JSONException if something goes wrong
      */
-    JSONObject toJSON() throws JSONException {
+    JSONObject toJSON() {
         JSONObject job = new JSONObject();
-        job.put("name", mListName);
-        job.put("time", new Date().getTime());
-        JSONArray items = new JSONArray();
-        for (ChecklistItem item : this) {
-            JSONObject iob = new JSONObject();
-            iob.put("name", item.mText);
-            iob.put("done", item.mDone);
-            items.put(iob);
+        try {
+            job.put("name", mListName);
+            job.put("time", new Date().getTime());
+            JSONArray items = new JSONArray();
+            for (ChecklistItem item : this) {
+                JSONObject iob = new JSONObject();
+                iob.put("name", item.mText);
+                iob.put("done", item.mDone);
+                items.put(iob);
+            }
+            job.put("items", items);
+        } catch (JSONException je) {
+            throw new Error("JSON exception " + je.getMessage());
         }
-        job.put("items", items);
         return job;
     }
 
+    /**
+     * Save the lists to backing store, if one is configured.
+     */
+    void saveToUri(final Uri uri) {
+        // Launch a thread to do this save, so we don't block the ui thread
+        Log.d(TAG, "Saving to Uri");
+        final byte[] data = toJSON().toString().getBytes();
+         new Thread(new Runnable() {
+            public void run() {
+                OutputStream stream;
+                try {
+                    String scheme = uri.getScheme();
+                    if (Objects.equals(scheme, ContentResolver.SCHEME_FILE)) {
+                        String path = uri.getPath();
+                        stream = new FileOutputStream(new File(path));
+                    } else if (Objects.equals(scheme, ContentResolver.SCHEME_CONTENT))
+                        stream = mParent.mContext.getContentResolver().openOutputStream(uri);
+                    else
+                        throw new Error("Failed to save to uri. Unknown uri scheme: " + uri.getScheme());
+                    stream.write(data);
+                    stream.close();
+                    Log.d(TAG, "Saved to uri");
+                } catch (IOException ioe) {
+                    throw new Error( "Exception while saving to uri " + ioe.getMessage());
+                }
+            }
+        }).start();
+    }
     /**
      * Format the list for sending as email
      */
