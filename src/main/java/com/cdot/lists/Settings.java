@@ -79,7 +79,8 @@ class Settings {
         }
         for (Map.Entry<String, Uri> entry : mUriPrefs.entrySet()) {
             Uri ev = entry.getValue();
-            entry.setValue(Uri.parse(mPrefs.getString(entry.getKey(), ev == null ? null : ev.toString())));
+            String pref = mPrefs.getString(entry.getKey(), ev == null ? null : ev.toString());
+            entry.setValue(pref != null ? Uri.parse(pref) : null);
         }
     }
 

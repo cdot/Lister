@@ -50,4 +50,5 @@
     <string name="warn_about_duplicates">Warn before adding duplicate item to list</string>
     <string name="x_items_deleted">%d items deleted</string>
     <string name="x_items_restored">%d items restored</string>
+    <string name="not_set">Not Set</string>
 </resources>

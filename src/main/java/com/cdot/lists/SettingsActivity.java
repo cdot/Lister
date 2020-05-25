@@ -39,7 +39,8 @@ public class SettingsActivity extends Activity implements AdapterView.OnItemSele
         mBinding.OpenLatestListAtStartupCB.setChecked(Settings.getBool(Settings.openLatestListAtStartup));
         mBinding.WarnAboutDuplicatesCB.setChecked(Settings.getBool(Settings.warnAboutDuplicates));
         mBinding.TextSizeSpinner.setSelection(Settings.getInt(Settings.textSizeIndex));
-        mBinding.BackingStoreURI.setText(Settings.getUri(Settings.backingStore).toString());
+        Uri uri = Settings.getUri(Settings.backingStore);
+        mBinding.BackingStoreURI.setText(uri != null ? uri.toString() : getString(R.string.not_set));
     }
 
     public void onActivityResult(int requestCode, int resultCode, Intent resultData) {
