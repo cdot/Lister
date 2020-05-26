@@ -41,6 +41,7 @@
 
         <ImageButton
             android:id="@+id/moveButton"
+            android:layout_marginStart="7dp"
             android:layout_width="20dp"
             android:layout_height="20dp"
             android:layout_gravity="center_vertical"
