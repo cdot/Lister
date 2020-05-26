@@ -8,5 +8,5 @@
     <item android:orderInCategory="50" android:id="@+id/action_undo_delete" android:title="@string/action_undo_delete" app:showAsAction="never"/>
     <item android:orderInCategory="60" android:id="@+id/action_sort_list" android:title="@string/action_sort_list" app:showAsAction="never"/>
     <item android:orderInCategory="70" android:id="@+id/action_rename_list" android:title="@string/action_rename_list" app:showAsAction="never"/>
-    <item android:orderInCategory="80" android:id="@+id/action_save_list_as" android:title="@string/action_export_list" app:showAsAction="never"/>
+    <item android:orderInCategory="80" android:id="@+id/action_save_list_as" android:title="@string/action_export_list" android:icon="@drawable/ic_action_export" app:showAsAction="never"/>
 </menu>

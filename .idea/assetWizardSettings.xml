@@ -20,7 +20,7 @@
                           <map>
                             <entry key="assetSourceType" value="FILE" />
                             <entry key="outputName" value="ic_checklist_icon" />
-                            <entry key="sourceFile" value="$PROJECT_DIR$/src/svg/checklist_icon.svg" />
+                            <entry key="sourceFile" value="$PROJECT_DIR$/src/main/assets/html/img/checklist_icon.svg" />
                           </map>
                         </option>
                       </PersistentState>

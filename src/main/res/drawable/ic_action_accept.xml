@@ -8,8 +8,8 @@
       android:strokeAlpha="1"
       android:strokeLineJoin="miter"
       android:strokeWidth="1"
-      android:fillColor="#000000"
-      android:strokeColor="#000000"
+      android:fillColor="?android:colorControlNormal"
+      android:strokeColor="?android:colorControlNormal"
       android:fillType="evenOdd"
       android:fillAlpha="1"
       android:strokeLineCap="butt"/>

@@ -4,5 +4,5 @@
     <item android:icon="@drawable/ic_action_new" android:id="@+id/action_new_list" android:title="@string/action_new_list" app:showAsAction="ifRoom"/>
     <item android:icon="@drawable/ic_action_help" android:id="@+id/action_help" android:title="@string/action_help" app:showAsAction="ifRoom"/>
     <item android:icon="@drawable/ic_action_settings" android:id="@+id/action_settings" android:title="@string/action_settings" app:showAsAction="ifRoom"/>
-    <item android:id="@+id/action_import_list" android:orderInCategory="100" android:title="@string/action_import_list" app:showAsAction="never"/>
+    <item android:icon="@drawable/ic_action_import" android:id="@+id/action_import_list" android:title="@string/action_import_list" app:showAsAction="ifRoom"/>
 </menu>

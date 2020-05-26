@@ -7,8 +7,8 @@
       android:pathData="M67.504,15.747l9.778,0l0,111.881l-9.778,0z"
       android:strokeAlpha="1"
       android:strokeWidth="1"
-      android:fillColor="#000000"
-      android:strokeColor="#00000000"
+      android:fillColor="?android:colorControlNormal"
+      android:strokeColor="?android:colorControlNormal"
       android:fillType="nonZero"
       android:fillAlpha="1"
       android:strokeLineCap="round"/>
@@ -16,8 +16,8 @@
       android:pathData="M16.453,76.576l0,-9.778l111.881,-0l0,9.778z"
       android:strokeAlpha="1"
       android:strokeWidth="1"
-      android:fillColor="#000000"
-      android:strokeColor="#00000000"
+      android:fillColor="?android:colorControlNormal"
+      android:strokeColor="?android:colorControlNormal"
       android:fillType="nonZero"
       android:fillAlpha="1"
       android:strokeLineCap="round"/>
