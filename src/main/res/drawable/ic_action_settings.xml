@@ -13,16 +13,6 @@
       android:fillAlpha="1"
       android:fillType="evenOdd"
       android:strokeLineCap="butt">
-    <aapt:attr name="android:fillColor">
-      <gradient
-          android:endColor="?android:colorControlActivated"
-          android:endX="120"
-          android:endY="22"
-          android:startColor="?android:colorControlNormal"
-          android:startX="12"
-          android:startY="122"
-          android:type="linear" />
-    </aapt:attr>
   </path>
   <path
       android:pathData="m64,37.929a26.071,26.071 0,0 0,-26.071 26.071,26.071 26.071,0 0,0 26.071,26.071 26.071,26.071 0,0 0,26.071 -26.071,26.071 26.071,0 0,0 -26.071,-26.071zM64,46.223A17.776,17.776 0,0 1,81.777 64,17.776 17.776,0 0,1 64,81.775 17.776,17.776 135,0 1,46.225 64,17.776 17.776,0 0,1 64,46.223Z"
@@ -32,15 +22,5 @@
       android:fillAlpha="1"
       android:fillType="nonZero"
       android:strokeLineCap="round">
-    <aapt:attr name="android:fillColor">
-      <gradient
-          android:endColor="?android:colorControlActivated"
-          android:endX="120"
-          android:endY="22"
-          android:startColor="?android:colorControlNormal"
-          android:startX="12"
-          android:startY="122"
-          android:type="linear" />
-    </aapt:attr>
   </path>
 </vector>

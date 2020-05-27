@@ -17,6 +17,7 @@
         android:id="@+id/CheckList"
     	android:dividerHeight="0dp"
         android:layout_below="@+id/checklist_toolbar"
+        android:layout_above="@+id/NewItemContainer"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
@@ -53,7 +54,7 @@
                 android:layout_marginBottom="5dp"
                 android:contentDescription="@string/add_item"
                 android:onClick="onClickAddItem"
-                app:srcCompat="@drawable/ic_action_new" />
+                app:srcCompat="@drawable/ic_action_new_item" />
         </RelativeLayout>
     </LinearLayout>
 </RelativeLayout>

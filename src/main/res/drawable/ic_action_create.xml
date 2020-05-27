@@ -13,16 +13,6 @@
       android:fillType="evenOdd"
       android:fillAlpha="1"
       android:strokeLineCap="butt">
-      <aapt:attr name="android:fillColor">
-        <gradient
-            android:endColor="?android:colorControlActivated"
-            android:endX="120"
-            android:endY="22"
-            android:startColor="?android:colorControlNormal"
-            android:startX="12"
-            android:startY="122"
-            android:type="linear" />
-      </aapt:attr>
   </path>
   <path
       android:pathData="M92.088,11.801L92.088,25.311L77.829,25.311L77.829,33.865L92.088,33.865L92.088,47.377L100.862,47.377L100.862,33.865L115.122,33.865L115.122,25.311L100.862,25.311L100.862,11.801Z"

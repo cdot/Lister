@@ -17,8 +17,8 @@
       android:pathData="m11.5862,4.4498 l-7.1177,9.4648 4.1517,-0.0527l0,20.0433l2.8447,0 0.2425,0 2.8447,0l0,-20.0433l4.1517,0.0527z"
       android:strokeAlpha="1"
       android:strokeWidth="0.44245726"
-      android:fillColor="?android:colorControlActivated"
-      android:strokeColor="?android:colorControlActivated"
+      android:fillColor="?android:colorButtonNormal"
+      android:strokeColor="?android:colorButtonNormal"
       android:fillType="nonZero"
       android:fillAlpha="0.66355136"
       android:strokeLineCap="round"/>
@@ -35,8 +35,8 @@
       android:pathData="m26.5138,33.6502 l-7.1177,-9.4648 4.1517,0.0527l0,-20.0433l2.8447,-0 0.2425,-0 2.8447,-0l0,20.0433l4.1517,-0.0527z"
       android:strokeAlpha="1"
       android:strokeWidth="0.44245726"
-      android:fillColor="?android:colorControlActivated"
-      android:strokeColor="?android:colorControlActivated"
+      android:fillColor="?android:colorButtonNormal"
+      android:strokeColor="?android:colorButtonNormal"
       android:fillType="nonZero"
       android:fillAlpha="0.66355136"
       android:strokeLineCap="round"/>

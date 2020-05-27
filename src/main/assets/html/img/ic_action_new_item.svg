@@ -11,10 +11,10 @@
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    version="1.1"
    id="svg6257"
-   width="144"
-   height="144"
-   viewBox="0 0 144 144"
-   sodipodi:docname="ic_action_new.svg"
+   width="32"
+   height="32"
+   viewBox="0 0 32 32"
+   sodipodi:docname="ic_action_new_item.svg"
    inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)">
   <metadata
      id="metadata991">
@@ -52,7 +52,7 @@
      inkscape:current-layer="svg6257" />
   <g
      id="g10019"
-     transform="matrix(1.1714286,0,0,1.1714286,-2.4444481,-22.631092)">
+     transform="matrix(0.27333333,0,0,0.27333334,-1.3703706,-6.0805884)">
     <path
        style="opacity:1;fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:1.07256949;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
        d="M 57.241919,29.563127 V 74.476209 H 12.330624 V 87.090856 H 57.241919 V 132.00215 H 69.856567 V 87.090856 H 114.76965 V 74.476209 H 69.856567 V 29.563127 Z"

@@ -10,16 +10,6 @@
       android:fillType="evenOdd"
       android:fillAlpha="1"
       android:strokeLineCap="butt">
-      <aapt:attr name="android:fillColor">
-        <gradient
-            android:endColor="?android:colorControlActivated"
-            android:startX="6"
-            android:startY="50"
-            android:startColor="?android:colorControlNormal"
-            android:endX="120"
-            android:endY="50"
-            android:type="linear" />
-      </aapt:attr>
   </path>
 
   <path
