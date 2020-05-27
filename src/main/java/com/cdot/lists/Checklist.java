@@ -434,6 +434,8 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
                         stream = mParent.mContext.getContentResolver().openOutputStream(uri);
                     else
                         throw new Error("Failed to save to uri. Unknown uri scheme: " + uri.getScheme());
+                    if (stream == null)
+                        throw new Error("Failed to save lists. Stream open failed");
                     stream.write(data);
                     stream.close();
                     Log.d(TAG, "Saved to uri");

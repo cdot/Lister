@@ -162,50 +162,54 @@ class Checklists extends ArrayList<Checklist> {
     void load() {
         clear();
 
-        // First reload cache from backing store, if it's available
-        Uri uri = Settings.getUri("backingStore");
-        if (uri != null) {
-            try {
-                InputStream stream;
-                if (Objects.equals(uri.getScheme(), ContentResolver.SCHEME_FILE)) {
-                    stream = new FileInputStream(new File((uri.getPath())));
-                } else if (Objects.equals(uri.getScheme(), ContentResolver.SCHEME_CONTENT)) {
-                    stream = mContext.getContentResolver().openInputStream(uri);
-                } else {
-                    throw new IOException("Failed to load lists. Unknown uri scheme: " + uri.getScheme());
-                }
-                Log.d(TAG, "Loading lists from " + uri);
-                loadFromStream(stream);
-            } catch (Exception e) {
-                Log.d(TAG, "Exception loading backing store " + e);
-            }
-        }
-
-        // Reload from cache any lists that are stamped more recent than what was read from
-        // the backing store; or, if the backing store wasn't available, get lists from here.
-        // Note this could result in confusion if an list is updated on the backing store
-        // asynchronously. No attempt is made to resolve conflicts
-        Checklists cache = new Checklists(mContext, false);
+        // First load the cache, then asynchronously load the backing store and update the list
+        // if it has changed
         try {
             FileInputStream fis = mContext.openFileInput(Settings.cacheFile);
-            Log.d(TAG, "Loading lists from cache");
-            cache.loadFromStream(fis);
-            int added = 0;
-            for (Checklist cl : cache) {
-                Checklist known = findListByName(cl.mListName);
-                if (known == null || cl.mTimestamp > known.mTimestamp) {
-                    if (known != null)
-                        remove(known);
-                    add(new Checklist(cl, this));
-                    added++;
-                }
-            }
-            Log.d(TAG, "Added " + added + " lists from cache");
+            loadFromStream(fis);
         } catch (Exception e) {
             Log.d(TAG, "Exception mergeing from cache " + e);
         }
+
         if (mArrayAdapter != null)
             mArrayAdapter.notifyDataSetChanged();
+
+        final Uri uri = Settings.getUri("backingStore");
+        if (uri == null)
+            return;
+        new Thread(new Runnable() {
+            public void run() {
+                try {
+                    Checklists backing = new Checklists(mContext, false);
+                    InputStream stream;
+                    if (Objects.equals(uri.getScheme(), ContentResolver.SCHEME_FILE)) {
+                        stream = new FileInputStream(new File((uri.getPath())));
+                    } else if (Objects.equals(uri.getScheme(), ContentResolver.SCHEME_CONTENT)) {
+                        stream = mContext.getContentResolver().openInputStream(uri);
+                    } else {
+                        throw new IOException("Failed to load lists. Unknown uri scheme: " + uri.getScheme());
+                    }
+                    backing.loadFromStream(stream);
+                    int added = 0;
+                    for (Checklist cl : backing) {
+                        Checklist known = findListByName(cl.mListName);
+                        if (known == null || cl.mTimestamp > known.mTimestamp) {
+                            if (known != null)
+                                remove(known);
+                            add(new Checklist(cl, Checklists.this));
+                            added++;
+                        }
+                    }
+                    if (added > 0) {
+                        Log.d(TAG, "Updated " + added + " lists from " + uri);
+                        if (mArrayAdapter != null)
+                            mArrayAdapter.notifyDataSetChanged();
+                    }
+                } catch (Exception e) {
+                    Log.d(TAG, "Exception loading backing store " + e);
+                }
+            }
+        }).start();
     }
 
     void saveToUri(final Uri uri) {
@@ -224,11 +228,13 @@ class Checklists extends ArrayList<Checklist> {
                         stream = mContext.getContentResolver().openOutputStream(uri);
                     else
                         throw new Error("Failed to save lists. Unknown uri scheme: " + uri.getScheme());
+                    if (stream == null)
+                        throw new Error("Failed to save lists. Stream open failed");
                     stream.write(data);
                     stream.close();
                     Log.d(TAG, "Saved to backing store");
                 } catch (IOException ioe) {
-                    throw new Error( "Exception while saving to backing store " + ioe.getMessage());
+                    throw new Error("Exception while saving to backing store " + ioe.getMessage());
                 }
             }
         }).start();
@@ -265,9 +271,10 @@ class Checklists extends ArrayList<Checklist> {
 
     /**
      * Construct a JSON array object from the checklists we manage
+     *
      * @return an array of JSON checklist objects
      */
-    private JSONArray toJSON()  {
+    private JSONArray toJSON() {
         JSONArray json = new JSONArray();
         for (Checklist cl : this)
             json.put(cl.toJSON());
