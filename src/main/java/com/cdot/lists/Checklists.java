@@ -34,7 +34,9 @@ import java.util.Objects;
 class Checklists extends ArrayList<Checklist> {
     private static final String TAG = "Checklists";
 
-    ItemsArrayAdapter mArrayAdapter;
+    // Adapter in the context where this checklist is being used. By default it's an adapter
+    // for this list, but may be overridden with the adapter for a displayed checklist
+    ArrayAdapter mArrayAdapter;
     Context mContext;
 
     /**
@@ -190,20 +192,24 @@ class Checklists extends ArrayList<Checklist> {
                         throw new IOException("Failed to load lists. Unknown uri scheme: " + uri.getScheme());
                     }
                     backing.loadFromStream(stream);
-                    int added = 0;
+                    boolean changed = false;
                     for (Checklist cl : backing) {
                         Checklist known = findListByName(cl.mListName);
                         if (known == null || cl.mTimestamp > known.mTimestamp) {
-                            if (known != null)
-                                remove(known);
-                            add(new Checklist(cl, Checklists.this));
-                            added++;
+                            if (known != null) {
+                                if (known.merge(cl))
+                                    changed = true;
+                            } else {
+                                add(new Checklist(cl, Checklists.this));
+                                changed = true;
+                            }
                         }
                     }
-                    if (added > 0) {
-                        Log.d(TAG, "Updated " + added + " lists from " + uri);
+                    if (changed) {
+                        save();
                         if (mArrayAdapter != null)
                             mArrayAdapter.notifyDataSetChanged();
+                        Log.d(TAG, "Updated lists from " + uri);
                     }
                 } catch (Exception e) {
                     Log.d(TAG, "Exception loading backing store " + e);

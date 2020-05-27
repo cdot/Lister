@@ -63,6 +63,13 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
             return mText;
         }
 
+        boolean merge(ChecklistItem ocli) {
+            if (mDone == ocli.mDone)
+                return false;
+            mDone = ocli.mDone;
+            return true;
+        }
+
         void setText(String str) {
             mText = str;
             mParent.save();
@@ -106,7 +113,7 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
             return Checklist.this.size();
         }
     }
-    ItemsArrayAdapter mArrayAdapter;
+    ArrayAdapter mArrayAdapter;
 
     String mListName;
     boolean mIsBeingEdited = false;
@@ -290,6 +297,34 @@ class Checklist extends ArrayList<Checklist.ChecklistItem> {
         mRemoveIdCount++;
         mArrayAdapter.notifyDataSetChanged();
         mParent.save();
+    }
+
+    /**
+     * Merge items from another list into this list. Changes to item status in the other
+     * list only happen if the timestamp on the other list is more recent than the timestamp
+     * on this list.
+     * @param other the other list
+     */
+    boolean merge(Checklist other) {
+        boolean changed = false;
+        for (ChecklistItem cli : this) {
+            ChecklistItem ocli = other.find(cli.mText, true);
+            if (ocli != null) {
+                if (cli.merge(ocli))
+                    changed = true;
+            } else
+                this.remove(ocli);
+        }
+        for (ChecklistItem ocli : other) {
+            ChecklistItem cli = find(ocli.mText, true);
+            if (cli == null) {
+                add(ocli);
+                changed = true;
+            }
+        }
+        if (changed)
+            mArrayAdapter.notifyDataSetChanged();
+        return changed;
     }
 
     int undoRemove() {
