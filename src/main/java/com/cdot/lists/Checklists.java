@@ -14,14 +14,11 @@ import androidx.annotation.NonNull;
 import org.json.JSONArray;
 import org.json.JSONException;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Objects;
 
@@ -31,28 +28,28 @@ import java.util.Objects;
  * On startup, try to read the list from the backing store. Should we wait for the load, or load from
  * the cache and then update? Need to time out backing store reads.
  */
-class Checklists extends ArrayList<Checklist> {
+class Checklists extends Serialisable {
     private static final String TAG = "Checklists";
 
-    // Adapter in the context where this checklist is being used. By default it's an adapter
-    // for this list, but may be overridden with the adapter for a displayed checklist
+    private ArrayList<Checklist> mLists = new ArrayList<>();
+
+    // Adapter in the context where this Checklist is being used.
     ArrayAdapter mArrayAdapter;
-    Context mContext;
 
     /**
      * Adapter for the array of items in the list
      */
     class ItemsArrayAdapter extends ArrayAdapter<String> {
 
-        ItemsArrayAdapter() {
-            super(mContext, 0, new ArrayList<String>());
+        ItemsArrayAdapter(Context cxt) {
+            super(cxt, 0, new ArrayList<String>());
         }
 
         @Override
         public @NonNull
         View getView(int i, View view, @NonNull ViewGroup viewGroup) {
             // Simple text view, so don't muck about with resources
-            TextView itemView = (view == null) ? new TextView(mContext) : (TextView) view;
+            TextView itemView = (view == null) ? new TextView(this.getContext()) : (TextView) view;
             switch (Settings.getInt("textSizeIndex")) {
                 case Settings.TEXT_SIZE_SMALL:
                     itemView.setTextAppearance(android.R.style.TextAppearance_DeviceDefault_Small);
@@ -68,13 +65,13 @@ class Checklists extends ArrayList<Checklist> {
                     //mVerticalPadding = 10;
                     break;
             }
-            itemView.setText(get(i).mListName);
+            itemView.setText(mLists.get(i).mListName);
             return itemView;
         }
 
         @Override
         public int getCount() {
-            return Checklists.this.size();
+            return mLists.size();
         }
     }
 
@@ -82,39 +79,41 @@ class Checklists extends ArrayList<Checklist> {
      * Constructor
      *
      * @param cxt  Context (Activity) the lists are being used in
-     * @param load true to load the list from backing store anc cache
+     * @param load true to load the list from cache (and trigger an update from backing store)
      */
     Checklists(Context cxt, boolean load) {
-        mContext = cxt;
-        mArrayAdapter = new ItemsArrayAdapter();
+        super(cxt);
+        mArrayAdapter = new ItemsArrayAdapter(cxt);
         if (load)
             load();
     }
 
     /**
-     * Create a new checklist
+     * Add a checklist and save
      *
-     * @param name name of the new checklist
+     * @param list list to add
      */
-    Checklist createList(String name) {
-        Checklist checkList = new Checklist(name, this);
-        add(checkList);
-        save();
-        return checkList;
+    Checklist addList(Checklist list) {
+        mLists.add(list);
+        notifyListsChanged();
+        return list;
     }
 
     /**
-     * Create a new checklist from JSON data read from the stream
+     * Get the list at the given index
      *
-     * @param stream where to get the data
-     * @return the new list
-     * @throws Exception IOException or JSONException
+     * @param i index of the list to remove
      */
-    Checklist createList(InputStream stream) throws Exception {
-        Checklist checkList = new Checklist(stream, this);
-        add(checkList);
-        save();
-        return checkList;
+    Checklist getListAt(int i) {
+        return mLists.get(i);
+    }
+
+    /**
+     * Get the current list size
+     * @return size
+     */
+    int size() {
+        return mLists.size();
     }
 
     /**
@@ -122,15 +121,11 @@ class Checklists extends ArrayList<Checklist> {
      *
      * @param i index of the list to clone
      */
-    void cloneListAtIndex(int i) {
-        Checklist checklist = new Checklist(get(i), this);
+    void cloneListAt(int i) {
+        Checklist checklist = new Checklist(mLists.get(i), this);
         checklist.mListName += " (copy)";
-        add(checklist);
-        try {
-            save();
-        } catch (Exception e) {
-            Log.d(TAG, "Exception while saving " + e.getMessage());
-        }
+        mLists.add(checklist);
+        notifyListsChanged();
     }
 
     /**
@@ -138,9 +133,9 @@ class Checklists extends ArrayList<Checklist> {
      *
      * @param i index of the list to remove
      */
-    void removeListAtIndex(int i) {
-        remove(i);
-        save();
+    void removeListAt(int i) {
+        mLists.remove(i);
+        notifyListsChanged();
     }
 
     /**
@@ -150,7 +145,7 @@ class Checklists extends ArrayList<Checklist> {
      * @return the list if found, or null otherwise
      */
     Checklist findListByName(String name) {
-        for (Checklist cl : this)
+        for (Checklist cl : mLists)
             if (cl.mListName.equals(name))
                 return cl;
         return null;
@@ -162,19 +157,18 @@ class Checklists extends ArrayList<Checklist> {
      * cache is more recent.
      */
     void load() {
-        clear();
+        mLists.clear();
 
         // First load the cache, then asynchronously load the backing store and update the list
         // if it has changed
         try {
             FileInputStream fis = mContext.openFileInput(Settings.cacheFile);
-            loadFromStream(fis);
+            fromStream(fis);
         } catch (Exception e) {
             Log.d(TAG, "Exception mergeing from cache " + e);
         }
 
-        if (mArrayAdapter != null)
-            mArrayAdapter.notifyDataSetChanged();
+        mArrayAdapter.notifyDataSetChanged();
 
         final Uri uri = Settings.getUri("backingStore");
         if (uri == null)
@@ -191,24 +185,22 @@ class Checklists extends ArrayList<Checklist> {
                     } else {
                         throw new IOException("Failed to load lists. Unknown uri scheme: " + uri.getScheme());
                     }
-                    backing.loadFromStream(stream);
+                    backing.fromStream(stream);
                     boolean changed = false;
-                    for (Checklist cl : backing) {
+                    for (Checklist cl : backing.mLists) {
                         Checklist known = findListByName(cl.mListName);
                         if (known == null || cl.mTimestamp > known.mTimestamp) {
                             if (known != null) {
                                 if (known.merge(cl))
                                     changed = true;
                             } else {
-                                add(new Checklist(cl, Checklists.this));
+                                mLists.add(new Checklist(cl, Checklists.this));
                                 changed = true;
                             }
                         }
                     }
                     if (changed) {
-                        save();
-                        if (mArrayAdapter != null)
-                            mArrayAdapter.notifyDataSetChanged();
+                        notifyListsChanged();
                         Log.d(TAG, "Updated lists from " + uri);
                     }
                 } catch (Exception e) {
@@ -218,59 +210,22 @@ class Checklists extends ArrayList<Checklist> {
         }).start();
     }
 
-    void saveToUri(final Uri uri) {
-        // Launch a thread to do this save, so we don't block the ui thread
-        Log.d(TAG, "Saving to backing store");
-        final byte[] data = toJSON().toString().getBytes();
-        new Thread(new Runnable() {
-            public void run() {
-                OutputStream stream;
-                try {
-                    String scheme = uri.getScheme();
-                    if (Objects.equals(scheme, ContentResolver.SCHEME_FILE)) {
-                        String path = uri.getPath();
-                        stream = new FileOutputStream(new File(path));
-                    } else if (Objects.equals(scheme, ContentResolver.SCHEME_CONTENT))
-                        stream = mContext.getContentResolver().openOutputStream(uri);
-                    else
-                        throw new Error("Failed to save lists. Unknown uri scheme: " + uri.getScheme());
-                    if (stream == null)
-                        throw new Error("Failed to save lists. Stream open failed");
-                    stream.write(data);
-                    stream.close();
-                    Log.d(TAG, "Saved to backing store");
-                } catch (IOException ioe) {
-                    throw new Error("Exception while saving to backing store " + ioe.getMessage());
-                }
-            }
-        }).start();
-    }
-
-    /**
-     * Load the checklists from JSON read from the stream
-     *
-     * @param stream source of the JSON
-     * @throws Exception IOException or JSONException
-     */
-    private void loadFromStream(InputStream stream) throws Exception {
-        StringBuilder sb = new StringBuilder();
-        String line;
-        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(stream));
-        while ((line = bufferedReader.readLine()) != null)
-            sb.append(line);
-        loadFromJSON(new JSONArray(sb.toString()));
+    void notifyListsChanged() {
+        save();
+        mArrayAdapter.notifyDataSetChanged();
     }
 
     /**
      * Process a JSON array object and load the lists found therein
      *
-     * @param lists array of checklists in JSON format
+     * @param jo array of checklists in JSON format
      * @throws JSONException if it can't be analysed e.g. missing fields
      */
-    private void loadFromJSON(JSONArray lists) throws JSONException {
-        clear();
+    public void fromJSON(Object jo) throws JSONException {
+        JSONArray lists = (JSONArray)jo;
+        mLists.clear();
         for (int i = 0; i < lists.length(); i++) {
-            add(new Checklist(lists.getJSONObject(i), this));
+            mLists.add(new Checklist(lists.getJSONObject(i), this));
         }
         Log.d(TAG, "Extracted " + lists.length() + " lists from JSON");
     }
@@ -280,21 +235,11 @@ class Checklists extends ArrayList<Checklist> {
      *
      * @return an array of JSON checklist objects
      */
-    private JSONArray toJSON() {
+    Object toJSON() throws JSONException {
         JSONArray json = new JSONArray();
-        for (Checklist cl : this)
+        for (Checklist cl : mLists)
             json.put(cl.toJSON());
         return json;
-    }
-
-    /**
-     * Save the lists to backing store, if one is configured.
-     */
-    private void saveToBackingStore() {
-        final Uri uri = Settings.getUri("backingStore");
-        if (uri == null)
-            return;
-        saveToUri(uri);
     }
 
     /**
@@ -312,6 +257,9 @@ class Checklists extends ArrayList<Checklist> {
             // Would really like to toast this
             Log.d(TAG, "Exception saving to cache " + e);
         }
-        saveToBackingStore();
+        final Uri uri = Settings.getUri("backingStore");
+        if (uri == null)
+            return;
+        saveToUri(uri);
     }
 }

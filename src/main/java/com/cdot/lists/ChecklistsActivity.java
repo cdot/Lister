@@ -23,12 +23,6 @@ import android.widget.TextView;
 
 import com.cdot.lists.databinding.ChecklistsActivityBinding;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Objects;
-
 /**
  * Activity that displays a list of checklists
  */
@@ -63,7 +57,7 @@ public class ChecklistsActivity extends AppCompatActivity {
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long j) {
-                launchChecklistActivity(mChecklists.get(i).mListName);
+                launchChecklistActivity(mChecklists.getListAt(i).mListName);
             }
         });
         listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
@@ -75,7 +69,7 @@ public class ChecklistsActivity extends AppCompatActivity {
                     public boolean onMenuItemClick(MenuItem menuItem) {
                         switch (menuItem.getItemId()) {
                             case R.id.action_copy:
-                                mChecklists.cloneListAtIndex(index);
+                                mChecklists.cloneListAt(index);
                                 loadLists();
                                 return true;
                             case R.id.action_delete:
@@ -163,15 +157,8 @@ public class ChecklistsActivity extends AppCompatActivity {
                 Uri uri = resultData.getData();
                 if (uri == null)
                     return;
-                InputStream stream;
-                if (Objects.equals(uri.getScheme(), "file")) {
-                    stream = new FileInputStream(new File((uri.getPath())));
-                } else if (Objects.equals(uri.getScheme(), "content")) {
-                    stream = getContentResolver().openInputStream(uri);
-                } else {
-                    throw new IOException("Failed to load lists. Unknown uri scheme: " + uri.getScheme());
-                }
-                Checklist checklist = mChecklists.createList(stream);
+                Checklist checklist = new Checklist(uri, mChecklists);
+                mChecklists.addList(checklist);
                 Log.d(TAG, "import list: " + checklist.mListName);
                 launchChecklistActivity(checklist.mListName);
             } catch (Exception e) {
@@ -213,7 +200,7 @@ public class ChecklistsActivity extends AppCompatActivity {
         builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialogInterface, int i) {
                 String listname = editText.getText().toString();
-                Checklist checkList = mChecklists.createList(listname);
+                Checklist checkList = mChecklists.addList(new Checklist(listname, mChecklists));
                 launchChecklistActivity(checkList.mListName);
             }
         });
@@ -233,10 +220,10 @@ public class ChecklistsActivity extends AppCompatActivity {
         String string = getResources().getString(R.string.action_delete_list);
         androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
         builder.setTitle(string + "?");
-        builder.setMessage(string + " \"" + mChecklists.get(index).mListName + "\"?");
+        builder.setMessage(string + " \"" + mChecklists.getListAt(index).mListName + "\"?");
         builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialogInterface, int which_button) {
-                mChecklists.removeListAtIndex(index);
+                mChecklists.removeListAt(index);
                 loadLists(); // needed to rest the adapter list
             }
         });
@@ -245,8 +232,8 @@ public class ChecklistsActivity extends AppCompatActivity {
     }
 
     private void showRenameDialog(int i) {
-        final Checklist checkList = mChecklists.get(i);
-        String listname = mChecklists.get(i).mListName;
+        final Checklist checkList = mChecklists.getListAt(i);
+        String listname = mChecklists.getListAt(i).mListName;
         try {
             androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
             builder.setTitle(R.string.action_rename_list);

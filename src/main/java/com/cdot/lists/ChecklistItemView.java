@@ -112,7 +112,7 @@ class ChecklistItemView extends LinearLayout {
         // Transparency
         float f = 1; // Completely opague
 
-        if (mItem.mDone && Settings.getBool(Settings.greyCheckedItems))
+        if (mItem.isDone() && Settings.getBool(Settings.greyCheckedItems))
             // Greyed out
             f = 0.5f;
         else if (!mIsMoving && mItem == mItem.getChecklist().mMovingItem)
@@ -124,7 +124,7 @@ class ChecklistItemView extends LinearLayout {
         mBinding.leftLayout.setAlpha(f);
 
         // Strike through
-        if (!mItem.mDone || !Settings.getBool(Settings.strikeThroughCheckedItems))
+        if (!mItem.isDone() || !Settings.getBool(Settings.strikeThroughCheckedItems))
             mBinding.itemText.setPaintFlags(mBinding.itemText.getPaintFlags() & ~Paint.STRIKE_THRU_TEXT_FLAG);
         else
             mBinding.itemText.setPaintFlags(mBinding.itemText.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
@@ -149,7 +149,7 @@ class ChecklistItemView extends LinearLayout {
             mControlsOnRight = true;
         }
 
-        mBinding.checkbox.setChecked(mItem.mDone);
+        mBinding.checkbox.setChecked(mItem.isDone());
     }
 
     private void showMenu() {
@@ -176,10 +176,10 @@ class ChecklistItemView extends LinearLayout {
             mItem.getChecklist().remove(mItem);
         else {
             mBinding.checkbox.setChecked(isChecked);
-            mItem.mDone = isChecked;
+            mItem.setDone(isChecked);
         }
         // Update the list!
-        mItem.getChecklist().notifyItemChanged();
+        mItem.getChecklist().notifyListChanged();
     }
 
     private void showRenameItemDialog() {
@@ -199,5 +199,6 @@ class ChecklistItemView extends LinearLayout {
 
     private void renameItem(String str) {
         mItem.setText(str);
+        mItem.getChecklist().notifyListChanged();
     }
 }

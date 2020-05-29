@@ -48,20 +48,22 @@ public class SettingsActivity extends Activity implements AdapterView.OnItemSele
             if (requestCode == REQUEST_CHANGE_STORE || requestCode == REQUEST_CREATE_STORE) {
                 Uri bs = Settings.getUri(Settings.backingStore);
                 Uri nbs = resultData.getData();
-                if (!nbs.equals(bs))
-                    Settings.setUri(Settings.backingStore, nbs);
+                if (nbs != null) {
+                    if (!nbs.equals(bs))
+                        Settings.setUri(Settings.backingStore, nbs);
 
-                // Clear the cache
-                deleteFile(Settings.cacheFile);
+                    // Clear the cache
+                    deleteFile(Settings.cacheFile);
 
-                // Persist granted access across reboots
-                if (requestCode == REQUEST_CREATE_STORE) {
-                    final int takeFlags = resultData.getFlags()
-                            & (Intent.FLAG_GRANT_READ_URI_PERMISSION
-                            | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-                    getContentResolver().takePersistableUriPermission(bs, takeFlags);
+                    // Persist granted access across reboots
+                    if (requestCode == REQUEST_CREATE_STORE) {
+                        final int takeFlags = resultData.getFlags()
+                                & (Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                        getContentResolver().takePersistableUriPermission(bs, takeFlags);
+                    }
+                    mBinding.BackingStoreURI.setText(nbs.toString());
                 }
-                mBinding.BackingStoreURI.setText(nbs.toString());
             }
         }
     }

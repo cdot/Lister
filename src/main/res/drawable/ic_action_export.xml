@@ -22,7 +22,7 @@
       android:strokeAlpha="1"
       android:strokeLineJoin="miter"
       android:strokeWidth="2"
-      android:fillColor="?android:colorButtonNormal"
+      android:fillColor="?android:colorControlActivated"
       android:strokeColor="?android:colorControlNormal"
       android:fillType="evenOdd"
       android:fillAlpha="1"

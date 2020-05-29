@@ -101,9 +101,11 @@ public class ChecklistActivity extends AppCompatActivity {
         String listName = getIntent().getStringExtra("list");
         mList = mChecklists.findListByName(listName);
 
-        if (mList == null)
+        if (mList == null) {
             // Create the list
-            mList = mChecklists.createList(listName);
+            mList = new Checklist(listName, mChecklists);
+            mChecklists.addList(mList);
+        }
 
         Settings.setString(Settings.currentList, listName);
         Objects.requireNonNull(getSupportActionBar()).setTitle(mList.mListName);
@@ -229,7 +231,7 @@ public class ChecklistActivity extends AppCompatActivity {
             if (find == null || !Settings.getBool(Settings.warnAboutDuplicates))
                 addItem(obj);
             else
-                promptSimilarItem(obj, find.mText);
+                promptSimilarItem(obj, find.getText());
         }
     }
 
