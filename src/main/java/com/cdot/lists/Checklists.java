@@ -1,3 +1,6 @@
+/**
+ * @copyright C-Dot Consultants 2020 - MIT license
+ */
 package com.cdot.lists;
 
 import android.content.ContentResolver;
@@ -39,9 +42,9 @@ class Checklists extends Serialisable {
     /**
      * Adapter for the array of items in the list
      */
-    class ItemsArrayAdapter extends ArrayAdapter<String> {
+    class ListsArrayAdapter extends ArrayAdapter<String> {
 
-        ItemsArrayAdapter(Context cxt) {
+        ListsArrayAdapter(Context cxt) {
             super(cxt, 0, new ArrayList<String>());
         }
 
@@ -65,7 +68,7 @@ class Checklists extends Serialisable {
                     //mVerticalPadding = 10;
                     break;
             }
-            itemView.setText(mLists.get(i).mListName);
+            itemView.setText(mLists.get(i).getName());
             return itemView;
         }
 
@@ -83,7 +86,7 @@ class Checklists extends Serialisable {
      */
     Checklists(Context cxt, boolean load) {
         super(cxt);
-        mArrayAdapter = new ItemsArrayAdapter(cxt);
+        mArrayAdapter = new ListsArrayAdapter(cxt);
         if (load)
             load();
     }
@@ -123,7 +126,8 @@ class Checklists extends Serialisable {
      */
     void cloneListAt(int i) {
         Checklist checklist = new Checklist(mLists.get(i), this);
-        checklist.mListName += " (copy)";
+        String newname = checklist.getName() + " (copy)";
+        checklist.setName(newname);
         mLists.add(checklist);
         notifyListsChanged();
     }
@@ -146,7 +150,7 @@ class Checklists extends Serialisable {
      */
     Checklist findListByName(String name) {
         for (Checklist cl : mLists)
-            if (cl.mListName.equals(name))
+            if (cl.getName().equals(name))
                 return cl;
         return null;
     }
@@ -188,7 +192,7 @@ class Checklists extends Serialisable {
                     backing.fromStream(stream);
                     boolean changed = false;
                     for (Checklist cl : backing.mLists) {
-                        Checklist known = findListByName(cl.mListName);
+                        Checklist known = findListByName(cl.getName());
                         if (known == null || cl.mTimestamp > known.mTimestamp) {
                             if (known != null) {
                                 if (known.merge(cl))

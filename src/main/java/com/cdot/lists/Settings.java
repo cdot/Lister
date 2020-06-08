@@ -1,3 +1,6 @@
+/**
+ * @copyright C-Dot Consultants 2020 - MIT license
+ */
 package com.cdot.lists;
 
 import android.content.Context;
@@ -7,22 +10,28 @@ import android.net.Uri;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Simpleton settings. Some settings are repeated in individual lists, where they override the
+ * defaults.
+ */
 class Settings {
     static final String UI_PREFERENCES = "UIPreferences";
 
-    static String greyCheckedItems = "greyCheckedItems";
-    static String strikeThroughCheckedItems = "strikeThroughCheckedItems";
-    static String moveCheckedItemsToBottom = "moveCheckedItemsToBottom";
-    static String checkBoxOnLeftSide = "checkBoxOnLeftSide";
-    static String autoDeleteCheckedItems = "autoDeleteCheckedItems";
+    // General
+    static String greyChecked = "greyCheckedItems";
+    static String strikeThroughChecked = "strikeThroughCheckedItems";
+    static String leftHandOperation = "checkBoxOnLeftSide";
     static String entireRowTogglesItem = "entireRowTogglesItem";
-    static String addNewItemsAtTopOfList = "addNewItemsAtTopOfList";
-    static String showListInFrontOfLockScreen = "showListInFrontOfLockScreen";
-    static String openLatestListAtStartup = "openLatestListAtStartup";
+    static String alwaysShow = "showListInFrontOfLockScreen";
+    static String openLatest = "openLatestListAtStartup";
     static String warnAboutDuplicates = "warnAboutDuplicates";
     static String textSizeIndex = "textSizeIndex";
     static String currentList = "currentList";
     static String backingStore = "backingStore";
+    static String showCheckedAtEnd = "moveCheckedItemsToBottom";
+    static String forceAlphaSort = "forceAlphaSort";
+    static String autoDeleteChecked = "autoDeleteCheckedItems";
+    static String addToTop = "addNewItemsAtTopOfList";
 
     static String cacheFile = "checklists.json";
 
@@ -35,18 +44,19 @@ class Settings {
     private static SharedPreferences mPrefs;
 
     private static Map<String, Boolean> mBoolPrefs = new HashMap<String, Boolean>() {{
-        put(autoDeleteCheckedItems, false);
-        put(greyCheckedItems, true);
-        put(moveCheckedItemsToBottom, false);
-        put(strikeThroughCheckedItems, true);
+        put(autoDeleteChecked, false);
+        put(greyChecked, true);
+        put(forceAlphaSort, false);
+        put(showCheckedAtEnd, false);
+        put(strikeThroughChecked, true);
         put(entireRowTogglesItem, true);
 
-        put(addNewItemsAtTopOfList, false);
-        put(showListInFrontOfLockScreen, false);
-        put(openLatestListAtStartup, true);
+        put(addToTop, false);
+        put(alwaysShow, false);
+        put(openLatest, true);
         put(warnAboutDuplicates, true);
 
-        put(checkBoxOnLeftSide, false);
+        put(leftHandOperation, false);
     }};
 
     private static Map<String, Integer> mIntPrefs = new HashMap<String, Integer>() {{

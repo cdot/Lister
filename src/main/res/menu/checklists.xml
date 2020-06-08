@@ -1,8 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:icon="@drawable/ic_action_new" android:id="@+id/action_new_list" android:title="@string/action_new_list" app:showAsAction="ifRoom"/>
-    <item android:icon="@drawable/ic_action_help" android:id="@+id/action_help" android:title="@string/action_help" app:showAsAction="ifRoom"/>
-    <item android:icon="@drawable/ic_action_settings" android:id="@+id/action_settings" android:title="@string/action_settings" app:showAsAction="ifRoom"/>
-    <item android:icon="@drawable/ic_action_import" android:id="@+id/action_import_list" android:title="@string/action_import_list" app:showAsAction="ifRoom"/>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/action_new_list"
+        android:icon="@drawable/ic_action_new"
+        android:orderInCategory="100"
+        android:title="@string/action_new_list"
+        app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/action_help"
+        android:icon="@drawable/ic_action_help"
+        android:orderInCategory="200"
+        android:title="@string/action_help"
+        app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/action_import_list"
+        android:icon="@drawable/ic_action_import"
+        android:orderInCategory="300"
+        android:title="@string/action_import_list"
+        app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/action_settings"
+        android:icon="@drawable/ic_action_settings"
+        android:orderInCategory="400"
+        android:title="@string/action_settings"
+        app:showAsAction="ifRoom" />
 </menu>

@@ -1,3 +1,6 @@
+/**
+ * @copyright C-Dot Consultants 2020 - MIT license
+ */
 package com.cdot.lists;
 
 import android.annotation.SuppressLint;
@@ -112,7 +115,7 @@ class ChecklistItemView extends LinearLayout {
         // Transparency
         float f = 1; // Completely opague
 
-        if (mItem.isDone() && Settings.getBool(Settings.greyCheckedItems))
+        if (mItem.isDone() && Settings.getBool(Settings.greyChecked))
             // Greyed out
             f = 0.5f;
         else if (!mIsMoving && mItem == mItem.getChecklist().mMovingItem)
@@ -124,7 +127,7 @@ class ChecklistItemView extends LinearLayout {
         mBinding.leftLayout.setAlpha(f);
 
         // Strike through
-        if (!mItem.isDone() || !Settings.getBool(Settings.strikeThroughCheckedItems))
+        if (!mItem.isDone() || !Settings.getBool(Settings.strikeThroughChecked))
             mBinding.itemText.setPaintFlags(mBinding.itemText.getPaintFlags() & ~Paint.STRIKE_THRU_TEXT_FLAG);
         else
             mBinding.itemText.setPaintFlags(mBinding.itemText.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
@@ -135,20 +138,28 @@ class ChecklistItemView extends LinearLayout {
         mBinding.itemText.setText(mItem.getText());
         setTextFormatting();
 
-        if (Settings.getBool(Settings.checkBoxOnLeftSide) && mControlsOnRight) {
-            // Move controls to left panel
-            mBinding.rightLayout.removeAllViews();
-            mBinding.leftLayout.addView(mBinding.moveButton);
-            mBinding.leftLayout.addView(mBinding.checkbox);
-            mControlsOnRight = false;
-        } else if (!Settings.getBool(Settings.checkBoxOnLeftSide) && !mControlsOnRight) {
-            // Move controls to right panel
-            mBinding.leftLayout.removeAllViews();
-            mBinding.rightLayout.addView(mBinding.checkbox);
-            mBinding.rightLayout.addView(mBinding.moveButton);
-            mControlsOnRight = true;
+        if (Settings.getBool(Settings.forceAlphaSort)) {
+            mBinding.leftLayout.removeView(mBinding.moveButton);
+            mBinding.rightLayout.removeView(mBinding.moveButton);
         }
 
+        if (Settings.getBool(Settings.leftHandOperation) && mControlsOnRight) {
+            // Move checkbox to left panel
+            mBinding.rightLayout.removeView(mBinding.checkbox);
+            mBinding.leftLayout.addView(mBinding.checkbox);
+            //mBinding.leftLayout.removeView(mBinding.moveButton);
+            if (!Settings.getBool(Settings.forceAlphaSort))
+                mBinding.rightLayout.addView(mBinding.moveButton);
+            mControlsOnRight = false;
+        } else if (!Settings.getBool(Settings.leftHandOperation) && !mControlsOnRight) {
+            // Move checkbox to right panel
+            mBinding.leftLayout.removeView(mBinding.checkbox);
+            mBinding.rightLayout.addView(mBinding.checkbox);
+            //mBinding.rightLayout.removeView(mBinding.moveButton);
+            if (!Settings.getBool(Settings.forceAlphaSort))
+                mBinding.leftLayout.addView(mBinding.moveButton);
+            mControlsOnRight = true;
+        }
         mBinding.checkbox.setChecked(mItem.isDone());
     }
 
@@ -172,7 +183,7 @@ class ChecklistItemView extends LinearLayout {
     }
 
     public void setChecked(boolean isChecked) {
-        if (Settings.getBool(Settings.autoDeleteCheckedItems) && isChecked)
+        if (Settings.getBool(Settings.autoDeleteChecked) && isChecked)
             mItem.getChecklist().remove(mItem);
         else {
             mBinding.checkbox.setChecked(isChecked);

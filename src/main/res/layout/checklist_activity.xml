@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/ActivityChecklist"
+    android:id="@+id/checklist_activity"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:paddingStart="5dp">
@@ -14,15 +14,15 @@
         android:minHeight="?attr/actionBarSize" />
 
     <ListView
-        android:id="@+id/CheckList"
+        android:id="@+id/checkList"
     	android:dividerHeight="0dp"
         android:layout_below="@+id/checklist_toolbar"
-        android:layout_above="@+id/NewItemContainer"
+        android:layout_above="@+id/new_item_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
     <LinearLayout
-        android:id="@+id/NewItemContainer"
+        android:id="@+id/new_item_container"
         android:layout_alignParentBottom="true"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -34,18 +34,18 @@
             android:layout_height="wrap_content">
 
             <EditText
-                android:id="@+id/AddItemText"
+                android:id="@+id/add_item_text"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="@string/new_item_hint"
                 android:inputType="textAutoComplete"
                 android:layout_alignParentStart="true"
-                android:layout_alignEnd="@+id/AddItemButton"
+                android:layout_alignEnd="@+id/add_item"
                 android:layout_centerVertical="true"
                 android:singleLine="true" />
 
             <ImageButton
-                android:id="@+id/AddItemButton"
+                android:id="@+id/add_item"
                 android:layout_width="20dp"
                 android:layout_height="20dp"
                 android:layout_alignParentEnd="true"

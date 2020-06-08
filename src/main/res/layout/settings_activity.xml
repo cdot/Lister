@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/ActivitySettings"
+    android:id="@+id/settings_activity"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:paddingStart="5dp"
@@ -14,7 +14,7 @@
         android:orientation="vertical">
 
         <TextView
-            android:id="@+id/BackingStoreURI"
+            android:id="@+id/backing_store_uri"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 
@@ -43,77 +43,84 @@
         </RelativeLayout>
 
         <CheckBox
-            android:id="@+id/DimCheckedItemsCB"
+            android:id="@+id/grey_out_checked"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:onClick="dimCheckedItemsCBClicked"
+            android:onClick="greyOutCheckedItemsClicked"
             android:text="@string/dim_checked_items" />
 
         <CheckBox
-            android:id="@+id/StrikeThroughCheckedItemsCB"
+            android:id="@+id/strike_checked"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:onClick="strikeThroughCheckedItemsCBClicked"
+            android:onClick="strikeCheckedItemsClicked"
             android:text="@string/strike_through_checked_items" />
 
         <CheckBox
-            android:id="@+id/MoveCheckedItemsToBottomCB"
+            android:id="@+id/force_alpha_sort"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:onClick="moveCheckedItemsToBottomCBClicked"
-            android:text="@string/mov_checked_items_to_bottom" />
+            android:onClick="forceAlphaSortClicked"
+            android:text="@string/force_alpha_sort" />
 
         <CheckBox
-            android:id="@+id/AutoDeleteCB"
+            android:id="@+id/show_checked_at_end"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:onClick="autoDeleteCBClicked"
+            android:onClick="showCheckedAtEndClicked"
+            android:text="@string/show_checked_at_end" />
+
+        <CheckBox
+            android:id="@+id/auto_delete_checked"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="autoDeleteCheckedItemsClicked"
             android:text="@string/auto_delete_checked_items" />
 
         <CheckBox
-            android:id="@+id/EntireRowTogglesCheckboxCB"
+            android:id="@+id/entire_row_toggles"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:onClick="entireRowTogglesCheckboxCBClicked"
+            android:onClick="entireRowTogglesClicked"
             android:text="@string/entire_row_toggles_check_box" />
 
         <CheckBox
-            android:id="@+id/CheckBoxOnLeftSideCB"
+            android:id="@+id/left_hand_operation"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:onClick="checkBoxOnLeftSideCBClicked"
+            android:onClick="leftHandOperationClicked"
             android:text="@string/left_hand_operation" />
 
         <CheckBox
-            android:id="@+id/AddNewItemsAtTopOfListCB"
+            android:id="@+id/add_to_top"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:onClick="addNewItemsAtTopOfListCBClicked"
+            android:onClick="addToTopClicked"
             android:text="@string/add_new_item_at_top_of_list" />
 
         <CheckBox
-            android:id="@+id/ShowListInFrontOfLockScreenCB"
+            android:id="@+id/always_show"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:onClick="showListInFrontOfLockScreenCBClicked"
+            android:onClick="alwaysShowClicked"
             android:text="@string/show_list_in_front_of_lock_screen" />
 
         <CheckBox
-            android:id="@+id/OpenLatestListAtStartupCB"
+            android:id="@+id/open_latest"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:onClick="openLatestListAtStartupCBClicked"
+            android:onClick="openLatestClicked"
             android:text="@string/open_latest_list_at_startup" />
 
         <CheckBox
-            android:id="@+id/WarnAboutDuplicatesCB"
+            android:id="@+id/warn_about_duplicates"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:onClick="warnAboutDuplicatesCBClicked"
+            android:onClick="warnAboutDuplicatesClicked"
             android:text="@string/warn_about_duplicates" />
 
         <Spinner
-            android:id="@+id/TextSizeSpinner"
+            android:id="@+id/text_size_spinner"
             android:layout_width="200dp"
             android:layout_height="wrap_content"
             android:entries="@array/text_size_list"

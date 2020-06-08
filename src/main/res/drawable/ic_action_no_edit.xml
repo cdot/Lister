@@ -10,20 +10,6 @@
       android:strokeColor="?android:colorControlNormal"
       android:strokeLineCap="butt"/>
   <path
-      android:pathData="M22.394,108.841L34.06,120.434l-16.591,4.895z"
-      android:strokeLineJoin="miter"
-      android:strokeWidth="0"
-      android:fillColor="?android:colorControlNormal"
-      android:strokeColor="?android:colorControlNormal"
-      android:fillType="evenOdd"
-      android:strokeLineCap="butt"/>
-  <path
-      android:pathData="M26.023,95.703L47.605,117.149"
-      android:strokeLineJoin="miter"
-      android:strokeWidth="3"
-      android:strokeColor="?android:colorControlNormal"
-      android:strokeLineCap="round"/>
-  <path
       android:pathData="m87.074,45.467 l-50.23,50.044"
       android:strokeLineJoin="miter"
       android:strokeWidth="3"
@@ -59,4 +45,12 @@
       android:strokeWidth="3"
       android:strokeColor="?android:colorControlNormal"
       android:strokeLineCap="round"/>
+  <path
+      android:pathData="m32.643,88.954c0,0 -15.99,13.126 -18.146,23.443 -1.312,6.278 0.852,15.388 0.852,15.388 0,0 9.18,2.138 15.498,0.834 10.382,-2.143 23.591,-18.032 23.591,-18.032L43.54,99.77Z"
+      android:strokeLineJoin="miter"
+      android:strokeWidth="2.91129804"
+      android:fillColor="?android:colorBackground"
+      android:strokeColor="?android:colorControlNormal"
+      android:fillType="evenOdd"
+      android:strokeLineCap="butt"/>
 </vector>

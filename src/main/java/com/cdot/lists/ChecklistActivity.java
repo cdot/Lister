@@ -1,3 +1,6 @@
+/**
+ * @copyright C-Dot Consultants 2020 - MIT license
+ */
 package com.cdot.lists;
 
 import android.app.Activity;
@@ -50,12 +53,12 @@ public class ChecklistActivity extends AppCompatActivity {
     protected void onCreate(Bundle bundle) {
         Log.d(TAG, "onCreate");
         super.onCreate(bundle);
-        //getDelegate().setLocalNightMode(AppCompatDelegate.MODE_NIGHT_YES);
+
         mBinding = ChecklistActivityBinding.inflate(getLayoutInflater());
         setContentView(mBinding.getRoot());
         setSupportActionBar(mBinding.checklistToolbar);
 
-        EditText editText = mBinding.AddItemText;
+        EditText editText = mBinding.addItemText;
         editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_AUTO_COMPLETE | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
         editText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
@@ -78,15 +81,15 @@ public class ChecklistActivity extends AppCompatActivity {
 
             @Override
             public void afterTextChanged(Editable editable) {
-                if (mBinding.AddItemText.getText().toString().trim().length() == 0) {
-                    mBinding.AddItemButton.setAlpha(0.5f);
+                if (mBinding.addItemText.getText().toString().trim().length() == 0) {
+                    mBinding.addItem.setAlpha(0.5f);
                 } else {
-                    mBinding.AddItemButton.setAlpha(1f);
+                    mBinding.addItem.setAlpha(1f);
                 }
             }
         });
         editText.setImeOptions(EditorInfo.IME_ACTION_DONE);
-        ImageButton imageButton = mBinding.AddItemButton;
+        ImageButton imageButton = mBinding.addItem;
         imageButton.setAlpha(0.5f);
         imageButton.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
@@ -105,12 +108,13 @@ public class ChecklistActivity extends AppCompatActivity {
             // Create the list
             mList = new Checklist(listName, mChecklists);
             mChecklists.addList(mList);
+
         }
 
         Settings.setString(Settings.currentList, listName);
-        Objects.requireNonNull(getSupportActionBar()).setTitle(mList.mListName);
+        Objects.requireNonNull(getSupportActionBar()).setTitle(mList.getName());
 
-        mBinding.CheckList.setAdapter(mList.mArrayAdapter);
+        mBinding.checkList.setAdapter(mList.mArrayAdapter);
 
         if (mList.size() == 0) {
             showNewItemPrompt(true);
@@ -136,37 +140,40 @@ public class ChecklistActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem menuItem) {
         Intent intent;
         switch (menuItem.getItemId()) {
+            default:
+                throw new Error("WTF MENU" + menuItem.getItemId());
+            case R.id.action_help:
+                Intent hIntent = new Intent(this, HelpActivity.class);
+                hIntent.putExtra("page", "Checklist");
+                startActivity(hIntent);
+                return true;
             case R.id.action_check_all:
                 mList.checkAll();
                 return true;
-            case R.id.action_copy:
-            case R.id.action_delete:
-            case R.id.action_help:
-            case R.id.action_new_list:
-            case R.id.action_rename:
-            case R.id.action_settings:
-            default:
-                Log.d(TAG, "WTF MENU" + menuItem.getItemId());
-                return super.onOptionsItemSelected(menuItem);
+            case R.id.action_share:
+                shareWithComponent();
+                return true;
             case R.id.action_delete_checked:
                 Toast.makeText(this, getString(R.string.x_items_deleted, mList.deleteAllChecked()), Toast.LENGTH_SHORT).show();
                 if (mList.size() == 0) {
                     mList.setEditMode(true);
-                    showNewItemPrompt(mList.mIsBeingEdited);
+                    showNewItemPrompt(true);
                     invalidateOptionsMenu();
                 }
                 return true;
             case R.id.action_edit:
-                Checklist checkList = mList;
-                checkList.setEditMode(!checkList.mIsBeingEdited);
-                showNewItemPrompt(mList.mIsBeingEdited);
-                invalidateOptionsMenu();
+                if (mList.mIsBeingEdited) {
+                    menuItem.setIcon(R.drawable.ic_action_no_edit);
+                    mList.setEditMode(false);
+                    showNewItemPrompt(false);
+                } else {
+                    menuItem.setIcon(R.drawable.ic_action_edit);
+                    mList.setEditMode(true);
+                    showNewItemPrompt(true);
+                }
                 return true;
             case R.id.action_rename_list:
                 showRenameListDialog();
-                return true;
-            case R.id.action_sort_list:
-                mList.sort();
                 return true;
             case R.id.action_uncheck_all:
                 mList.uncheckAll();
@@ -195,26 +202,26 @@ public class ChecklistActivity extends AppCompatActivity {
 
     @Override
     public void onAttachedToWindow() {
-        if (Settings.getBool(Settings.showListInFrontOfLockScreen)) {
+        if (Settings.getBool(Settings.alwaysShow)) {
             getWindow().addFlags(AccessibilityEventCompat.TYPE_GESTURE_DETECTION_END);
         }
     }
 
     private void showNewItemPrompt(boolean z) {
         Log.d(TAG, "showNewItemPrompt " + z);
-        mBinding.NewItemContainer.setVisibility(z ? View.VISIBLE : View.INVISIBLE);
+        mBinding.newItemContainer.setVisibility(z ? View.VISIBLE : View.INVISIBLE);
 
         // Show/hide soft keyboard
         InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
         if (z) {
-            mBinding.AddItemText.setFocusable(true);
-            mBinding.AddItemText.setFocusableInTouchMode(true);
-            mBinding.AddItemText.requestFocus();
-            inputMethodManager.showSoftInput(mBinding.AddItemText, InputMethodManager.SHOW_IMPLICIT);
+            mBinding.addItemText.setFocusable(true);
+            mBinding.addItemText.setFocusableInTouchMode(true);
+            mBinding.addItemText.requestFocus();
+            inputMethodManager.showSoftInput(mBinding.addItemText, InputMethodManager.SHOW_IMPLICIT);
         } else {
             View currentFocus = getCurrentFocus();
             if (currentFocus == null)
-                currentFocus = mBinding.AddItemText;
+                currentFocus = mBinding.addItemText;
             inputMethodManager.hideSoftInputFromWindow(currentFocus.getWindowToken(), 0);
         }
     }
@@ -225,7 +232,7 @@ public class ChecklistActivity extends AppCompatActivity {
     }
 
     private void addNewItem() {
-        String obj = mBinding.AddItemText.getText().toString();
+        String obj = mBinding.addItemText.getText().toString();
         if (obj.trim().length() != 0) {
             Checklist.ChecklistItem find = mList.find(obj, false);
             if (find == null || !Settings.getBool(Settings.warnAboutDuplicates))
@@ -236,13 +243,9 @@ public class ChecklistActivity extends AppCompatActivity {
     }
 
     private void addItem(String str) {
-        mList.add(str);
-        mBinding.AddItemText.setText("");
-        if (Settings.getBool(Settings.addNewItemsAtTopOfList)) {
-            mBinding.CheckList.smoothScrollToPosition(0);
-        } else {
-            mBinding.CheckList.smoothScrollToPosition(mList.size());
-        }
+        int index = mList.add(str);
+        mBinding.addItemText.setText("");
+        mBinding.checkList.smoothScrollToPosition(index);
     }
 
     private void promptSimilarItem(final String str, String str2) {
@@ -263,13 +266,13 @@ public class ChecklistActivity extends AppCompatActivity {
         builder.setTitle(R.string.action_rename_list);
         builder.setMessage(R.string.enter_new_name_of_list);
         final EditText editText = new EditText(this);
-        editText.setText(mList.mListName);
+        editText.setText(mList.getName());
         builder.setView(editText);
         builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialogInterface, int i) {
-                mList.mListName = editText.getText().toString();
+                mList.setName(editText.getText().toString());
                 mChecklists.save();
-                Objects.requireNonNull(getSupportActionBar()).setTitle(mList.mListName);
+                Objects.requireNonNull(getSupportActionBar()).setTitle(mList.getName());
             }
         });
         builder.setNegativeButton(R.string.cancel, null);
@@ -284,9 +287,9 @@ public class ChecklistActivity extends AppCompatActivity {
 
         // get screen position of the ListView and the Activity
         int[] iArr = new int[2];
-        mBinding.CheckList.getLocationOnScreen(iArr);
+        mBinding.checkList.getLocationOnScreen(iArr);
         int listViewTop = iArr[1];
-        mBinding.ActivityChecklist.getLocationOnScreen(iArr);
+        mBinding.checklistActivity.getLocationOnScreen(iArr);
         int activityTop = iArr[1];
 
         // Convert touch location to relative to the ListView
@@ -295,9 +298,9 @@ public class ChecklistActivity extends AppCompatActivity {
         // Get the index of the item being moved in the items list
         int itemIndex = mList.indexOf(movingItem);
         // Get the index of the moving view in the list of views (should be last?)
-        int viewIndex = mBinding.CheckList.getChildCount() - 1;
+        int viewIndex = mBinding.checkList.getChildCount() - 1;
         while (viewIndex >= 0) {
-            if (((ChecklistItemView) mBinding.CheckList.getChildAt(viewIndex)).getItem() == movingItem)
+            if (((ChecklistItemView) mBinding.checkList.getChildAt(viewIndex)).getItem() == movingItem)
                 break;
             viewIndex--;
         }
@@ -306,13 +309,13 @@ public class ChecklistActivity extends AppCompatActivity {
 
         int prevBottom = Integer.MIN_VALUE;
         if (viewIndex > 0) // Not first view
-            prevBottom = mBinding.CheckList.getChildAt(viewIndex - 1).getBottom();
+            prevBottom = mBinding.checkList.getChildAt(viewIndex - 1).getBottom();
 
         int nextTop = Integer.MAX_VALUE;
-        if (viewIndex < mBinding.CheckList.getChildCount() - 1) // Not last view
-            nextTop = mBinding.CheckList.getChildAt(viewIndex + 1).getTop();
+        if (viewIndex < mBinding.checkList.getChildCount() - 1) // Not last view
+            nextTop = mBinding.checkList.getChildAt(viewIndex + 1).getTop();
 
-        int halfItemHeight = mBinding.CheckList.getChildAt(viewIndex).getHeight() / 2;
+        int halfItemHeight = mBinding.checkList.getChildAt(viewIndex).getHeight() / 2;
         if (y < prevBottom) {
             mList.moveItemToPosition(movingItem, itemIndex - 1);
         } else if (y > nextTop) {
@@ -326,13 +329,13 @@ public class ChecklistActivity extends AppCompatActivity {
                 mMovingView = new ChecklistItemView(movingItem, true, this);
                 // addView is not supported in AdapterView, so can't add the movingView there.
                 // Instead have to add to the activity and adjust margins accordingly
-                mBinding.ActivityChecklist.addView(mMovingView);
+                mBinding.checklistActivity.addView(mMovingView);
             }
 
             if (y < halfItemHeight)
-                mBinding.CheckList.smoothScrollToPosition(itemIndex - 1);
-            if (y > mBinding.CheckList.getHeight() - halfItemHeight)
-                mBinding.CheckList.smoothScrollToPosition(itemIndex + 1);
+                mBinding.checkList.smoothScrollToPosition(itemIndex - 1);
+            if (y > mBinding.checkList.getHeight() - halfItemHeight)
+                mBinding.checkList.smoothScrollToPosition(itemIndex + 1);
             // Layout params for the parent, not for this view
             RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
             // Set the top margin to move the view to the right place relative to the Activity
@@ -341,10 +344,19 @@ public class ChecklistActivity extends AppCompatActivity {
         }
         if (motionEvent.getAction() == MotionEvent.ACTION_UP || motionEvent.getAction() == MotionEvent.ACTION_CANCEL) {
             Log.d(TAG, "ChecklistActivity Up ");
-            mBinding.ActivityChecklist.removeView(mMovingView);
+            mBinding.checklistActivity.removeView(mMovingView);
             mList.setMovingItem(null);
             mMovingView = null;
         }
         return true;
+    }
+
+    public void shareWithComponent() {
+        Intent intent = new Intent(Intent.ACTION_SEND);
+        intent.setType("text/plain");
+        intent.putExtra(Intent.EXTRA_TITLE, mList.getName());
+        intent.putExtra(Intent.EXTRA_SUBJECT, mList.getName());
+        intent.putExtra(Intent.EXTRA_TEXT, mList.toPlainString());
+        startActivity(Intent.createChooser(intent, mList.getName()));
     }
 }

@@ -1,3 +1,6 @@
+/**
+ * @copyright C-Dot Consultants 2020 - MIT license
+ */
 package com.cdot.lists;
 
 import android.app.Activity;
@@ -20,6 +23,9 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.Objects;
 
+/**
+ * base class of things that can be serialised to a JSON representation and saved.
+ */
 abstract class Serialisable {
     private final String TAG = "Serialisable";
 
@@ -34,6 +40,12 @@ abstract class Serialisable {
         fromStream(stream);
     }
 
+    /**
+     * Construct by reading content from a Uri
+     * @param uri the URI to read from
+     * @param cxt the context, used to access the ContentResolver. Generally the application context.
+     * @throws Exception if there's a problem reading or decoding
+     */
     Serialisable(Uri uri, Context cxt) throws Exception {
         this(cxt);
         InputStream stream;
@@ -49,14 +61,15 @@ abstract class Serialisable {
 
     /**
      * Get the JSON object that represents the content of this object
-     * @return a JOSNObject or JSONArray
+     * @return a JSONObject or JSONArray
      * @throws JSONException if it fails
      */
     abstract Object toJSON() throws JSONException;
 
     /**
-     * Perform an asynchronous save to a URI
-     * @param uri
+     * Launch a thread to perform an asynchronous save to a URI. If there;s an error, it will
+     * be reported in a Toast on the UI thread.
+     * @param uri the URI to save to
      */
     void saveToUri(final Uri uri) {
         // Launch a thread to do this save, so we don't block the ui thread

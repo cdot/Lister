@@ -1,3 +1,6 @@
+/**
+ * @copyright C-Dot Consultants 2020 - MIT license
+ */
 package com.cdot.lists;
 
 import android.app.Activity;
@@ -14,6 +17,7 @@ import com.cdot.lists.databinding.SettingsActivityBinding;
 public class SettingsActivity extends Activity implements AdapterView.OnItemSelectedListener {
     private static final int REQUEST_CHANGE_STORE = 1;
     private static final int REQUEST_CREATE_STORE = 2;
+    static final int REQUEST_SETTINGS_CHANGED = 3;
 
     SettingsActivityBinding mBinding;
     
@@ -27,24 +31,30 @@ public class SettingsActivity extends Activity implements AdapterView.OnItemSele
         mBinding = SettingsActivityBinding.inflate(getLayoutInflater());
         setContentView(mBinding.getRoot());
 
-        mBinding.TextSizeSpinner.setOnItemSelectedListener(this);
-        mBinding.DimCheckedItemsCB.setChecked(Settings.getBool(Settings.greyCheckedItems));
-        mBinding.StrikeThroughCheckedItemsCB.setChecked(Settings.getBool(Settings.strikeThroughCheckedItems));
-        mBinding.MoveCheckedItemsToBottomCB.setChecked(Settings.getBool(Settings.moveCheckedItemsToBottom));
-        mBinding.CheckBoxOnLeftSideCB.setChecked(Settings.getBool(Settings.checkBoxOnLeftSide));
-        mBinding.AutoDeleteCB.setChecked(Settings.getBool(Settings.autoDeleteCheckedItems));
-        mBinding.EntireRowTogglesCheckboxCB.setChecked(Settings.getBool(Settings.entireRowTogglesItem));
-        mBinding.AddNewItemsAtTopOfListCB.setChecked(Settings.getBool(Settings.addNewItemsAtTopOfList));
-        mBinding.ShowListInFrontOfLockScreenCB.setChecked(Settings.getBool(Settings.showListInFrontOfLockScreen));
-        mBinding.OpenLatestListAtStartupCB.setChecked(Settings.getBool(Settings.openLatestListAtStartup));
-        mBinding.WarnAboutDuplicatesCB.setChecked(Settings.getBool(Settings.warnAboutDuplicates));
-        mBinding.TextSizeSpinner.setSelection(Settings.getInt(Settings.textSizeIndex));
+        mBinding.textSizeSpinner.setOnItemSelectedListener(this);
+        mBinding.greyOutChecked.setChecked(Settings.getBool(Settings.greyChecked));
+        mBinding.strikeChecked.setChecked(Settings.getBool(Settings.strikeThroughChecked));
+        mBinding.forceAlphaSort.setChecked(Settings.getBool(Settings.forceAlphaSort));
+        mBinding.showCheckedAtEnd.setChecked(Settings.getBool(Settings.showCheckedAtEnd));
+        mBinding.leftHandOperation.setChecked(Settings.getBool(Settings.leftHandOperation));
+        mBinding.autoDeleteChecked.setChecked(Settings.getBool(Settings.autoDeleteChecked));
+        mBinding.entireRowToggles.setChecked(Settings.getBool(Settings.entireRowTogglesItem));
+        mBinding.addToTop.setChecked(Settings.getBool(Settings.addToTop));
+
+        mBinding.alwaysShow.setChecked(Settings.getBool(Settings.alwaysShow));
+        mBinding.openLatest.setChecked(Settings.getBool(Settings.openLatest));
+        mBinding.warnAboutDuplicates.setChecked(Settings.getBool(Settings.warnAboutDuplicates));
+        mBinding.textSizeSpinner.setSelection(Settings.getInt(Settings.textSizeIndex));
         Uri uri = Settings.getUri(Settings.backingStore);
-        mBinding.BackingStoreURI.setText(uri != null ? uri.toString() : getString(R.string.not_set));
+        mBinding.backingStoreUri.setText(uri != null ? uri.toString() : getString(R.string.not_set));
+
+        // Default result is cancelled, unless the data store is changed and lists need to be
+        // reloaded in which case it's RESULT_OK
+        setResult(RESULT_CANCELED);
     }
 
     public void onActivityResult(int requestCode, int resultCode, Intent resultData) {
-        if (resultCode == Activity.RESULT_OK && resultData != null) {
+        if (resultCode == RESULT_OK && resultData != null) {
             if (requestCode == REQUEST_CHANGE_STORE || requestCode == REQUEST_CREATE_STORE) {
                 Uri bs = Settings.getUri(Settings.backingStore);
                 Uri nbs = resultData.getData();
@@ -62,7 +72,8 @@ public class SettingsActivity extends Activity implements AdapterView.OnItemSele
                                 | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
                         getContentResolver().takePersistableUriPermission(bs, takeFlags);
                     }
-                    mBinding.BackingStoreURI.setText(nbs.toString());
+                    mBinding.backingStoreUri.setText(nbs.toString());
+                    setResult(RESULT_OK);
                 }
             }
         }
@@ -91,48 +102,52 @@ public class SettingsActivity extends Activity implements AdapterView.OnItemSele
 
     // Checkbox click handlers, invoked from resource
 
-    public void dimCheckedItemsCBClicked(View view) {
-        Settings.setBool(Settings.greyCheckedItems, mBinding.DimCheckedItemsCB.isChecked());
+    public void greyOutCheckedItemsClicked(View view) {
+        Settings.setBool(Settings.greyChecked, mBinding.greyOutChecked.isChecked());
     }
 
-    public void moveCheckedItemsToBottomCBClicked(View view) {
-        Settings.setBool(Settings.moveCheckedItemsToBottom, mBinding.MoveCheckedItemsToBottomCB.isChecked());
+    public void showCheckedAtEndClicked(View view) {
+        Settings.setBool(Settings.showCheckedAtEnd, mBinding.showCheckedAtEnd.isChecked());
     }
 
-    public void checkBoxOnLeftSideCBClicked(View view) {
-        Settings.setBool(Settings.checkBoxOnLeftSide, mBinding.CheckBoxOnLeftSideCB.isChecked());
+    public void forceAlphaSortClicked(View view) {
+        Settings.setBool(Settings.forceAlphaSort, mBinding.forceAlphaSort.isChecked());
     }
 
-    public void autoDeleteCBClicked(View view) {
-        Settings.setBool(Settings.autoDeleteCheckedItems, mBinding.AutoDeleteCB.isChecked());
+    public void leftHandOperationClicked(View view) {
+        Settings.setBool(Settings.leftHandOperation, mBinding.leftHandOperation.isChecked());
     }
 
-    public void entireRowTogglesCheckboxCBClicked(View view) {
-        Settings.setBool(Settings.entireRowTogglesItem, mBinding.EntireRowTogglesCheckboxCB.isChecked());
+    public void autoDeleteCheckedItemsClicked(View view) {
+        Settings.setBool(Settings.autoDeleteChecked, mBinding.autoDeleteChecked.isChecked());
     }
 
-    public void strikeThroughCheckedItemsCBClicked(View view) {
-        Settings.setBool(Settings.strikeThroughCheckedItems, mBinding.StrikeThroughCheckedItemsCB.isChecked());
+    public void entireRowTogglesClicked(View view) {
+        Settings.setBool(Settings.entireRowTogglesItem, mBinding.entireRowToggles.isChecked());
     }
 
-    public void addNewItemsAtTopOfListCBClicked(View view) {
-        Settings.setBool(Settings.addNewItemsAtTopOfList, mBinding.AddNewItemsAtTopOfListCB.isChecked());
+    public void strikeCheckedItemsClicked(View view) {
+        Settings.setBool(Settings.strikeThroughChecked, mBinding.strikeChecked.isChecked());
     }
 
-    public void showListInFrontOfLockScreenCBClicked(View view) {
-        Settings.setBool(Settings.showListInFrontOfLockScreen, mBinding.ShowListInFrontOfLockScreenCB.isChecked());
+    public void addToTopClicked(View view) {
+        Settings.setBool(Settings.addToTop, mBinding.addToTop.isChecked());
     }
 
-    public void openLatestListAtStartupCBClicked(View view) {
-        Settings.setBool(Settings.openLatestListAtStartup, mBinding.OpenLatestListAtStartupCB.isChecked());
+    public void alwaysShowClicked(View view) {
+        Settings.setBool(Settings.alwaysShow, mBinding.alwaysShow.isChecked());
     }
 
-    public void warnAboutDuplicatesCBClicked(View view) {
-        Settings.setBool(Settings.warnAboutDuplicates, mBinding.WarnAboutDuplicatesCB.isChecked());
+    public void openLatestClicked(View view) {
+        Settings.setBool(Settings.openLatest, mBinding.openLatest.isChecked());
+    }
+
+    public void warnAboutDuplicatesClicked(View view) {
+        Settings.setBool(Settings.warnAboutDuplicates, mBinding.warnAboutDuplicates.isChecked());
     }
 
     public void onItemSelected(AdapterView<?> adapterView, View view, int i, long j) {
-        if (adapterView == mBinding.TextSizeSpinner)
+        if (adapterView == mBinding.textSizeSpinner)
             Settings.setInt(Settings.textSizeIndex, i);
     }
 }

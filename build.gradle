@@ -4,7 +4,8 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.6.3'
+        //classpath 'com.android.tools.build:gradle:3.6.3'
+        classpath 'com.android.tools.build:gradle:4.0.0'
     }
 }
 apply plugin: 'com.android.application'
@@ -16,6 +17,14 @@ repositories {
 }
 
 android {
+    signingConfigs {
+        debug {
+            storeFile file('/home/crawford/Projects/Lister/signature.jks')
+            storePassword 'W18ble'
+            keyAlias 'key0'
+            keyPassword 'W18ble'
+        }
+    }
     compileSdkVersion 28
     buildToolsVersion '28.0.3'
     viewBinding.enabled = true
@@ -30,6 +39,18 @@ android {
 
     lintOptions {
         abortOnError false
+    }
+    buildTypes {
+        release {
+            minifyEnabled true
+            signingConfig signingConfigs.debug
+        }
+
+        debug {
+            applicationIdSuffix ".debug"
+            debuggable true
+            signingConfig signingConfigs.debug
+        }
     }
 }
 
