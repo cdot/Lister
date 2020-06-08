@@ -13,20 +13,110 @@
     <li>Create Copy</li>
 </ul>
 </p>
-<p>Create copy will make an identical copy of the list. You can use this to create template list with e.g.
+<p>Create copy will make an identical copy of the list. You can use this to create template list
+    with e.g.
     the basic groceries that you always buy.</p>
 <h2>Action Bar</h2>
 <table>
-    <tr><td><img src="../img/ic_action_new.svg"></td><td>New list</td>
-        <td>Create a new list</td></tr>
-    <tr><td><img src="../img/ic_action_help.svg"></td><td>Help</td>
-        <td>Launch this help view</td></tr>
-    <tr><td><img src="../img/ic_action_settings.svg"></td><td>Settings</td>
-        <td>Change settings</td></tr>
-    <tr><td><img src="../img/ic_action_import.svg"></td><td>Import List</td>
+    <tr>
+        <td><img src="../img/ic_action_new.svg"></td>
+        <td>New list</td>
+        <td>Create a new list</td>
+    </tr>
+    <tr>
+        <td><img src="../img/ic_action_help.svg"></td>
+        <td>Help</td>
+        <td>Launch this help view</td>
+    </tr>
+    <tr>
+        <td><img src="../img/ic_action_settings.svg"></td>
+        <td>Settings</td>
+        <td>Change settings</td>
+    </tr>
+    <tr>
+        <td><img src="../img/ic_action_import.svg"></td>
+        <td>Import List</td>
         <td>Import a list that was previously exported from the app. The list can come from any
-            content provider that your device supports e.g. the SD card or Google Drive</td></tr>
+            content provider that your device supports e.g. the SD card or Google Drive
+        </td>
+    </tr>
 </table>
-<h2><a href="Settings.html">Settings</a></h2>
+<h1>Settings</h1>
+<table class="settings">
+    <tr>
+        <th><img src="../img/ic_action_open.svg">Change Store</th>
+        <td>Lets you switch to using a different store. Any store that is accessible through
+            the Android Content Resolver can be used.
+        </td>
+    </tr>
+    <tr>
+        <th><img src="../img/ic_action_create.svg">Create New Store</th>
+        <td>Lets you create a new, empty store.</td>
+    </tr>
+    <tr>
+        <th>Grey out checked items</th>
+        <td>Grey out checked items so it is easier to see the items that are left to do</td>
+    </tr>
+    <tr>
+        <th>Strike through checked items</th>
+        <td>Strike through checked items with a line</td>
+    </tr>
+    <tr>
+        <th>Move checked items to bottom</th>
+        <td>The checked items are shown after the unchecked items. This only effects the view, and
+            moving items may not work as expected
+        </td>
+    </tr>
+    <tr>
+        <th>Left hand operation</th>
+        <td>Move the check box and move button to the left side.
+            This makes it easier to manage the list with either hand
+        </td>
+    </tr>
+    <tr>
+        <th>Force Alphabetical Sort</th>
+        <td>Always sort list items in alphabetical order. Enabling this will disable item moving.
+        </td>
+    </tr>
+    <tr>
+        <th>Auto-delete checked items</th>
+        <td>Delete items automatically when they are checked. You can undo the delete if
+            necessary.
+        </td>
+    </tr>
+    <tr>
+        <th>Entire row toggles check box</th>
+        <td>A touch anywhere on the row will toggle the check box</td>
+    </tr>
+    <tr>
+        <th>Add new items at top of list</th>
+        <td>By default items are added at the bottom of the list</td>
+    </tr>
+    <tr>
+        <th>Show list in front of lock screen</th>
+        <td>Lets you continue using the list even when the screen is locked.
+            You will still need to unlock the screen before you can access any other app
+        </td>
+    </tr>
+    <tr>
+        <th>Open latest list when app is started</th>
+        <td>When the app is started it will automatically launch the last open list from the
+            previous
+            session,
+            if it still exists.
+        </td>
+    </tr>
+    <tr>
+        <th>Warning before adding duplicate item to list</th>
+        <td>When a newly entered item has a similar item already in the list, it will show a popup
+            asking for confirmation before the new item is added to the list.
+        </td>
+    </tr>
+    <tr>
+        <th>Text size</th>
+        <td>Set the text size of the list items
+        </td>
+    </tr>
+</table>
 </body>
 </html>
