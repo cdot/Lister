@@ -25,94 +25,13 @@ import java.util.Iterator;
 import java.util.Stack;
 
 /**
- * A checklist of checkable items
+ * A checklist of checkable items. Can also be an item in a Checklists
  */
-class Checklist extends Serialisable {
+class Checklist extends EntryList implements EntryListItem, JSONable  {
     private static final String TAG = "Checklist";
 
-    private ArrayList<Checklist.ChecklistItem> mUnsorted = new ArrayList<>();
-    private ArrayList<Checklist.ChecklistItem> mSorted = new ArrayList<>();
-
-    class ChecklistItem {
-        private String mText;
-        private boolean mDone;
-        private long mDoneAt; // timestamp, only valid if mDone
-
-        ChecklistItem(String str, boolean done) {
-            mText = str;
-            mDone = done;
-            mDoneAt = done ? System.currentTimeMillis() : 0;
-        }
-
-        ChecklistItem(JSONObject jo) throws JSONException {
-            mText = jo.getString("name");
-            mDone = false;
-            mDoneAt = 0;
-            try {
-                mDone = jo.getBoolean("done");
-                mDoneAt = jo.getLong("at");
-            } catch (JSONException ignored) {
-            }
-        }
-
-        ChecklistItem(ChecklistItem clone) {
-            mText = clone.mText;
-            mDone = clone.mDone;
-            mDoneAt = clone.mDoneAt;
-        }
-
-        Checklist getChecklist() {
-            return Checklist.this;
-        }
-
-        String getText() {
-            return mText;
-        }
-
-        boolean isDone() {
-            return mDone;
-        }
-
-        /**
-         * Merge this item's fields with another more recent version of the same item with the
-         * same text. The more recent item's status takes precedence over this items
-         * @param ocli the more recent item to merge
-         * @return true if there were changes
-         */
-        boolean merge(ChecklistItem ocli) {
-            mDoneAt = Math.max(mDoneAt, ocli.mDoneAt);
-            if (mDone == ocli.mDone) // no changes
-                return false;
-            mDone = ocli.mDone;
-            return true;
-        }
-
-        /**
-         * Set the item's text and trigger a save
-         * @param str new text
-         */
-        void setText(String str) {
-            mText = str;
-        }
-
-        /**
-         * Set the item's done status and trigger a save
-         * @param done new done status
-         */
-        void setDone(boolean done) {
-            mDone = done;
-            mDoneAt = System.currentTimeMillis();
-        }
-
-        Object toJSON() throws JSONException {
-            JSONObject iob = new JSONObject();
-            iob.put("name", mText);
-            iob.put("done", mDone);
-            if (mDone)
-                iob.put("at", mDoneAt);
-            return iob;
-        }
-    }
+    private ArrayList<ChecklistItem> mUnsorted = new ArrayList<>();
+    private ArrayList<ChecklistItem> mSorted = new ArrayList<>();
 
     /**
      * Adapter for the array of items in the list
@@ -123,10 +42,8 @@ class Checklist extends Serialisable {
         }
 
         @Override
-        public @NonNull
-        View getView(int i, View view, @NonNull ViewGroup viewGroup) {
+        public @NonNull View getView(int i, View view, @NonNull ViewGroup viewGroup) {
             ChecklistItem item;
-            ChecklistItemView itemView;
             if (Settings.getBool(Settings.showCheckedAtEnd)) {
                 if (i < getUncheckedCount())
                     item = getUnchecked(i);
@@ -136,11 +53,14 @@ class Checklist extends Serialisable {
                 item = mSorted.get(i);
             else
                 item = mUnsorted.get(i);
+
+            ChecklistItemView itemView;
             if (view == null) {
                 assert item != null;
-                itemView = new ChecklistItemView(item, false, mParent.mContext);
+                itemView = new ChecklistItemView(item, false, getContext());
             } else {
                 itemView = (ChecklistItemView) view;
+                // TODO: it this really required? Surely the new should have dealt with it
                 itemView.setItem(item);
             }
             itemView.updateView();
@@ -153,19 +73,14 @@ class Checklist extends Serialisable {
         }
     }
 
-    ArrayAdapter mArrayAdapter;
-
     private String mListName;
-    boolean mIsBeingEdited = false;
     long mTimestamp = 0;
 
     private Stack<ChecklistItem> mRemovedItems = new Stack<>();
-    private Stack<Integer> mRemovedItemsId = new Stack<>();
+    // Each remove operation has a unique ID
+    private Stack<Integer> mRemoveOpID = new Stack<>();
+    private transient int mNextRemoveOpID = 0;
     private Stack<Integer> mRemovedItemsIndex = new Stack<>();
-    private Checklists mParent;
-
-    transient ChecklistItem mMovingItem = null;
-    private transient int mRemoveIdCount = 0;
 
     /**
      * Construct and load from cache
@@ -173,11 +88,10 @@ class Checklist extends Serialisable {
      * @param name   private file list is stored in
      * @param parent container
      */
-    Checklist(String name, Checklists parent) {
-        super(parent.mContext);
-        mParent = parent;
+    Checklist(String name, Checklists parent, Context cxt) {
+        super(parent, cxt);
         mListName = name;
-        mArrayAdapter = new ItemsArrayAdapter(mParent.mContext);
+        mArrayAdapter = new ItemsArrayAdapter(cxt);
     }
 
     /**
@@ -186,11 +100,10 @@ class Checklist extends Serialisable {
      * @param job the JSON object
      * @throws JSONException if something goes wrong
      */
-    Checklist(JSONObject job, Checklists parent) throws JSONException {
-        super(parent.mContext);
-        mParent = parent;
+    Checklist(JSONObject job, Checklists parent, Context cxt) throws JSONException {
+        super(parent, cxt);
         fromJSON(job);
-        mArrayAdapter = new ItemsArrayAdapter(mParent.mContext);
+        mArrayAdapter = new ItemsArrayAdapter(cxt);
     }
 
     /**
@@ -200,11 +113,10 @@ class Checklist extends Serialisable {
      * @param parent the container object
      * @throws Exception   IOException or JSONException
      */
-    Checklist(InputStream stream, Checklists parent) throws Exception {
-        super(parent.mContext);
-        mParent = parent;
+    Checklist(InputStream stream, Checklists parent, Context cxt) throws Exception {
+        super(parent, cxt);
         fromStream(stream);
-        mArrayAdapter = new ItemsArrayAdapter(mParent.mContext);
+        mArrayAdapter = new ItemsArrayAdapter(cxt);
     }
 
     /**
@@ -212,36 +124,46 @@ class Checklist extends Serialisable {
      *
      * @param copy list to clone
      */
-    Checklist(Checklist copy, Checklists parent) {
-        super(parent.mContext);
-        mParent = parent;
+    Checklist(Checklist copy, Checklists parent, Context cxt) {
+        super(parent, cxt);
         mListName = copy.mListName;
         for (ChecklistItem item : copy.mUnsorted)
-            mUnsorted.add(new ChecklistItem(item));
+            mUnsorted.add(new ChecklistItem(this, item));
         reSort();
-        mArrayAdapter = new ItemsArrayAdapter(mParent.mContext);
+        mArrayAdapter = new ItemsArrayAdapter(cxt);
     }
 
-    private ArrayList<Checklist.ChecklistItem> getItems() {
+    private ArrayList<ChecklistItem> getItems() {
         return (Settings.getBool(Settings.forceAlphaSort) ? mSorted : mUnsorted);
     }
 
-    Checklist(Uri uri, Checklists parent) throws Exception {
-        super(uri, parent.mContext);
-        mParent = parent;
-        mArrayAdapter = new ItemsArrayAdapter(mParent.mContext);
+    Checklist(Uri uri, Checklists parent, Context cxt) throws Exception {
+        super(uri, parent, cxt);
+        mArrayAdapter = new ItemsArrayAdapter(cxt);
     }
 
+    // implements EntryList
+    @Override
     String getName() {
         return mListName;
     }
 
+    // implements EntryList
+    @Override
     void setName(String name) {
         mListName = name;
     }
 
+    // implements EntryList
+    @Override
     int size() {
         return mUnsorted.size();
+    }
+
+    // implements EntryList
+    @Override
+    EntryListItem get(int idx) {
+        return mUnsorted.get(idx);
     }
 
     /**
@@ -249,8 +171,20 @@ class Checklist extends Serialisable {
      * @param ci item
      * @return index of the item
      */
-    int indexOf(ChecklistItem ci) {
+    // @implements EntryList
+    @Override
+    int indexOf(EntryListItem ci) {
         return mUnsorted.indexOf(ci);
+    }
+
+    // implements EntryListItem
+    @Override
+    public String getText() { return getName(); }
+
+    // implements EntryListItem
+    @Override
+    public void setText(String s) {
+        setName(s);
     }
 
     /**
@@ -285,12 +219,6 @@ class Checklist extends Serialisable {
         return null;
     }
 
-    void setEditMode(boolean editing) {
-        Log.d(TAG, "setEditMode " + editing);
-        mIsBeingEdited = editing;
-        mArrayAdapter.notifyDataSetChanged();
-    }
-
     /**
      * Get the number of checked items
      *
@@ -313,43 +241,43 @@ class Checklist extends Serialisable {
         return mUnsorted.size() - getCheckedCount();
     }
 
-    /**
-     * Find an item in the list
-     *
-     * @param str       item to find
-     * @param matchCase true to match case
-     * @return item or null if not found
-     */
-    ChecklistItem find(String str, boolean matchCase) {
+    // implements EntryList
+    @Override
+    int find(String str, boolean matchCase) {
+        int i = -1;
         for (ChecklistItem next : mUnsorted) {
+            i++;
             if (next.mText.equalsIgnoreCase(str))
-                return next;
+                return i;
         }
         if (matchCase)
-            return null;
-        for (ChecklistItem next2 : mUnsorted) {
-            if (next2.mText.toLowerCase().contains(str.toLowerCase()))
-                return next2;
+            return -1;
+        i = -1;
+        for (ChecklistItem next : mUnsorted) {
+            i++;
+            if (next.mText.toLowerCase().contains(str.toLowerCase()))
+                return i;
         }
-        return null;
+        return -1;
     }
 
-    /**
-     * Operations on mUnsorted, since this can only be invoked when the list is unsorted
-     * @param item
-     * @param i
-     */
-    void moveItemToPosition(ChecklistItem item, int i) {
+    /// implements EntryList
+    @Override
+    void moveItemToPosition(EntryListItem bit, int i) {
+        // Operations on mUnsorted, since this can only be invoked when the list is unsorted
+        ChecklistItem item = (ChecklistItem)bit;
         if (i >= 0 && i <= mUnsorted.size() - 1) {
-            remove(item);
+            remove(indexOf(item));
             mUnsorted.add(i, item);
             notifyListChanged();
         }
     }
 
-    int add(String str) {
-        Log.d(TAG, "Add " + str);
-        ChecklistItem item = new ChecklistItem(str, false);
+    /// implements EntryList
+    @Override
+    int add(EntryListItem eit) {
+        ChecklistItem item = (ChecklistItem)eit;
+        Log.d(TAG, "Add " + item.getText());
         if (Settings.getBool(Settings.addToTop))
             mUnsorted.add(0, item);
         else
@@ -358,14 +286,16 @@ class Checklist extends Serialisable {
         return getItems().indexOf(item);
     }
 
-    void remove(ChecklistItem item) {
+    /// implements EntryList
+    @Override
+    void remove(int idx) {
         Log.d(TAG, "remove");
+        ChecklistItem item = (ChecklistItem)get(idx);
         mRemovedItems.push(item);
         mRemovedItemsIndex.push(mUnsorted.indexOf(item));
-        mRemovedItemsId.push(mRemoveIdCount);
+        mRemoveOpID.push(mNextRemoveOpID++);
         mUnsorted.remove(item);
         mSorted.remove(item);
-        mRemoveIdCount++;
         notifyListChanged();
     }
 
@@ -379,16 +309,15 @@ class Checklist extends Serialisable {
     boolean merge(Checklist other) {
         boolean changed = false;
         for (ChecklistItem cli : mUnsorted) {
-            ChecklistItem ocli = other.find(cli.mText, true);
-            if (ocli != null) {
-                if (cli.merge(ocli))
+            int ocli = other.find(cli.mText, true);
+            if (ocli >= 0) {
+                if (cli.merge((ChecklistItem)other.get(ocli)))
                     changed = true;
-            } else
-                this.remove(ocli);
+            } // item not in other list
         }
         for (ChecklistItem ocli : mUnsorted) {
-            ChecklistItem cli = find(ocli.mText, true);
-            if (cli == null) {
+            int cli = find(ocli.mText, true);
+            if (cli < 0) {
                 mUnsorted.add(ocli);
                 changed = true;
             }
@@ -401,11 +330,11 @@ class Checklist extends Serialisable {
     }
 
     int undoRemove() {
-        int intValue = mRemovedItemsId.peek();
+        int intValue = mRemoveOpID.peek();
         int undos = 0;
-        while (mRemovedItemsIndex.size() != 0 && intValue == mRemovedItemsId.peek()) {
+        while (mRemovedItemsIndex.size() > 0 && intValue == mRemoveOpID.peek()) {
             mUnsorted.add(mRemovedItemsIndex.pop(), mRemovedItems.pop());
-            mRemovedItemsId.pop();
+            mRemoveOpID.pop();
             undos++;
         }
         if (undos > 0)
@@ -425,13 +354,18 @@ class Checklist extends Serialisable {
         notifyListChanged();
     }
 
+    private void notifyListRefresh() {
+        reSort();
+        mArrayAdapter.notifyDataSetChanged();
+    }
+
     /**
      * The "checked" status of an item has changed
      */
+    @Override // EntryList
     void notifyListChanged() {
-        reSort();
-        mArrayAdapter.notifyDataSetChanged();
-        mParent.save();
+        notifyListRefresh();
+        getContainer().save();
     }
 
     /**
@@ -445,18 +379,18 @@ class Checklist extends Serialisable {
             if (next.mDone) {
                 mRemovedItems.push(next);
                 mRemovedItemsIndex.push(mUnsorted.indexOf(next));
-                mRemovedItemsId.push(mRemoveIdCount);
+                mRemoveOpID.push(mNextRemoveOpID);
                 it.remove();
                 i++;
             }
         }
-        mRemoveIdCount++;
+        mNextRemoveOpID++;
         mArrayAdapter.notifyDataSetChanged();
         return i;
     }
 
     private void reSort() {
-        mSorted = (ArrayList<Checklist.ChecklistItem>)mUnsorted.clone();
+        mSorted = (ArrayList<ChecklistItem>)mUnsorted.clone();
         Collections.sort(mSorted, new Comparator<ChecklistItem>() {
             public int compare(ChecklistItem item, ChecklistItem item2) {
                 return item.getText().compareToIgnoreCase(item2.getText());
@@ -464,37 +398,22 @@ class Checklist extends Serialisable {
         });
     }
 
-    void setMovingItem(ChecklistItem item) {
-        if (mMovingItem == null || item == null)
-            mMovingItem = item;
-        mArrayAdapter.notifyDataSetChanged();
-    }
-
-    /**
-     * Load from a JSON object
-     *
-     * @param jo JSON object
-     * @throws JSONException if anything goes wrong
-     */
-    void fromJSON(Object jo) throws JSONException {
+    @Override // JSONable
+    public void fromJSON(Object jo) throws JSONException {
         JSONObject job = (JSONObject)jo;
         mUnsorted.clear();
         mListName = job.getString("name");
         mTimestamp = job.getLong("time");
         JSONArray items = job.getJSONArray("items");
         for (int i = 0; i < items.length(); i++) {
-            ChecklistItem ci = new ChecklistItem(items.getJSONObject(i));
+            ChecklistItem ci = new ChecklistItem(this, items.getJSONObject(i));
             mUnsorted.add(ci);
         }
         reSort();
     }
 
-    /**
-     * Save the checklist to a json object
-     *
-     * @return a String
-     */
-    Object toJSON() throws JSONException {
+    @Override // JSONable
+    public Object toJSON() throws JSONException {
         JSONObject job = new JSONObject();
         job.put("name", mListName);
         job.put("time", new Date().getTime());

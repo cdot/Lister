@@ -8,6 +8,7 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.net.Uri;
 import android.util.Log;
+import android.widget.ArrayAdapter;
 import android.widget.Toast;
 
 import org.json.JSONArray;
@@ -26,28 +27,96 @@ import java.util.Objects;
 /**
  * base class of things that can be serialised to a JSON representation and saved.
  */
-abstract class Serialisable {
+abstract class EntryList implements JSONable {
     private final String TAG = "Serialisable";
+    ArrayAdapter mArrayAdapter;
 
-    protected Context mContext;
+    private EntryList mParent;
+    private Context mContext;
 
-    Serialisable(Context cxt) {
+    transient EntryListItem mMovingItem = null;
+
+    EntryList(EntryList parent, Context cxt) {
+        mParent = parent;
         mContext = cxt;
     }
 
-    Serialisable(InputStream stream, Context cxt) throws Exception {
-        this(cxt);
+    EntryList(InputStream stream, EntryList parent, Context cxt) throws Exception {
+        this(parent, cxt);
         fromStream(stream);
     }
 
+    public EntryList getContainer() {
+        return mParent;
+    }
+
+    Context getContext() {
+        return mContext;
+    }
+
+    /**
+     * Save the list, if the operation is supported.
+     */
+    void save() {}
+
+    String getName() {
+        return "none";
+    }
+
+    void setName(String name) {
+    }
+
+    /**
+     * Get the current list size
+     *
+     * @return size
+     */
+    abstract int size();
+
+    /**
+     * Add a new item to the end of the list
+     *
+     * @param item the item to add
+     * @return the index of the added item
+     */
+    abstract int add(EntryListItem item);
+
+    /**
+     * Remove the given item from the list
+     *
+     * @param idx index of the item to remove
+     */
+    abstract void remove(int idx);
+
+    void remove(EntryListItem item) {
+        remove(indexOf(item));
+    }
+
+    /**
+     * Find an item in the list
+     *
+     * @param str       item to find
+     * @param matchCase true to match case
+     * @return index of matched item or -1 if not found
+     */
+    abstract int find(String str, boolean matchCase);
+
+    /**
+     * Get the entry at the given index
+     *
+     * @param i index of the list to remove
+     */
+    abstract EntryListItem get(int i);
+
     /**
      * Construct by reading content from a Uri
+     *
      * @param uri the URI to read from
      * @param cxt the context, used to access the ContentResolver. Generally the application context.
      * @throws Exception if there's a problem reading or decoding
      */
-    Serialisable(Uri uri, Context cxt) throws Exception {
-        this(cxt);
+    EntryList(Uri uri, EntryList parent, Context cxt) throws Exception {
+        this(parent, cxt);
         InputStream stream;
         if (Objects.equals(uri.getScheme(), "file")) {
             stream = new FileInputStream(new File((uri.getPath())));
@@ -60,15 +129,34 @@ abstract class Serialisable {
     }
 
     /**
-     * Get the JSON object that represents the content of this object
-     * @return a JSONObject or JSONArray
-     * @throws JSONException if it fails
+     * Get the index of the item in the list, or -1 if it's not there
+     * c.f. find()
+     * @param ci
+     * @return the index of the item in the list, or -1 if it's not there
      */
-    abstract Object toJSON() throws JSONException;
+    abstract int indexOf(EntryListItem ci);
+
+    /**
+     * Move the item to a new position in the list
+     * @param item item to move
+     * @param i position to move it to
+     */
+    abstract void moveItemToPosition(EntryListItem item, int i);
+
+    void setMovingItem(EntryListItem item) {
+        if (mMovingItem == null || item == null)
+            mMovingItem = item;
+        mArrayAdapter.notifyDataSetChanged();
+    }
+
+    void notifyListChanged() {
+        mArrayAdapter.notifyDataSetChanged();
+    }
 
     /**
      * Launch a thread to perform an asynchronous save to a URI. If there;s an error, it will
      * be reported in a Toast on the UI thread.
+     *
      * @param uri the URI to save to
      */
     void saveToUri(final Uri uri) {
@@ -108,13 +196,6 @@ abstract class Serialisable {
             }
         }).start();
     }
-
-    /**
-     * Read a JSON object to get the content for this object
-     * @param json a JSONObject or JSONArray
-     * @throws JSONException if it fails
-     */
-    abstract void fromJSON(Object json) throws JSONException;
 
     /**
      * Load the object from JSON read from the stream

@@ -1,15 +1,15 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="144dp"
-    android:height="144dp"
+    android:width="24dp"
+    android:height="24dp"
     android:viewportWidth="128"
     android:viewportHeight="128">
   <path
       android:pathData="m64.001,10.667 l-9.734,0.194 -3.309,14.989 -6.811,3.697 -6.608,4.05 -14.634,-4.628 -5.035,8.33 -4.699,8.526 11.328,10.362 -0.206,7.813 0.206,7.813 -11.328,10.362 4.699,8.526 5.035,8.33 14.634,-4.628 6.608,4.05 6.811,3.697 3.309,14.989 9.734,0.194 9.732,-0.194 3.309,-14.989 6.811,-3.763 6.605,-4.116 14.639,4.628 5.033,-8.332 4.696,-8.526 -11.323,-10.359 0.201,-7.747 -0.204,-7.747 11.328,-10.362 -4.699,-8.526 -5.035,-8.33 -14.634,4.628 -6.608,-4.05 -6.811,-3.697 -3.309,-14.989zM64.001,32.92a31.08,31.08 0,0 1,31.08 31.08,31.08 31.08,0 0,1 -31.08,31.08 31.08,31.08 0,0 1,-31.08 -31.08,31.08 31.08,0 0,1 31.08,-31.08z"
       android:strokeAlpha="1"
       android:strokeLineJoin="miter"
-      android:strokeWidth="2"
+      android:strokeWidth="5"
       android:strokeColor="?android:colorControlNormal"
-      android:fillColor="?android:colorControlNormal"
+      android:fillColor="?android:colorControlHighlight"
       android:fillAlpha="1"
       android:fillType="evenOdd"
       android:strokeLineCap="butt">
@@ -17,10 +17,10 @@
   <path
       android:pathData="m64,37.929a26.071,26.071 0,0 0,-26.071 26.071,26.071 26.071,0 0,0 26.071,26.071 26.071,26.071 0,0 0,26.071 -26.071,26.071 26.071,0 0,0 -26.071,-26.071zM64,46.223A17.776,17.776 0,0 1,81.777 64,17.776 17.776,0 0,1 64,81.775 17.776,17.776 135,0 1,46.225 64,17.776 17.776,0 0,1 64,46.223Z"
       android:strokeAlpha="1"
-      android:strokeWidth="2"
+      android:strokeWidth="5"
       android:strokeColor="?android:colorControlNormal"
       android:fillAlpha="1"
-      android:fillColor="?android:colorControlNormal"
+      android:fillColor="?android:colorControlHighlight"
       android:fillType="nonZero"
       android:strokeLineCap="round">
   </path>

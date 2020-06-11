@@ -1,23 +1,23 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="144dp"
-    android:height="144dp"
+    android:width="24dp"
+    android:height="24dp"
     android:viewportWidth="38.1"
     android:viewportHeight="38.100002">
 
   <path
       android:pathData="m11.5862,3.175 l-8.4112,11.4561 4.9062,-0.0639l0,20.3578l3.3617,0 0.2866,0 3.3617,0l0,-20.3578l4.9062,0.0639z"
       android:strokeAlpha="1"
-      android:strokeWidth="0.5291667"
-      android:fillColor="?android:colorControlNormal"
+      android:strokeWidth="1.6"
+      android:fillColor="?android:colorControlHighlight"
       android:strokeColor="?android:colorControlNormal"
       android:fillType="nonZero"
-      android:fillAlpha="0.9953271"
+      android:fillAlpha="1"
       android:strokeLineCap="round"/>
   <path
       android:pathData="m11.5862,4.4498 l-7.1177,9.4648 4.1517,-0.0527l0,20.0433l2.8447,0 0.2425,0 2.8447,0l0,-20.0433l4.1517,0.0527z"
       android:strokeAlpha="1"
-      android:strokeWidth="0.44245726"
-      android:fillColor="?android:colorButtonNormal"
+      android:strokeWidth="1"
+      android:fillColor="?android:colorBackground"
       android:strokeColor="?android:colorButtonNormal"
       android:fillType="nonZero"
       android:fillAlpha="0.66355136"
@@ -25,8 +25,8 @@
   <path
       android:pathData="m26.5138,34.925 l-8.4112,-11.4561 4.9062,0.0639l0,-20.3578l3.3617,-0 0.2866,-0 3.3617,-0l0,20.3578l4.9062,-0.0639z"
       android:strokeAlpha="1"
-      android:strokeWidth="0.5291667"
-      android:fillColor="?android:colorControlNormal"
+      android:strokeWidth="1.6"
+      android:fillColor="?android:colorControlHighlight"
       android:strokeColor="?android:colorControlNormal"
       android:fillType="nonZero"
       android:fillAlpha="0.9953271"
@@ -34,8 +34,8 @@
   <path
       android:pathData="m26.5138,33.6502 l-7.1177,-9.4648 4.1517,0.0527l0,-20.0433l2.8447,-0 0.2425,-0 2.8447,-0l0,20.0433l4.1517,-0.0527z"
       android:strokeAlpha="1"
-      android:strokeWidth="0.44245726"
-      android:fillColor="?android:colorButtonNormal"
+      android:strokeWidth="1"
+      android:fillColor="?android:colorBackground"
       android:strokeColor="?android:colorButtonNormal"
       android:fillType="nonZero"
       android:fillAlpha="0.66355136"

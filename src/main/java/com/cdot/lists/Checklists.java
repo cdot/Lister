@@ -10,7 +10,6 @@ import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 
@@ -31,16 +30,13 @@ import java.util.Objects;
  * On startup, try to read the list from the backing store. Should we wait for the load, or load from
  * the cache and then update? Need to time out backing store reads.
  */
-class Checklists extends Serialisable {
+class Checklists extends EntryList {
     private static final String TAG = "Checklists";
 
     private ArrayList<Checklist> mLists = new ArrayList<>();
 
-    // Adapter in the context where this Checklist is being used.
-    ArrayAdapter mArrayAdapter;
-
     /**
-     * Adapter for the array of items in the list
+     * Adapter for the array of lists in the list
      */
     class ListsArrayAdapter extends ArrayAdapter<String> {
 
@@ -51,24 +47,17 @@ class Checklists extends Serialisable {
         @Override
         public @NonNull
         View getView(int i, View view, @NonNull ViewGroup viewGroup) {
-            // Simple text view, so don't muck about with resources
-            TextView itemView = (view == null) ? new TextView(this.getContext()) : (TextView) view;
-            switch (Settings.getInt("textSizeIndex")) {
-                case Settings.TEXT_SIZE_SMALL:
-                    itemView.setTextAppearance(android.R.style.TextAppearance_DeviceDefault_Small);
-                    //mVerticalPadding = 0;
-                    break;
-                case Settings.TEXT_SIZE_MEDIUM:
-                case Settings.TEXT_SIZE_DEFAULT:
-                    itemView.setTextAppearance(android.R.style.TextAppearance_DeviceDefault_Medium);
-                    //mVerticalPadding = 5;
-                    break;
-                case Settings.TEXT_SIZE_LARGE:
-                    itemView.setTextAppearance(android.R.style.TextAppearance_DeviceDefault_Large);
-                    //mVerticalPadding = 10;
-                    break;
+            Checklist item = mLists.get(i);
+            ChecklistsItemView itemView;
+            if (view == null) {
+                assert item != null;
+                itemView = new ChecklistsItemView(item, false, getContext());
+            } else {
+                itemView = (ChecklistsItemView) view;
+                // TODO: it this really required? Surely the new should have dealt with it
+                itemView.setItem(item);
             }
-            itemView.setText(mLists.get(i).getName());
+            itemView.updateView();
             return itemView;
         }
 
@@ -85,38 +74,57 @@ class Checklists extends Serialisable {
      * @param load true to load the list from cache (and trigger an update from backing store)
      */
     Checklists(Context cxt, boolean load) {
-        super(cxt);
+        super(null, cxt);
         mArrayAdapter = new ListsArrayAdapter(cxt);
         if (load)
             load();
     }
 
-    /**
-     * Add a checklist and save
-     *
-     * @param list list to add
-     */
-    Checklist addList(Checklist list) {
-        mLists.add(list);
-        notifyListsChanged();
-        return list;
+    // @implements EntryList
+    @Override
+    int add(EntryListItem list) {
+        mLists.add((Checklist)list);
+        notifyListChanged();
+        return mLists.indexOf(list);
     }
 
-    /**
-     * Get the list at the given index
-     *
-     * @param i index of the list to remove
-     */
-    Checklist getListAt(int i) {
+    // @implements EntryList
+    @Override
+    int find(@NonNull String name, boolean matchCase) {
+        int i = 0;
+        for (Checklist e : mLists) {
+            if (name.equals(e.getName()))
+                return i;
+            i++;
+        }
+        return -1;
+    }
+
+    // Implements EntryList
+    @Override
+    EntryListItem get(int i) {
         return mLists.get(i);
     }
 
-    /**
-     * Get the current list size
-     * @return size
-     */
+    // Implements EntryList
+    @Override
     int size() {
         return mLists.size();
+    }
+
+    // Implements EntryList
+    @Override
+    int indexOf(EntryListItem ci) {
+        return mLists.indexOf(ci);
+    }
+
+    // Implements EntryList
+    @Override
+    void moveItemToPosition(EntryListItem item, int i) {
+        if (i >= 0 && i <= mLists.size() - 1) {
+            mLists.remove(item);
+            mLists.add(i, (Checklist)item);
+        }
     }
 
     /**
@@ -125,11 +133,11 @@ class Checklists extends Serialisable {
      * @param i index of the list to clone
      */
     void cloneListAt(int i) {
-        Checklist checklist = new Checklist(mLists.get(i), this);
+        Checklist checklist = new Checklist(mLists.get(i), this, getContext());
         String newname = checklist.getName() + " (copy)";
         checklist.setName(newname);
         mLists.add(checklist);
-        notifyListsChanged();
+        notifyListChanged();
     }
 
     /**
@@ -137,22 +145,11 @@ class Checklists extends Serialisable {
      *
      * @param i index of the list to remove
      */
-    void removeListAt(int i) {
+    // implements EntryList
+    @Override
+    void remove(int i) {
         mLists.remove(i);
-        notifyListsChanged();
-    }
-
-    /**
-     * Find the named list
-     *
-     * @param name list to search for
-     * @return the list if found, or null otherwise
-     */
-    Checklist findListByName(String name) {
-        for (Checklist cl : mLists)
-            if (cl.getName().equals(name))
-                return cl;
-        return null;
+        notifyListChanged();
     }
 
     /**
@@ -166,7 +163,7 @@ class Checklists extends Serialisable {
         // First load the cache, then asynchronously load the backing store and update the list
         // if it has changed
         try {
-            FileInputStream fis = mContext.openFileInput(Settings.cacheFile);
+            FileInputStream fis = getContext().openFileInput(Settings.cacheFile);
             fromStream(fis);
         } catch (Exception e) {
             Log.d(TAG, "Exception mergeing from cache " + e);
@@ -180,31 +177,32 @@ class Checklists extends Serialisable {
         new Thread(new Runnable() {
             public void run() {
                 try {
-                    Checklists backing = new Checklists(mContext, false);
+                    Checklists backing = new Checklists( getContext(), false);
                     InputStream stream;
                     if (Objects.equals(uri.getScheme(), ContentResolver.SCHEME_FILE)) {
                         stream = new FileInputStream(new File((uri.getPath())));
                     } else if (Objects.equals(uri.getScheme(), ContentResolver.SCHEME_CONTENT)) {
-                        stream = mContext.getContentResolver().openInputStream(uri);
+                        stream = getContext().getContentResolver().openInputStream(uri);
                     } else {
                         throw new IOException("Failed to load lists. Unknown uri scheme: " + uri.getScheme());
                     }
                     backing.fromStream(stream);
                     boolean changed = false;
                     for (Checklist cl : backing.mLists) {
-                        Checklist known = findListByName(cl.getName());
+                        int idx = find(cl.getName(), true);
+                        Checklist known = idx < 0 ? null : mLists.get(idx);
                         if (known == null || cl.mTimestamp > known.mTimestamp) {
                             if (known != null) {
                                 if (known.merge(cl))
                                     changed = true;
                             } else {
-                                mLists.add(new Checklist(cl, Checklists.this));
+                                mLists.add(new Checklist(cl, Checklists.this, getContext()));
                                 changed = true;
                             }
                         }
                     }
                     if (changed) {
-                        notifyListsChanged();
+                        notifyListChanged();
                         Log.d(TAG, "Updated lists from " + uri);
                     }
                 } catch (Exception e) {
@@ -214,32 +212,24 @@ class Checklists extends Serialisable {
         }).start();
     }
 
-    void notifyListsChanged() {
+    @Override // EntryList
+    void notifyListChanged() {
         save();
         mArrayAdapter.notifyDataSetChanged();
     }
 
-    /**
-     * Process a JSON array object and load the lists found therein
-     *
-     * @param jo array of checklists in JSON format
-     * @throws JSONException if it can't be analysed e.g. missing fields
-     */
+    @Override // JSONable
     public void fromJSON(Object jo) throws JSONException {
         JSONArray lists = (JSONArray)jo;
         mLists.clear();
         for (int i = 0; i < lists.length(); i++) {
-            mLists.add(new Checklist(lists.getJSONObject(i), this));
+            mLists.add(new Checklist(lists.getJSONObject(i), this, getContext()));
         }
         Log.d(TAG, "Extracted " + lists.length() + " lists from JSON");
     }
 
-    /**
-     * Construct a JSON array object from the checklists we manage
-     *
-     * @return an array of JSON checklist objects
-     */
-    Object toJSON() throws JSONException {
+    @Override // JSONable
+    public Object toJSON() throws JSONException {
         JSONArray json = new JSONArray();
         for (Checklist cl : mLists)
             json.put(cl.toJSON());
@@ -254,7 +244,7 @@ class Checklists extends Serialisable {
         // cache will always be older than the backing store if the backing store save
         // succeeds
         try {
-            FileOutputStream stream = mContext.openFileOutput(Settings.cacheFile, Context.MODE_PRIVATE);
+            FileOutputStream stream = getContext().openFileOutput(Settings.cacheFile, Context.MODE_PRIVATE);
             stream.write(this.toJSON().toString().getBytes());
             stream.close();
         } catch (Exception e) {

@@ -10,8 +10,6 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.text.InputType;
 import android.util.Log;
 import android.view.Menu;
@@ -22,7 +20,8 @@ import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.PopupMenu;
-import android.widget.TextView;
+import android.widget.RelativeLayout;
+import android.widget.Toast;
 
 import com.cdot.lists.databinding.ChecklistsActivityBinding;
 
@@ -30,7 +29,7 @@ import com.cdot.lists.databinding.ChecklistsActivityBinding;
  * Activity that displays a list of checklists. The checklists are stored in a paired Checklists
  * object.
  */
-public class ChecklistsActivity extends AppCompatActivity {
+public class ChecklistsActivity extends EntryListActivity {
     private static final String TAG = "ChecklistsActivity";
 
     // Activity request codes
@@ -42,12 +41,13 @@ public class ChecklistsActivity extends AppCompatActivity {
 
     private ChecklistsActivityBinding mBinding;
 
-    @Override
+    @Override // EntryListActivity
     public void onCreate(Bundle bundle) {
         super.onCreate(bundle);
         Settings.setContext(this);
 
         mChecklists = new Checklists(this, true);
+        setList(mChecklists);
 
         mBinding = ChecklistsActivityBinding.inflate(getLayoutInflater());
         View view = mBinding.getRoot();
@@ -60,10 +60,10 @@ public class ChecklistsActivity extends AppCompatActivity {
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long j) {
-                launchChecklistActivity(mChecklists.getListAt(i).getName());
+                launchChecklistActivity(i);
             }
         });
-        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+        /*listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
             public boolean onItemLongClick(AdapterView<?> adapterView, View view, final int index, long j) {
                 PopupMenu popupMenu = new PopupMenu(ChecklistsActivity.this, view);
@@ -90,33 +90,52 @@ public class ChecklistsActivity extends AppCompatActivity {
                 popupMenu.show();
                 return true;
             }
-        });
+        });*/
 
         if (Settings.getBool(Settings.openLatest)) {
             String currentList = Settings.getString(Settings.currentList);
-            if (currentList != null && mChecklists.findListByName(currentList) != null) {
-                Log.d(TAG, "launching " + currentList);
-                launchChecklistActivity(currentList);
-            } else
-                Log.d(TAG, "no list to launch " + currentList);
+            if (currentList != null) {
+                int idx = mChecklists.find(currentList, true);
+                if (idx >= 0) {
+                    Log.d(TAG, "launching " + currentList);
+                    launchChecklistActivity(idx);
+                    return;
+                }
+            }
+            Log.d(TAG, "no list to launch " + currentList);
         }
 
     }
 
-    @Override
+    @Override // EntryListActivity
+    protected EntryListItemView makeMovingView(EntryListItem item) {
+        return new ChecklistsItemView(item, true, this);
+    }
+
+    @Override // EntryListActivity
+    protected ListView getListView() {
+        return mBinding.listList;
+    }
+
+    @Override // EntryListActivity
+    protected RelativeLayout getListLayout() {
+        return mBinding.checklistsActivity;
+    }
+
+    @Override // AppCompatActivity
     protected void onResume() {
         super.onResume();
         Log.d(TAG, "onResume");
         loadLists();
     }
 
-    @Override
+    @Override // AppCompatActivity
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.checklists, menu);
         return true;
     }
 
-    @Override
+    @Override // AppCompatActivity
     public boolean onOptionsItemSelected(MenuItem menuItem) {
         Intent intent;
         switch (menuItem.getItemId()) {
@@ -137,8 +156,6 @@ public class ChecklistsActivity extends AppCompatActivity {
                 showNewListNameDialog();
                 return true;
 
-            case R.id.action_rename:
-            case R.id.action_rename_list:
             default:
                 return super.onOptionsItemSelected(menuItem);
 
@@ -155,6 +172,7 @@ public class ChecklistsActivity extends AppCompatActivity {
      * @param resultCode  did it work?
      * @param resultData  and what's the data?
      */
+    @Override // AppCompatActivity
     public void onActivityResult(int requestCode, int resultCode, Intent resultData) {
         super.onActivityResult(requestCode, resultCode, resultData);
         if (resultCode == Activity.RESULT_OK) {
@@ -163,10 +181,10 @@ public class ChecklistsActivity extends AppCompatActivity {
                     Uri uri = resultData.getData();
                     if (uri == null)
                         return;
-                    Checklist checklist = new Checklist(uri, mChecklists);
-                    mChecklists.addList(checklist);
+                    Checklist checklist = new Checklist(uri, mChecklists, this);
+                    int idx = mChecklists.add(checklist);
                     Log.d(TAG, "import list: " + checklist.getName());
-                    launchChecklistActivity(checklist.getName());
+                    launchChecklistActivity(idx);
                 } catch (Exception e) {
                     Log.d(TAG, "import failed to create list. " + e.getMessage());
                 }
@@ -179,24 +197,20 @@ public class ChecklistsActivity extends AppCompatActivity {
     /**
      * Launch the checklist reading content from the given private filename
      *
-     * @param listName Checklist to open
+     * @param idx index of Checklist to open
      */
-    private void launchChecklistActivity(String listName) {
+    private void launchChecklistActivity(int idx) {
         Intent intent = new Intent(this, ChecklistActivity.class);
-        intent.putExtra("list", listName);
+        intent.putExtra("index", idx);
+        intent.putExtra("name", ((Checklist)mChecklists.get(idx)).getName());
         startActivity(intent);
     }
 
     // Load the list of known lists
     private void loadLists() {
         mChecklists.load();
-        TextView itv = mBinding.InfoText;
-        if (mChecklists.size() == 0) {
-            itv.setText(R.string.no_lists);
-            itv.setVisibility(View.VISIBLE);
-            return;
-        }
-        itv.setVisibility(View.GONE);
+        if (mChecklists.size() == 0)
+            Toast.makeText(this, R.string.no_lists, Toast.LENGTH_LONG).show();
     }
 
     private void showNewListNameDialog() {
@@ -209,8 +223,8 @@ public class ChecklistsActivity extends AppCompatActivity {
         builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialogInterface, int i) {
                 String listname = editText.getText().toString();
-                Checklist checkList = mChecklists.addList(new Checklist(listname, mChecklists));
-                launchChecklistActivity(checkList.getName());
+                int idx = mChecklists.add(new Checklist(listname, mChecklists, ChecklistsActivity.this));
+                launchChecklistActivity(idx);
             }
         });
         builder.setNegativeButton(R.string.cancel, null);
@@ -223,43 +237,5 @@ public class ChecklistsActivity extends AppCompatActivity {
                 ((InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE)).showSoftInput(editText, 1);
             }
         });
-    }
-
-    private void showDeleteConfirmDialog(final int index) {
-        String string = getResources().getString(R.string.action_delete_list);
-        androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
-        builder.setTitle(string + "?");
-        builder.setMessage(string + " \"" + mChecklists.getListAt(index).getName() + "\"?");
-        builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialogInterface, int which_button) {
-                mChecklists.removeListAt(index);
-                loadLists(); // needed to rest the adapter list
-            }
-        });
-        builder.setNegativeButton(R.string.cancel, null);
-        builder.show();
-    }
-
-    private void showRenameDialog(int i) {
-        final Checklist checkList = mChecklists.getListAt(i);
-        String listname = mChecklists.getListAt(i).getName();
-        try {
-            androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
-            builder.setTitle(R.string.action_rename_list);
-            builder.setMessage(R.string.enter_new_name_of_list);
-            final EditText editText = new EditText(this);
-            editText.setText(listname);
-            builder.setView(editText);
-            builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
-                public void onClick(DialogInterface dialogInterface, int which_button) {
-                    checkList.setName(editText.getText().toString());
-                    loadLists();
-                }
-            });
-            builder.setNegativeButton(R.string.cancel, null);
-            builder.show();
-        } catch (Exception e) {
-            Log.d(TAG, "Rename list exception: " + e.getMessage());
-        }
     }
 }

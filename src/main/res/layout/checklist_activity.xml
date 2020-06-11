@@ -54,7 +54,7 @@
                 android:layout_marginBottom="5dp"
                 android:contentDescription="@string/add_item"
                 android:onClick="onClickAddItem"
-                app:srcCompat="@drawable/ic_action_new_item" />
+                app:srcCompat="@drawable/ic_action_new" />
         </RelativeLayout>
     </LinearLayout>
 </RelativeLayout>

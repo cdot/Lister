@@ -3,33 +3,25 @@
  */
 package com.cdot.lists;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
+
 import android.content.DialogInterface;
-
-import androidx.appcompat.app.AlertDialog;
-
 import android.graphics.Paint;
 import android.util.Log;
-import android.view.LayoutInflater;
-import android.view.MenuItem;
-import android.view.MotionEvent;
 import android.view.View;
+import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
-import android.widget.PopupMenu;
+import android.widget.TextView;
 
-import com.cdot.lists.databinding.ChecklistItemViewBinding;
+import androidx.appcompat.app.AlertDialog;
 
 /**
  * View for a single item in a checklist, and for moving same.
  */
-class ChecklistItemView extends LinearLayout {
+class ChecklistItemView extends EntryListItemView {
     private static final String TAG = "ChecklistItemView";
-    private Checklist.ChecklistItem mItem;
-    private boolean mIsMoving;
-    private Context mContext;
-    private ChecklistItemViewBinding mBinding;
     private boolean mControlsOnRight;
 
     /**
@@ -37,179 +29,112 @@ class ChecklistItemView extends LinearLayout {
      * @param isMoving true if this is to be used as a view for dragging an item to a new position, false for an item in a fixed list
      * @param cxt      activity
      */
-    @SuppressLint("ClickableViewAccessibility")
-    ChecklistItemView(Checklist.ChecklistItem item, boolean isMoving, Context cxt) {
-        super(cxt);
-
-        mBinding = ChecklistItemViewBinding.inflate((LayoutInflater) cxt.getSystemService(Context.LAYOUT_INFLATER_SERVICE));
+    ChecklistItemView(EntryListItem item, boolean isMoving, Context cxt) {
+        super(item, isMoving, cxt, R.layout.checklist_item_view, R.menu.checklist_item_popup);
         mControlsOnRight = true;
-        mIsMoving = isMoving;
-        mContext = cxt;
-        mItem = item;
 
-        addView(mBinding.rowLayout);
-
-        if (!mIsMoving) {
-            setOnClickListener(new View.OnClickListener() {
+        if (!isMoving) {
+            addListeners();
+            final CheckBox cb = findViewById(R.id.checklist_checkbox);
+            cb.setOnClickListener(new View.OnClickListener() {
                 public void onClick(View view) {
-                    Log.d(TAG, "OnClick");
-                    if (Settings.getBool(Settings.entireRowTogglesItem))
-                        setChecked(!mBinding.checkbox.isChecked());
-                }
-            });
-            setOnLongClickListener(new View.OnLongClickListener() {
-                @Override
-                public boolean onLongClick(View view) {
-                    showMenu();
-                    return true;
-                }
-            });
-            mBinding.checkbox.setOnClickListener(new View.OnClickListener() {
-                public void onClick(View view) {
-                    Log.d(TAG, "OnClick");
-                    setChecked(mBinding.checkbox.isChecked());
-                }
-            });
-            mBinding.moveButton.setOnTouchListener(new View.OnTouchListener() {
-                @Override
-                public boolean onTouch(View view, MotionEvent motionEvent) {
-                    Log.d(TAG, "OnTouch " + motionEvent.getAction() + " " + Integer.toHexString(System.identityHashCode(this)));
-                    if (motionEvent.getAction() == MotionEvent.ACTION_DOWN) {
-                        mItem.getChecklist().setMovingItem(mItem);
-                    }
-                    return true;
+                    setChecked(cb.isChecked());
                 }
             });
         }
-
         updateView();
     }
 
-    void setItem(Checklist.ChecklistItem item) {
-        mItem = item;
-    }
-
-    Checklist.ChecklistItem getItem() {
-        return mItem;
-    }
-
-    private void setTextFormatting() {
-        int padding;
-        // Size
-        switch (Settings.getInt("textSizeIndex")) {
-            case Settings.TEXT_SIZE_SMALL:
-                mBinding.itemText.setTextAppearance(android.R.style.TextAppearance_DeviceDefault_Small);
-                padding = 0;
-                break;
-            default:
-                mBinding.itemText.setTextAppearance(android.R.style.TextAppearance_DeviceDefault_Medium);
-                padding = 5;
-                break;
-            case Settings.TEXT_SIZE_LARGE:
-                mBinding.itemText.setTextAppearance(android.R.style.TextAppearance_DeviceDefault_Large);
-                padding = 10;
-                break;
+    @Override // View.OnClickListener()
+    public void onClick(View view) {
+        if (Settings.getBool(Settings.entireRowTogglesItem)) {
+            CheckBox cb = findViewById(R.id.checklist_checkbox);
+            setChecked(!cb.isChecked());
         }
-        mBinding.itemText.setPadding(0, padding, 0, padding);
+    }
+
+    @Override // EntryListItemView
+    protected void setTextFormatting() {
+        super.setTextFormatting();
 
         // Transparency
         float f = 1; // Completely opague
 
-        if (mItem.isDone() && Settings.getBool(Settings.greyChecked))
+        if (((ChecklistItem)mItem).isDone() && Settings.getBool(Settings.greyChecked))
             // Greyed out
             f = 0.5f;
-        else if (!mIsMoving && mItem == mItem.getChecklist().mMovingItem)
+        else if (!mIsMoving && mItem == mItem.getContainer().mMovingItem)
             // Moving item
             f = 0.2f;
 
-        mBinding.itemText.setAlpha(f);
-        mBinding.rightLayout.setAlpha(f);
-        mBinding.leftLayout.setAlpha(f);
+        TextView it = findViewById(R.id.item_text);
+        it.setAlpha(f);
+        findViewById(R.id.right_layout).setAlpha(f);
+        findViewById(R.id.left_layout).setAlpha(f);
 
         // Strike through
-        if (!mItem.isDone() || !Settings.getBool(Settings.strikeThroughChecked))
-            mBinding.itemText.setPaintFlags(mBinding.itemText.getPaintFlags() & ~Paint.STRIKE_THRU_TEXT_FLAG);
+        if (!((ChecklistItem)mItem).isDone() || !Settings.getBool(Settings.strikeThroughChecked))
+            it.setPaintFlags(it.getPaintFlags() & ~Paint.STRIKE_THRU_TEXT_FLAG);
         else
-            mBinding.itemText.setPaintFlags(mBinding.itemText.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+            it.setPaintFlags(it.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
     }
 
+    @Override // EntryListItemView
     public void updateView() {
-        // Update the item text
-        mBinding.itemText.setText(mItem.getText());
-        setTextFormatting();
+        super.updateView();
 
+        LinearLayout ll = findViewById(R.id.left_layout);
+        LinearLayout rl = findViewById(R.id.right_layout);
+        CheckBox cb = findViewById(R.id.checklist_checkbox);
+        ImageButton mb = findViewById(R.id.move_button);
         if (Settings.getBool(Settings.forceAlphaSort)) {
-            mBinding.leftLayout.removeView(mBinding.moveButton);
-            mBinding.rightLayout.removeView(mBinding.moveButton);
+            ll.removeView(mb);
+            rl.removeView(mb);
         }
 
         if (Settings.getBool(Settings.leftHandOperation) && mControlsOnRight) {
             // Move checkbox to left panel
-            mBinding.rightLayout.removeView(mBinding.checkbox);
-            mBinding.leftLayout.addView(mBinding.checkbox);
-            //mBinding.leftLayout.removeView(mBinding.moveButton);
+            rl.removeView(cb);
+            ll.addView(cb);
+            //ll.removeView(mb);
             if (!Settings.getBool(Settings.forceAlphaSort))
-                mBinding.rightLayout.addView(mBinding.moveButton);
+                rl.addView(mb);
             mControlsOnRight = false;
         } else if (!Settings.getBool(Settings.leftHandOperation) && !mControlsOnRight) {
             // Move checkbox to right panel
-            mBinding.leftLayout.removeView(mBinding.checkbox);
-            mBinding.rightLayout.addView(mBinding.checkbox);
-            //mBinding.rightLayout.removeView(mBinding.moveButton);
+            ll.removeView(cb);
+            rl.addView(cb);
+            //rl.removeView(mb);
             if (!Settings.getBool(Settings.forceAlphaSort))
-                mBinding.leftLayout.addView(mBinding.moveButton);
+                ll.addView(mb);
             mControlsOnRight = true;
         }
-        mBinding.checkbox.setChecked(mItem.isDone());
+        cb.setChecked(((ChecklistItem)mItem).isDone());
     }
 
-    private void showMenu() {
-        PopupMenu popupMenu = new PopupMenu(mContext, this);
-        popupMenu.inflate(R.menu.checklist_item_popup);
-        popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
-            public boolean onMenuItemClick(MenuItem menuItem) {
-                int itemId = menuItem.getItemId();
-                if (itemId == R.id.action_delete) {
-                    mItem.getChecklist().remove(mItem);
-                    return true;
-                } else if (itemId == R.id.action_rename) {
-                    showRenameItemDialog();
-                    return true;
-                }
-                return false;
-            }
-        });
-        popupMenu.show();
-    }
-
-    public void setChecked(boolean isChecked) {
+    private void setChecked(boolean isChecked) {
         if (Settings.getBool(Settings.autoDeleteChecked) && isChecked)
-            mItem.getChecklist().remove(mItem);
+            mItem.getContainer().remove(mItem);
         else {
-            mBinding.checkbox.setChecked(isChecked);
-            mItem.setDone(isChecked);
+            CheckBox cb = findViewById(R.id.checklist_checkbox);
+            cb.setChecked(isChecked);
+            ((ChecklistItem)mItem).setDone(isChecked);
         }
         // Update the list!
-        mItem.getChecklist().notifyListChanged();
+        mItem.getContainer().notifyListChanged();
     }
 
-    private void showRenameItemDialog() {
-        androidx.appcompat.app.AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
-        builder.setTitle(R.string.edit_list_item);
-        final EditText editText = new EditText(mContext);
-        builder.setView(editText);
-        editText.setText(mBinding.itemText.getText());
-        builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialogInterface, int i) {
-                renameItem(editText.getText().toString());
-            }
-        });
-        builder.setNegativeButton(R.string.cancel, null);
-        builder.show();
-    }
-
-    private void renameItem(String str) {
-        mItem.setText(str);
-        mItem.getChecklist().notifyListChanged();
+    @Override // EntryListItemView
+    protected boolean onAction(int act) {
+        switch (act) {
+            case R.id.action_delete:
+                mItem.getContainer().remove(mItem);
+                return true;
+            case R.id.action_rename:
+                showRenameDialog(R.string.edit_list_item, -1);
+                return true;
+            default:
+                return false;
+        }
     }
 }

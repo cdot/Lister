@@ -1,4 +1,3 @@
 th { text-align: left }
-.settings tr:nth-child(odd) {background: #DDD}
-.settings tr:nth-child(even) {background: #FFF}
+.settings dt { font-weight: bold }
 img { display:inline; width: 20px; height: 20px; }
