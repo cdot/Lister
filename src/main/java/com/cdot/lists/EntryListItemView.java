@@ -132,42 +132,4 @@ class EntryListItemView extends RelativeLayout implements View.OnClickListener {
         });
         popupMenu.show();
     }
-
-    protected void showRenameDialog(int titleRes, int messageRes) {
-        String listname = mItem.getText();
-        try {
-            androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(getContext());
-            builder.setTitle(titleRes);
-            if (messageRes >= 0)
-                builder.setMessage(messageRes);
-            final EditText editText = new EditText(getContext());
-            editText.setText(listname);
-            builder.setView(editText);
-            builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
-                public void onClick(DialogInterface dialogInterface, int which_button) {
-                    mItem.setText(editText.getText().toString());
-                    mItem.getContainer().notifyListChanged();
-                }
-            });
-            builder.setNegativeButton(R.string.cancel, null);
-            builder.show();
-        } catch (Exception e) {
-            Log.d(TAG, "Rename list exception: " + e.getMessage());
-        }
-    }
-
-    protected void showDeleteConfirmDialog() {
-        String string = getResources().getString(R.string.action_delete_list);
-        androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(getContext());
-        builder.setTitle(string + "?");
-        builder.setMessage(string + " \"" + mItem.getText() + "\"?");
-        builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialogInterface, int which_button) {
-                mItem.getContainer().remove(mItem);
-                mItem.getContainer().notifyListChanged();
-            }
-        });
-        builder.setNegativeButton(R.string.cancel, null);
-        builder.show();
-    }
 }

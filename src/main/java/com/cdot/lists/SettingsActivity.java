@@ -39,7 +39,6 @@ public class SettingsActivity extends Activity implements AdapterView.OnItemSele
         mBinding.leftHandOperation.setChecked(Settings.getBool(Settings.leftHandOperation));
         mBinding.autoDeleteChecked.setChecked(Settings.getBool(Settings.autoDeleteChecked));
         mBinding.entireRowToggles.setChecked(Settings.getBool(Settings.entireRowTogglesItem));
-        mBinding.addToTop.setChecked(Settings.getBool(Settings.addToTop));
 
         mBinding.alwaysShow.setChecked(Settings.getBool(Settings.alwaysShow));
         mBinding.openLatest.setChecked(Settings.getBool(Settings.openLatest));
@@ -128,10 +127,6 @@ public class SettingsActivity extends Activity implements AdapterView.OnItemSele
 
     public void strikeCheckedItemsClicked(View view) {
         Settings.setBool(Settings.strikeThroughChecked, mBinding.strikeChecked.isChecked());
-    }
-
-    public void addToTopClicked(View view) {
-        Settings.setBool(Settings.addToTop, mBinding.addToTop.isChecked());
     }
 
     public void alwaysShowClicked(View view) {

@@ -2,10 +2,12 @@ package com.cdot.lists;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.view.View;
-import android.widget.ListView;
-import android.widget.TextView;
+import android.widget.EditText;
+
+import androidx.appcompat.app.AlertDialog;
 
 import com.cdot.lists.databinding.ChecklistsItemViewBinding;
 
@@ -37,18 +39,41 @@ public class ChecklistsItemView extends EntryListItemView {
 
     @Override // EntryListItemView
     protected boolean onAction(int act) {
-        Checklists checklists = (Checklists)mItem.getContainer();
+        Checklists checklists = (Checklists) mItem.getContainer();
         int index = mItem.getContainer().indexOf(mItem);
+        AlertDialog.Builder builder;
         switch (act) {
             case R.id.action_delete:
-                showDeleteConfirmDialog();
+                builder = new AlertDialog.Builder(getContext());
+                builder.setTitle(R.string.confirm_delete);
+                builder.setMessage(R.string.confirm_delete_list);
+                builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialogInterface, int which_button) {
+                        mItem.getContainer().remove(mItem, true);
+                    }
+                });
+                builder.setNegativeButton(R.string.cancel, null);
+                builder.show();
                 return true;
             case R.id.action_rename:
-                showRenameDialog(R.string.action_rename_list, R.string.enter_new_name_of_list);
+                builder = new AlertDialog.Builder(getContext());
+                builder.setTitle(R.string.rename_list);
+                builder.setMessage(R.string.enter_new_name_of_list);
+                final EditText editText = new EditText(getContext());
+                editText.setSingleLine(true);
+                editText.setText(mItem.getText());
+                builder.setView(editText);
+                builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        mItem.setText(editText.getText().toString());
+                        mItem.getContainer().notifyListChanged(true);
+                    }
+                });
+                builder.setNegativeButton(R.string.cancel, null);
+                builder.show();
                 return true;
             case R.id.action_copy:
-                checklists.cloneListAt(index);
-                mItem.getContainer().notifyListChanged();
+                checklists.cloneList(mItem, getContext());
                 return true;
             default:
                 return false;

@@ -1,21 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/checklists_activity"
+    android:id="@+id/entry_list_activity_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:paddingStart="5dp">
 
     <androidx.appcompat.widget.Toolbar
-        android:id="@+id/checklists_toolbar"
+        android:id="@+id/entry_list_activity_toolbar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:elevation="4dp"
         android:minHeight="?attr/actionBarSize" />
 
     <ListView
-        android:id="@+id/list_list"
-        android:layout_below="@+id/checklists_toolbar"
+        android:id="@+id/entry_list_activity_list_view"
+        android:layout_below="@+id/entry_list_activity_toolbar"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 </RelativeLayout>

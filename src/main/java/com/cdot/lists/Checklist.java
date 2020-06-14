@@ -18,8 +18,6 @@ import org.json.JSONObject;
 
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Stack;
@@ -30,17 +28,21 @@ import java.util.Stack;
 class Checklist extends EntryList implements EntryListItem, JSONable  {
     private static final String TAG = "Checklist";
 
-    private ArrayList<ChecklistItem> mUnsorted = new ArrayList<>();
-    private ArrayList<ChecklistItem> mSorted = new ArrayList<>();
-
     /**
      * Adapter for the array of items in the list
      */
     private class ItemsArrayAdapter extends ArrayAdapter<String> {
         ItemsArrayAdapter(Context cxt) {
-            super(cxt, 0, new ArrayList<String>());
+            super(cxt, 0);
         }
 
+        /**
+         *
+         * @param i the index of the row in the display
+         * @param view
+         * @param viewGroup
+         * @return
+         */
         @Override
         public @NonNull View getView(int i, View view, @NonNull ViewGroup viewGroup) {
             ChecklistItem item;
@@ -49,10 +51,8 @@ class Checklist extends EntryList implements EntryListItem, JSONable  {
                     item = getUnchecked(i);
                 else
                     item = getChecked(i - getUncheckedCount());
-            } else if (Settings.getBool(Settings.forceAlphaSort))
-                item = mSorted.get(i);
-            else
-                item = mUnsorted.get(i);
+            } else
+                item = (ChecklistItem) getSorted().get(i);
 
             ChecklistItemView itemView;
             if (view == null) {
@@ -76,19 +76,13 @@ class Checklist extends EntryList implements EntryListItem, JSONable  {
     private String mListName;
     long mTimestamp = 0;
 
-    private Stack<ChecklistItem> mRemovedItems = new Stack<>();
-    // Each remove operation has a unique ID
-    private Stack<Integer> mRemoveOpID = new Stack<>();
-    private transient int mNextRemoveOpID = 0;
-    private Stack<Integer> mRemovedItemsIndex = new Stack<>();
-
     /**
      * Construct and load from cache
      *
      * @param name   private file list is stored in
      * @param parent container
      */
-    Checklist(String name, Checklists parent, Context cxt) {
+    Checklist(String name, EntryList parent, Context cxt) {
         super(parent, cxt);
         mListName = name;
         mArrayAdapter = new ItemsArrayAdapter(cxt);
@@ -100,7 +94,7 @@ class Checklist extends EntryList implements EntryListItem, JSONable  {
      * @param job the JSON object
      * @throws JSONException if something goes wrong
      */
-    Checklist(JSONObject job, Checklists parent, Context cxt) throws JSONException {
+    Checklist(JSONObject job, EntryList parent, Context cxt) throws JSONException {
         super(parent, cxt);
         fromJSON(job);
         mArrayAdapter = new ItemsArrayAdapter(cxt);
@@ -113,7 +107,7 @@ class Checklist extends EntryList implements EntryListItem, JSONable  {
      * @param parent the container object
      * @throws Exception   IOException or JSONException
      */
-    Checklist(InputStream stream, Checklists parent, Context cxt) throws Exception {
+    Checklist(InputStream stream, EntryList parent, Context cxt) throws Exception {
         super(parent, cxt);
         fromStream(stream);
         mArrayAdapter = new ItemsArrayAdapter(cxt);
@@ -124,17 +118,14 @@ class Checklist extends EntryList implements EntryListItem, JSONable  {
      *
      * @param copy list to clone
      */
-    Checklist(Checklist copy, Checklists parent, Context cxt) {
+    Checklist(Checklist copy, EntryList parent, Context cxt) {
         super(parent, cxt);
         mListName = copy.mListName;
-        for (ChecklistItem item : copy.mUnsorted)
-            mUnsorted.add(new ChecklistItem(this, item));
+        mShowSorted = copy.mShowSorted;
+        for (EntryListItem item : copy.mUnsorted)
+            add(new ChecklistItem(this, (ChecklistItem)item));
         reSort();
         mArrayAdapter = new ItemsArrayAdapter(cxt);
-    }
-
-    private ArrayList<ChecklistItem> getItems() {
-        return (Settings.getBool(Settings.forceAlphaSort) ? mSorted : mUnsorted);
     }
 
     Checklist(Uri uri, Checklists parent, Context cxt) throws Exception {
@@ -142,28 +133,16 @@ class Checklist extends EntryList implements EntryListItem, JSONable  {
         mArrayAdapter = new ItemsArrayAdapter(cxt);
     }
 
-    // implements EntryList
+    // implements EntryListItem
     @Override
-    String getName() {
+    public String getText() {
         return mListName;
     }
 
-    // implements EntryList
+    // implements EntryListItem
     @Override
-    void setName(String name) {
+    public void setText(String name) {
         mListName = name;
-    }
-
-    // implements EntryList
-    @Override
-    int size() {
-        return mUnsorted.size();
-    }
-
-    // implements EntryList
-    @Override
-    EntryListItem get(int idx) {
-        return mUnsorted.get(idx);
     }
 
     /**
@@ -177,16 +156,6 @@ class Checklist extends EntryList implements EntryListItem, JSONable  {
         return mUnsorted.indexOf(ci);
     }
 
-    // implements EntryListItem
-    @Override
-    public String getText() { return getName(); }
-
-    // implements EntryListItem
-    @Override
-    public void setText(String s) {
-        setName(s);
-    }
-
     /**
      * Get the ith checked item in the displayed list
      *
@@ -195,9 +164,9 @@ class Checklist extends EntryList implements EntryListItem, JSONable  {
      */
     private ChecklistItem getChecked(int i) {
         int count = -1;
-        for (ChecklistItem item : getItems()) {
-            if (item.mDone && ++count == i)
-                return item;
+        for (EntryListItem item : getSorted()) {
+            if (((ChecklistItem)item).mDone && ++count == i)
+                return (ChecklistItem)item;
         }
         // No checked items
         return null;
@@ -211,9 +180,9 @@ class Checklist extends EntryList implements EntryListItem, JSONable  {
      */
     private ChecklistItem getUnchecked(int i) {
         int count = -1;
-        for (ChecklistItem item : getItems()) {
-            if (!item.mDone && ++count == i)
-                return item;
+        for (EntryListItem item : getSorted()) {
+            if (!((ChecklistItem)item).mDone && ++count == i)
+                return (ChecklistItem)item;
         }
         // No items unchecked
         return null;
@@ -226,9 +195,10 @@ class Checklist extends EntryList implements EntryListItem, JSONable  {
      */
     private int getCheckedCount() {
         int i = 0;
-        for (ChecklistItem it : mUnsorted)
-            if (it.mDone)
+        for (EntryListItem item : mUnsorted) {
+            if (((ChecklistItem) item).mDone)
                 i++;
+        }
         return i;
     }
 
@@ -241,64 +211,6 @@ class Checklist extends EntryList implements EntryListItem, JSONable  {
         return mUnsorted.size() - getCheckedCount();
     }
 
-    // implements EntryList
-    @Override
-    int find(String str, boolean matchCase) {
-        int i = -1;
-        for (ChecklistItem next : mUnsorted) {
-            i++;
-            if (next.mText.equalsIgnoreCase(str))
-                return i;
-        }
-        if (matchCase)
-            return -1;
-        i = -1;
-        for (ChecklistItem next : mUnsorted) {
-            i++;
-            if (next.mText.toLowerCase().contains(str.toLowerCase()))
-                return i;
-        }
-        return -1;
-    }
-
-    /// implements EntryList
-    @Override
-    void moveItemToPosition(EntryListItem bit, int i) {
-        // Operations on mUnsorted, since this can only be invoked when the list is unsorted
-        ChecklistItem item = (ChecklistItem)bit;
-        if (i >= 0 && i <= mUnsorted.size() - 1) {
-            remove(indexOf(item));
-            mUnsorted.add(i, item);
-            notifyListChanged();
-        }
-    }
-
-    /// implements EntryList
-    @Override
-    int add(EntryListItem eit) {
-        ChecklistItem item = (ChecklistItem)eit;
-        Log.d(TAG, "Add " + item.getText());
-        if (Settings.getBool(Settings.addToTop))
-            mUnsorted.add(0, item);
-        else
-            mUnsorted.add(item);
-        notifyListChanged();
-        return getItems().indexOf(item);
-    }
-
-    /// implements EntryList
-    @Override
-    void remove(int idx) {
-        Log.d(TAG, "remove");
-        ChecklistItem item = (ChecklistItem)get(idx);
-        mRemovedItems.push(item);
-        mRemovedItemsIndex.push(mUnsorted.indexOf(item));
-        mRemoveOpID.push(mNextRemoveOpID++);
-        mUnsorted.remove(item);
-        mSorted.remove(item);
-        notifyListChanged();
-    }
-
     /**
      * Merge items from another list into this list. Changes to item status in the other
      * list only happen if the timestamp on the other list is more recent than the timestamp
@@ -308,99 +220,72 @@ class Checklist extends EntryList implements EntryListItem, JSONable  {
      */
     boolean merge(Checklist other) {
         boolean changed = false;
-        for (ChecklistItem cli : mUnsorted) {
+        for (EntryListItem it : mUnsorted) {
+            ChecklistItem cli = (ChecklistItem)it;
             int ocli = other.find(cli.mText, true);
             if (ocli >= 0) {
                 if (cli.merge((ChecklistItem)other.get(ocli)))
                     changed = true;
             } // item not in other list
         }
-        for (ChecklistItem ocli : mUnsorted) {
+        for (EntryListItem it : mUnsorted) {
+            ChecklistItem ocli = (ChecklistItem)it;
             int cli = find(ocli.mText, true);
             if (cli < 0) {
                 mUnsorted.add(ocli);
                 changed = true;
             }
         }
-        if (changed) {
-            reSort();
-            mArrayAdapter.notifyDataSetChanged();
-        }
         return changed;
     }
 
-    int undoRemove() {
-        int intValue = mRemoveOpID.peek();
-        int undos = 0;
-        while (mRemovedItemsIndex.size() > 0 && intValue == mRemoveOpID.peek()) {
-            mUnsorted.add(mRemovedItemsIndex.pop(), mRemovedItems.pop());
-            mRemoveOpID.pop();
-            undos++;
+    /**
+     * Make a global change to the "checked" status of all items in the list
+     * @param check
+     */
+    void checkAll(boolean check) {
+        boolean changed = false;
+        for (EntryListItem item : mUnsorted) {
+            ChecklistItem ci = (ChecklistItem) item;
+            if (ci.mDone != check) {
+                ci.setDone(check);
+                changed = true;
+            }
         }
-        if (undos > 0)
-            notifyListChanged();
-        return undos;
+        if (changed)
+            notifyListChanged(true);
     }
 
-    void checkAll() {
-        for (ChecklistItem item : mUnsorted)
-            item.setDone(true);
-        notifyListChanged();
-    }
-
-    void uncheckAll() {
-        for (ChecklistItem item : mUnsorted)
-            item.setDone(false);
-        notifyListChanged();
-    }
-
-    private void notifyListRefresh() {
+    @Override // EntryList
+    public void notifyListChanged(boolean doSave) {
         reSort();
         mArrayAdapter.notifyDataSetChanged();
-    }
-
-    /**
-     * The "checked" status of an item has changed
-     */
-    @Override // EntryList
-    void notifyListChanged() {
-        notifyListRefresh();
-        getContainer().save();
+        if (doSave)
+            getContainer().save(getContext());
     }
 
     /**
      * @return number of items deleted
      */
     int deleteAllChecked() {
-        Iterator<ChecklistItem> it = mUnsorted.iterator();
-        int i = 0;
-        while (it.hasNext()) {
-            ChecklistItem next = it.next();
-            if (next.mDone) {
-                mRemovedItems.push(next);
-                mRemovedItemsIndex.push(mUnsorted.indexOf(next));
-                mRemoveOpID.push(mNextRemoveOpID);
-                it.remove();
-                i++;
-            }
-        }
-        mNextRemoveOpID++;
-        mArrayAdapter.notifyDataSetChanged();
-        return i;
-    }
+        ArrayList<ChecklistItem> kill = new ArrayList<>();
 
-    private void reSort() {
-        mSorted = (ArrayList<ChecklistItem>)mUnsorted.clone();
-        Collections.sort(mSorted, new Comparator<ChecklistItem>() {
-            public int compare(ChecklistItem item, ChecklistItem item2) {
-                return item.getText().compareToIgnoreCase(item2.getText());
-            }
-        });
+        for (EntryListItem it : mUnsorted) {
+            if (((ChecklistItem)it).mDone)
+                kill.add((ChecklistItem)it);
+        }
+
+        newUndoSet();
+        for (ChecklistItem dead : kill) {
+            remove(dead, true);
+        }
+        mArrayAdapter.notifyDataSetChanged();
+        return kill.size();
     }
 
     @Override // JSONable
-    public void fromJSON(Object jo) throws JSONException {
-        JSONObject job = (JSONObject)jo;
+    public void fromJSON(JSONObject job) throws JSONException {
+        super.fromJSON(job);
         mUnsorted.clear();
         mListName = job.getString("name");
         mTimestamp = job.getLong("time");
@@ -413,12 +298,12 @@ class Checklist extends EntryList implements EntryListItem, JSONable  {
     }
 
     @Override // JSONable
-    public Object toJSON() throws JSONException {
-        JSONObject job = new JSONObject();
+    public JSONObject toJSON() throws JSONException {
+        JSONObject job = super.toJSON();
         job.put("name", mListName);
         job.put("time", new Date().getTime());
         JSONArray items = new JSONArray();
-        for (ChecklistItem item : mUnsorted) {
+        for (EntryListItem item : mUnsorted) {
             items.put(item.toJSON());
         }
         job.put("items", items);
@@ -430,10 +315,10 @@ class Checklist extends EntryList implements EntryListItem, JSONable  {
      */
     public String toPlainString() {
         StringBuilder sb = new StringBuilder();
-        for (ChecklistItem next : getItems()) {
-            if (next.mDone)
+        for (EntryListItem next : getSorted()) {
+            if (((ChecklistItem)next).mDone)
                 sb.append("* ");
-            sb.append(next.mText).append("\n");
+            sb.append(next.getText()).append("\n");
         }
         return sb.toString();
     }

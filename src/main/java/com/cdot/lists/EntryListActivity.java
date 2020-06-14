@@ -3,27 +3,39 @@
  */
 package com.cdot.lists;
 
+import android.content.Intent;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 
 abstract class EntryListActivity extends AppCompatActivity {
     private static final String TAG = "EntryListActivity";
 
     protected EntryList mList;
 
-    protected abstract ListView getListView();
-    protected abstract RelativeLayout getListLayout();
     protected abstract EntryListItemView makeMovingView(EntryListItem movingItem);
 
     private EntryListItemView mMovingView;
 
     void setList(EntryList list) {
         mList = list;
+        ListView lv = findViewById(R.id.entry_list_activity_list_view);
+        lv.setAdapter(list.mArrayAdapter);
     }
+
+    protected void setLayout(int resId) {
+        setContentView(resId);
+        Toolbar tb = findViewById(R.id.entry_list_activity_toolbar);
+        setSupportActionBar(tb);
+    }
+
+    protected abstract String getHelpFile();
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent motionEvent) {
@@ -33,8 +45,8 @@ abstract class EntryListActivity extends AppCompatActivity {
 
         // get screen position of the ListView and the Activity
         int[] iArr = new int[2];
-        ListView cl = getListView();
-        RelativeLayout layout = getListLayout();
+        ListView cl = findViewById(R.id.entry_list_activity_list_view);
+        RelativeLayout layout = findViewById(R.id.entry_list_activity_layout);
 
         cl.getLocationOnScreen(iArr);
         int listViewTop = iArr[1];
@@ -97,5 +109,37 @@ abstract class EntryListActivity extends AppCompatActivity {
             mMovingView = null;
         }
         return true;
+    }
+
+    // Action menu
+    @Override
+    public boolean onOptionsItemSelected(MenuItem menuItem) {
+        switch (menuItem.getItemId()) {
+            default:
+                throw new Error("WTF MENU" + menuItem.getItemId());
+            case R.id.action_alpha_sort:
+                mList.mShowSorted = !mList.mShowSorted;
+                mList.notifyListChanged(true);
+                invalidateOptionsMenu();
+                return true;
+            case R.id.action_help:
+                Intent hIntent = new Intent(this, HelpActivity.class);
+                hIntent.putExtra("page", getHelpFile());
+                startActivity(hIntent);
+                return true;
+        }
+    }
+
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        MenuItem menuItem = menu.findItem(R.id.action_alpha_sort);
+        if (mList.mShowSorted) {
+            menuItem.setIcon(R.drawable.ic_action_alpha_sort_off);
+            menuItem.setTitle(R.string.action_alpha_sort_off);
+        } else {
+            menuItem.setIcon(R.drawable.ic_action_alpha_sort_on);
+            menuItem.setTitle(R.string.action_alpha_sort_on);
+        }
+
+        return super.onPrepareOptionsMenu(menu);
     }
 }

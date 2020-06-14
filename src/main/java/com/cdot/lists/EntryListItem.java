@@ -3,6 +3,8 @@
  */
 package com.cdot.lists;
 
+import org.json.JSONException;
+
 /**
  * Interface to items in an EntryList
  */
@@ -20,4 +22,8 @@ interface EntryListItem {
      * @return a text string representing the item in the list
      */
     String getText();
+
+    void notifyListChanged(boolean save);
+
+    Object toJSON() throws JSONException;
 }

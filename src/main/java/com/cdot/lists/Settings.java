@@ -31,7 +31,6 @@ class Settings {
     static String showCheckedAtEnd = "moveCheckedItemsToBottom";
     static String forceAlphaSort = "forceAlphaSort";
     static String autoDeleteChecked = "autoDeleteCheckedItems";
-    static String addToTop = "addNewItemsAtTopOfList";
 
     static String cacheFile = "checklists.json";
 
@@ -51,7 +50,6 @@ class Settings {
         put(strikeThroughChecked, true);
         put(entireRowTogglesItem, true);
 
-        put(addToTop, false);
         put(alwaysShow, false);
         put(openLatest, true);
         put(warnAboutDuplicates, true);

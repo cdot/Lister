@@ -60,7 +60,7 @@ class ChecklistItemView extends EntryListItemView {
         // Transparency
         float f = 1; // Completely opague
 
-        if (((ChecklistItem)mItem).isDone() && Settings.getBool(Settings.greyChecked))
+        if (((ChecklistItem) mItem).isDone() && Settings.getBool(Settings.greyChecked))
             // Greyed out
             f = 0.5f;
         else if (!mIsMoving && mItem == mItem.getContainer().mMovingItem)
@@ -73,7 +73,7 @@ class ChecklistItemView extends EntryListItemView {
         findViewById(R.id.left_layout).setAlpha(f);
 
         // Strike through
-        if (!((ChecklistItem)mItem).isDone() || !Settings.getBool(Settings.strikeThroughChecked))
+        if (!((ChecklistItem) mItem).isDone() || !Settings.getBool(Settings.strikeThroughChecked))
             it.setPaintFlags(it.getPaintFlags() & ~Paint.STRIKE_THRU_TEXT_FLAG);
         else
             it.setPaintFlags(it.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
@@ -109,30 +109,49 @@ class ChecklistItemView extends EntryListItemView {
                 ll.addView(mb);
             mControlsOnRight = true;
         }
-        cb.setChecked(((ChecklistItem)mItem).isDone());
+        cb.setChecked(((ChecklistItem) mItem).isDone());
     }
 
     private void setChecked(boolean isChecked) {
-        if (Settings.getBool(Settings.autoDeleteChecked) && isChecked)
-            mItem.getContainer().remove(mItem);
-        else {
+        if (Settings.getBool(Settings.autoDeleteChecked) && isChecked) {
+            EntryList el = mItem.getContainer();
+            el.newUndoSet();
+            el.remove(mItem, true);
+        } else {
             CheckBox cb = findViewById(R.id.checklist_checkbox);
             cb.setChecked(isChecked);
-            ((ChecklistItem)mItem).setDone(isChecked);
+            ((ChecklistItem) mItem).setDone(isChecked);
         }
         // Update the list!
-        mItem.getContainer().notifyListChanged();
+        mItem.notifyListChanged(true);
     }
 
     @Override // EntryListItemView
     protected boolean onAction(int act) {
         switch (act) {
             case R.id.action_delete:
-                mItem.getContainer().remove(mItem);
+                EntryList list = mItem.getContainer();
+                list.newUndoSet();
+                list.remove(mItem, true);
                 return true;
+
             case R.id.action_rename:
-                showRenameDialog(R.string.edit_list_item, -1);
+                AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+                builder.setTitle(R.string.edit_list_item);
+                final EditText editText = new EditText(getContext());
+                editText.setSingleLine(true);
+                editText.setText(mItem.getText());
+                builder.setView(editText);
+                builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        mItem.setText(editText.getText().toString());
+                        mItem.notifyListChanged(true);
+                    }
+                });
+                builder.setNegativeButton(R.string.cancel, null);
+                builder.show();
                 return true;
+
             default:
                 return false;
         }

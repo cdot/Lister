@@ -28,7 +28,7 @@
                 android:layout_width="@android:dimen/app_icon_size"
                 android:layout_height="@android:dimen/app_icon_size"
                 android:layout_alignParentStart="true"
-                android:background="@drawable/ic_action_open"
+                android:background="@drawable/ic_action_store_open"
                 android:contentDescription="@string/action_change_store"
                 android:onClick="changeStoreClicked" />
 
@@ -37,7 +37,7 @@
                 android:layout_width="48dp"
                 android:layout_height="48dp"
                 android:layout_alignParentEnd="true"
-                android:background="@drawable/ic_action_create"
+                android:background="@drawable/ic_action_store_new"
                 android:contentDescription="@string/action_create_store"
                 android:onClick="createStoreClicked" />
         </RelativeLayout>
@@ -61,7 +61,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:onClick="forceAlphaSortClicked"
-            android:text="@string/force_alpha_sort" />
+            android:text="@string/default_alpha_sort" />
 
         <CheckBox
             android:id="@+id/show_checked_at_end"
@@ -90,13 +90,6 @@
             android:layout_height="wrap_content"
             android:onClick="leftHandOperationClicked"
             android:text="@string/left_hand_operation" />
-
-        <CheckBox
-            android:id="@+id/add_to_top"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:onClick="addToTopClicked"
-            android:text="@string/add_new_item_at_top_of_list" />
 
         <CheckBox
             android:id="@+id/always_show"

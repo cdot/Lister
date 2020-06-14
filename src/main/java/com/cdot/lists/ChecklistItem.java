@@ -54,11 +54,15 @@ class ChecklistItem implements EntryListItem {
     @Override // EntryListItem
     public void setText(String str) {
         mText = str;
-        getContainer().notifyListChanged();
     }
 
     boolean isDone() {
         return mDone;
+    }
+
+    @Override // implement EntryListItem
+    public void notifyListChanged(boolean save) {
+        getContainer().notifyListChanged(save);
     }
 
     /**
@@ -84,7 +88,7 @@ class ChecklistItem implements EntryListItem {
         mDoneAt = System.currentTimeMillis();
     }
 
-    Object toJSON() throws JSONException {
+    public JSONObject toJSON() throws JSONException {
         JSONObject iob = new JSONObject();
         iob.put("name", mText);
         iob.put("done", mDone);
