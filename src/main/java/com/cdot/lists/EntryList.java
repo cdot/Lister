@@ -54,7 +54,8 @@ abstract class EntryList implements JSONable, EntryListItem {
         EntryListItem item;
 
         Remove(int ix, EntryListItem it) {
-            index = ix; item = it;
+            index = ix;
+            item = it;
         }
     }
 
@@ -97,6 +98,7 @@ abstract class EntryList implements JSONable, EntryListItem {
     /**
      * Get an array giving to the current sort order of the items in the list. Used only for
      * display.
+     *
      * @return a sorted array of items
      */
     protected ArrayList<EntryListItem> getSorted() {
@@ -106,14 +108,15 @@ abstract class EntryList implements JSONable, EntryListItem {
     /**
      * Save the list, subclasses override if the operation is supported.
      */
-    void save(Context cxt) {}
+    void save(Context cxt) {
+    }
 
     /**
      * Get the current list size
      *
      * @return size
      */
-    int size()  {
+    int size() {
         return mUnsorted.size();
     }
 
@@ -143,12 +146,11 @@ abstract class EntryList implements JSONable, EntryListItem {
      * Put a new item at a specified position in the list
      *
      * @param item the item to add
-     * @param i the index of the added item
+     * @param i    the index of the added item
      */
     void put(int i, EntryListItem item) {
         mUnsorted.add(i, item);
         reSort();
-        notifyListChanged(true);
     }
 
     void clear() {
@@ -170,8 +172,6 @@ abstract class EntryList implements JSONable, EntryListItem {
         }
         mUnsorted.remove(item);
         mSorted.remove(item);
-        // no need to reSort
-        notifyListChanged(true);
     }
 
     /**
@@ -184,6 +184,7 @@ abstract class EntryList implements JSONable, EntryListItem {
 
     /**
      * Undo the last remove. All operations with the same undo tag will be undone.
+     *
      * @return the number of items restored
      */
     int undoRemove() {
@@ -195,7 +196,6 @@ abstract class EntryList implements JSONable, EntryListItem {
         for (Remove it : items)
             mUnsorted.add(it.index, it.item);
         reSort();
-        notifyListChanged(true);
         return items.size();
     }
 
@@ -227,6 +227,7 @@ abstract class EntryList implements JSONable, EntryListItem {
     /**
      * Get the index of the item in the list, or -1 if it's not there
      * c.f. find(), sortedIndexOf
+     *
      * @param ci
      * @return the index of the item in the list, or -1 if it's not there
      */
@@ -237,6 +238,7 @@ abstract class EntryList implements JSONable, EntryListItem {
     /**
      * Get the index of the item in the sorted list, or -1 if it's not there
      * c.f. find(), indexOf
+     *
      * @param ci
      * @return the index of the item in the list, or -1 if it's not there
      */
@@ -246,20 +248,24 @@ abstract class EntryList implements JSONable, EntryListItem {
 
     /**
      * Move the item to a new position in the list
+     *
      * @param bit item to move
-     * @param i position to move it to, position in the unsorted list!
+     * @param i   position to move it to, position in the unsorted list!
+     * @return true if the item moved
      */
-    void moveItemToPosition(EntryListItem bit, int i) {
-        ChecklistItem item = (ChecklistItem)bit;
-        if (i >= 0 && i <= mUnsorted.size() - 1) {
+    boolean moveItemToPosition(EntryListItem item, int i) {
+        Log.d(TAG, "M" + i);
+        if (i >= 0 && i < mUnsorted.size()) {
             remove(item, false);
             put(i, item);
-            notifyListChanged(true);
+            return true;
         }
+        return false;
     }
 
     /**
      * Set the item in the list that is currently being moved
+     *
      * @param item the item being moved
      */
     void setMovingItem(EntryListItem item) {
@@ -270,6 +276,7 @@ abstract class EntryList implements JSONable, EntryListItem {
 
     /**
      * Inform the UI that the list changed and needs refreshing.
+     *
      * @param doSave true to save the list
      */
     public void notifyListChanged(boolean doSave) {
@@ -282,7 +289,7 @@ abstract class EntryList implements JSONable, EntryListItem {
      * After an edit to the list, re-sort the UI representation
      */
     protected void reSort() {
-        mSorted = (ArrayList<EntryListItem>)mUnsorted.clone();
+        mSorted = (ArrayList<EntryListItem>) mUnsorted.clone();
         Collections.sort(mSorted, new Comparator<EntryListItem>() {
             public int compare(EntryListItem item, EntryListItem item2) {
                 return item.getText().compareToIgnoreCase(item2.getText());

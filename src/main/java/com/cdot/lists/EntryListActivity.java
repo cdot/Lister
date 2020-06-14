@@ -79,8 +79,10 @@ abstract class EntryListActivity extends AppCompatActivity {
         int halfItemHeight = cl.getChildAt(viewIndex).getHeight() / 2;
         if (y < prevBottom) {
             mList.moveItemToPosition(movingItem, itemIndex - 1);
+            mList.notifyListChanged(true);
         } else if (y > nextTop) {
             mList.moveItemToPosition(movingItem, itemIndex + 1);
+            mList.notifyListChanged(true);
         }
 
         if (motionEvent.getAction() == MotionEvent.ACTION_MOVE) {

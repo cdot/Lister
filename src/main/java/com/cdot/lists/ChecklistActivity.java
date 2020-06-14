@@ -8,13 +8,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
-
-import androidx.core.view.accessibility.AccessibilityEventCompat;
-import androidx.appcompat.app.AlertDialog;
-
-import android.text.Editable;
 import android.text.InputType;
-import android.text.TextWatcher;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
@@ -23,10 +17,12 @@ import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
-import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.appcompat.app.AlertDialog;
+import androidx.core.view.accessibility.AccessibilityEventCompat;
 
 import java.util.Objects;
 
@@ -65,26 +61,7 @@ public class ChecklistActivity extends EntryListActivity {
             }
         });
 
-        final ImageButton imageButton = findViewById(R.id.add_item_button);
-        mAddItemText.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence charSequence, int i, int i2, int i3) {
-            }
-
-            @Override
-            public void onTextChanged(CharSequence charSequence, int i, int i2, int i3) {
-            }
-
-            @Override
-            public void afterTextChanged(Editable editable) {
-                if (mAddItemText.getText().toString().trim().length() == 0)
-                    imageButton.setAlpha(0.5f);
-                else
-                    imageButton.setAlpha(1f);
-            }
-        });
         mAddItemText.setImeOptions(EditorInfo.IME_ACTION_DONE);
-        imageButton.setAlpha(0.5f);
 
         // mChecklists is just a context placeholder here
         mChecklists = new Checklists(this, true);
@@ -180,6 +157,7 @@ public class ChecklistActivity extends EntryListActivity {
                 return true;
             case R.id.action_undo_delete:
                 int undone = getList().undoRemove();
+                getList().notifyListChanged(true);
                 if (undone == 0)
                     Toast.makeText(this, R.string.no_deleted_items, Toast.LENGTH_SHORT).show();
                 else
@@ -240,12 +218,6 @@ public class ChecklistActivity extends EntryListActivity {
             inputMethodManager.hideSoftInputFromWindow(currentFocus.getWindowToken(), 0);
         }
         invalidateOptionsMenu();
-    }
-
-    // Invoked from checklist_activity.xml
-    // TODO not convinced we need this, "keyboard done" should be enough
-    public void onClickAddItem(View view) {
-        addNewItem();
     }
 
     private void addNewItem() {

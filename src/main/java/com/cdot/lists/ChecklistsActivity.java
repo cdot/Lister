@@ -9,22 +9,15 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-
 import android.text.InputType;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 import android.view.inputmethod.InputMethodManager;
-import android.widget.AdapterView;
 import android.widget.EditText;
-import android.widget.ListView;
-import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
-
-import com.cdot.lists.databinding.ChecklistsActivityBinding;
 
 /**
  * Activity that displays a list of checklists. The checklists are stored in a paired Checklists
@@ -70,7 +63,9 @@ public class ChecklistsActivity extends EntryListActivity {
     }
 
     @Override // EntryListActivity
-    protected String getHelpFile() { return "Checklists"; }
+    protected String getHelpFile() {
+        return "Checklists";
+    }
 
     @Override // AppCompatActivity
     protected void onResume() {
@@ -150,7 +145,7 @@ public class ChecklistsActivity extends EntryListActivity {
                     Uri uri = resultData.getData();
                     if (uri == null)
                         return;
-                    Checklist newList = new Checklist(uri, (Checklists)mList, this);
+                    Checklist newList = new Checklist(uri, (Checklists) mList, this);
                     mList.add(newList);
                     mList.notifyListChanged(true);
                     Log.d(TAG, "imported list: " + newList.getText());
@@ -182,7 +177,7 @@ public class ChecklistsActivity extends EntryListActivity {
     private void loadLists() {
         Log.d(TAG, "Loading lists");
         mList.clear();
-        ((Checklists)mList).load(this);
+        ((Checklists) mList).load(this);
         if (mList.size() == 0)
             Toast.makeText(this, R.string.no_lists, Toast.LENGTH_LONG).show();
     }

@@ -20,7 +20,7 @@ public class SettingsActivity extends Activity implements AdapterView.OnItemSele
     static final int REQUEST_SETTINGS_CHANGED = 3;
 
     SettingsActivityBinding mBinding;
-    
+
     @Override
     public void onNothingSelected(AdapterView<?> adapterView) {
     }

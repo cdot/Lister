@@ -5,7 +5,6 @@ package com.cdot.lists;
 
 import android.content.Context;
 import android.net.Uri;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
@@ -19,13 +18,11 @@ import org.json.JSONObject;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.Iterator;
-import java.util.Stack;
 
 /**
  * A checklist of checkable items. Can also be an item in a Checklists
  */
-class Checklist extends EntryList implements EntryListItem, JSONable  {
+class Checklist extends EntryList implements EntryListItem, JSONable {
     private static final String TAG = "Checklist";
 
     /**
@@ -37,14 +34,14 @@ class Checklist extends EntryList implements EntryListItem, JSONable  {
         }
 
         /**
-         *
-         * @param i the index of the row in the display
+         * @param i         the index of the row in the display
          * @param view
          * @param viewGroup
          * @return
          */
         @Override
-        public @NonNull View getView(int i, View view, @NonNull ViewGroup viewGroup) {
+        public @NonNull
+        View getView(int i, View view, @NonNull ViewGroup viewGroup) {
             ChecklistItem item;
             if (Settings.getBool(Settings.showCheckedAtEnd)) {
                 if (i < getUncheckedCount())
@@ -105,7 +102,7 @@ class Checklist extends EntryList implements EntryListItem, JSONable  {
      *
      * @param stream source of JSON
      * @param parent the container object
-     * @throws Exception   IOException or JSONException
+     * @throws Exception IOException or JSONException
      */
     Checklist(InputStream stream, EntryList parent, Context cxt) throws Exception {
         super(parent, cxt);
@@ -123,7 +120,7 @@ class Checklist extends EntryList implements EntryListItem, JSONable  {
         mListName = copy.mListName;
         mShowSorted = copy.mShowSorted;
         for (EntryListItem item : copy.mUnsorted)
-            add(new ChecklistItem(this, (ChecklistItem)item));
+            add(new ChecklistItem(this, (ChecklistItem) item));
         reSort();
         mArrayAdapter = new ItemsArrayAdapter(cxt);
     }
@@ -147,6 +144,7 @@ class Checklist extends EntryList implements EntryListItem, JSONable  {
 
     /**
      * Get the index of the item in the base (unsorted) list
+     *
      * @param ci item
      * @return index of the item
      */
@@ -165,8 +163,8 @@ class Checklist extends EntryList implements EntryListItem, JSONable  {
     private ChecklistItem getChecked(int i) {
         int count = -1;
         for (EntryListItem item : getSorted()) {
-            if (((ChecklistItem)item).mDone && ++count == i)
-                return (ChecklistItem)item;
+            if (((ChecklistItem) item).mDone && ++count == i)
+                return (ChecklistItem) item;
         }
         // No checked items
         return null;
@@ -181,8 +179,8 @@ class Checklist extends EntryList implements EntryListItem, JSONable  {
     private ChecklistItem getUnchecked(int i) {
         int count = -1;
         for (EntryListItem item : getSorted()) {
-            if (!((ChecklistItem)item).mDone && ++count == i)
-                return (ChecklistItem)item;
+            if (!((ChecklistItem) item).mDone && ++count == i)
+                return (ChecklistItem) item;
         }
         // No items unchecked
         return null;
@@ -221,15 +219,15 @@ class Checklist extends EntryList implements EntryListItem, JSONable  {
     boolean merge(Checklist other) {
         boolean changed = false;
         for (EntryListItem it : mUnsorted) {
-            ChecklistItem cli = (ChecklistItem)it;
+            ChecklistItem cli = (ChecklistItem) it;
             int ocli = other.find(cli.mText, true);
             if (ocli >= 0) {
-                if (cli.merge((ChecklistItem)other.get(ocli)))
+                if (cli.merge((ChecklistItem) other.get(ocli)))
                     changed = true;
             } // item not in other list
         }
         for (EntryListItem it : mUnsorted) {
-            ChecklistItem ocli = (ChecklistItem)it;
+            ChecklistItem ocli = (ChecklistItem) it;
             int cli = find(ocli.mText, true);
             if (cli < 0) {
                 mUnsorted.add(ocli);
@@ -241,6 +239,7 @@ class Checklist extends EntryList implements EntryListItem, JSONable  {
 
     /**
      * Make a global change to the "checked" status of all items in the list
+     *
      * @param check
      */
     void checkAll(boolean check) {
@@ -271,8 +270,8 @@ class Checklist extends EntryList implements EntryListItem, JSONable  {
         ArrayList<ChecklistItem> kill = new ArrayList<>();
 
         for (EntryListItem it : mUnsorted) {
-            if (((ChecklistItem)it).mDone)
-                kill.add((ChecklistItem)it);
+            if (((ChecklistItem) it).mDone)
+                kill.add((ChecklistItem) it);
         }
 
         newUndoSet();
@@ -316,7 +315,7 @@ class Checklist extends EntryList implements EntryListItem, JSONable  {
     public String toPlainString() {
         StringBuilder sb = new StringBuilder();
         for (EntryListItem next : getSorted()) {
-            if (((ChecklistItem)next).mDone)
+            if (((ChecklistItem) next).mDone)
                 sb.append("* ");
             sb.append(next.getText()).append("\n");
         }

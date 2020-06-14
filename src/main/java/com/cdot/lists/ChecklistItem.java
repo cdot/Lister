@@ -68,6 +68,7 @@ class ChecklistItem implements EntryListItem {
     /**
      * Merge this item's fields with another more recent version of the same item with the
      * same text. The more recent item's status takes precedence over this items
+     *
      * @param ocli the more recent item to merge
      * @return true if there were changes
      */
@@ -81,6 +82,7 @@ class ChecklistItem implements EntryListItem {
 
     /**
      * Set the item's done status and trigger a save
+     *
      * @param done new done status
      */
     void setDone(boolean done) {

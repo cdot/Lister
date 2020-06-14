@@ -49,7 +49,9 @@ public class ChecklistsItemView extends EntryListItemView {
                 builder.setMessage(R.string.confirm_delete_list);
                 builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialogInterface, int which_button) {
-                        mItem.getContainer().remove(mItem, true);
+                        EntryList el = mItem.getContainer();
+                        el.remove(mItem, true);
+                        el.notifyListChanged(true);
                     }
                 });
                 builder.setNegativeButton(R.string.cancel, null);

@@ -13,12 +13,14 @@ interface EntryListItem {
 
     /**
      * Set the item's text
+     *
      * @param str new text
      */
     void setText(String str);
 
     /**
      * Get the item's text
+     *
      * @return a text string representing the item in the list
      */
     String getText();

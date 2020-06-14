@@ -4,10 +4,8 @@
 package com.cdot.lists;
 
 import android.content.Context;
-
 import android.content.DialogInterface;
 import android.graphics.Paint;
-import android.util.Log;
 import android.view.View;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -87,10 +85,6 @@ class ChecklistItemView extends EntryListItemView {
         LinearLayout rl = findViewById(R.id.right_layout);
         CheckBox cb = findViewById(R.id.checklist_checkbox);
         ImageButton mb = findViewById(R.id.move_button);
-        if (Settings.getBool(Settings.forceAlphaSort)) {
-            ll.removeView(mb);
-            rl.removeView(mb);
-        }
 
         if (Settings.getBool(Settings.leftHandOperation) && mControlsOnRight) {
             // Move checkbox to left panel
@@ -133,6 +127,7 @@ class ChecklistItemView extends EntryListItemView {
                 EntryList list = mItem.getContainer();
                 list.newUndoSet();
                 list.remove(mItem, true);
+                list.notifyListChanged(true);
                 return true;
 
             case R.id.action_rename:

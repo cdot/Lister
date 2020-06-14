@@ -29,32 +29,13 @@
         android:background="?android:attr/colorBackground"
         android:orientation="vertical">
 
-        <RelativeLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content">
-
-            <EditText
-                android:id="@+id/add_item_text"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="@string/new_item_hint"
-                android:inputType="textAutoComplete"
-                android:layout_alignParentStart="true"
-                android:layout_alignEnd="@+id/add_item_button"
-                android:layout_centerVertical="true"
-                android:singleLine="true" />
-
-            <ImageButton
-                android:id="@+id/add_item_button"
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:layout_alignParentEnd="true"
-                android:layout_gravity="center_vertical"
-                android:layout_marginTop="5dp"
-                android:layout_marginBottom="5dp"
-                android:contentDescription="@string/add_item"
-                android:onClick="onClickAddItem"
-                app:srcCompat="@drawable/ic_action_item_add_on" />
-        </RelativeLayout>
+        <EditText
+            android:id="@+id/add_item_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/new_item_hint"
+            android:inputType="textAutoComplete"
+            android:layout_centerVertical="true"
+            android:singleLine="true" />
     </LinearLayout>
 </RelativeLayout>

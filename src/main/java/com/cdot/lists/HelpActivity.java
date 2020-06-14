@@ -4,8 +4,9 @@
 package com.cdot.lists;
 
 import android.os.Bundle;
-import androidx.appcompat.app.AppCompatActivity;
 import android.webkit.WebView;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 /**
  * Simple activity to view help information stored in an html file
