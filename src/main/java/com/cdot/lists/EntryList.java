@@ -11,6 +11,8 @@ import android.util.Log;
 import android.widget.ArrayAdapter;
 import android.widget.Toast;
 
+import com.opencsv.CSVReader;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -26,13 +28,14 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Objects;
 import java.util.Stack;
 
 /**
- * base class of things that can be serialised to a JSON representation and saved.
+ * Base class of things that can be serialised to a JSON representation and saved.
  */
-abstract class EntryList implements JSONable, EntryListItem {
+abstract class EntryList implements EntryListItem {
     private final String TAG = "Serialisable";
     ArrayAdapter mArrayAdapter;
 
@@ -41,14 +44,19 @@ abstract class EntryList implements JSONable, EntryListItem {
 
     private Context mContext;
 
+    // The basic list
     protected ArrayList<EntryListItem> mUnsorted = new ArrayList<>();
 
     // Is this list being displayed sorted?
     protected boolean mShowSorted = false;
+    // A sorted version of the list (sorts on getText())
     protected ArrayList<EntryListItem> mSorted = new ArrayList<>();
 
     transient EntryListItem mMovingItem = null;
 
+    /**
+     * An item that has been removed, and the index it was removed from, for undos
+     */
     private class Remove {
         int index;
         EntryListItem item;
@@ -59,8 +67,14 @@ abstract class EntryList implements JSONable, EntryListItem {
         }
     }
 
+    // Undo stack
     Stack<ArrayList<Remove>> mRemoves;
 
+    /**
+     * Constructor
+     * @param parent the list that contains this list (or null for the root)
+     * @param cxt the Context, used to access the ContentResolver. Generally the application context.
+     */
     EntryList(EntryList parent, Context cxt) {
         mParent = parent;
         mContext = cxt;
@@ -71,6 +85,7 @@ abstract class EntryList implements JSONable, EntryListItem {
      * Construct by reading content from a Uri
      *
      * @param uri the URI to read from
+     * @param parent the list that contains this list (or null for the root)
      * @param cxt the context, used to access the ContentResolver. Generally the application context.
      * @throws Exception if there's a problem reading or decoding
      */
@@ -87,6 +102,7 @@ abstract class EntryList implements JSONable, EntryListItem {
         fromStream(stream);
     }
 
+    @Override // implement EntryListItem
     public EntryList getContainer() {
         return mParent;
     }
@@ -153,6 +169,9 @@ abstract class EntryList implements JSONable, EntryListItem {
         reSort();
     }
 
+    /**
+     * Empty the list
+     */
     void clear() {
         mUnsorted.clear();
         mSorted.clear();
@@ -249,7 +268,7 @@ abstract class EntryList implements JSONable, EntryListItem {
     /**
      * Move the item to a new position in the list
      *
-     * @param bit item to move
+     * @param item item to move
      * @param i   position to move it to, position in the unsorted list!
      * @return true if the item moved
      */
@@ -365,7 +384,7 @@ abstract class EntryList implements JSONable, EntryListItem {
         fromJSON(job);
     }
 
-    @Override // implements JSONable
+    @Override // implements EntryListItem
     public void fromJSON(JSONObject job) throws JSONException {
         try {
             mShowSorted = job.getBoolean("sort");
@@ -374,7 +393,7 @@ abstract class EntryList implements JSONable, EntryListItem {
         }
     }
 
-    @Override // implements JSONable
+    @Override // implements EntryListItem
     public JSONObject toJSON() throws JSONException {
         JSONObject job = new JSONObject();
         JSONArray its = new JSONArray();
@@ -383,5 +402,24 @@ abstract class EntryList implements JSONable, EntryListItem {
         job.put("items", its);
         job.put("sort", mShowSorted);
         return job;
+    }
+
+    @Override // implement EntryListItem
+    public String toCSV() {
+        StringBuilder rows = new StringBuilder();
+        for (EntryListItem it : mUnsorted) {
+            rows.append(it.toCSV()).append("\n");
+        }
+        return rows.toString();
+    }
+
+    @Override // implement EntryListItem
+    public String toPlainString(String tab) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(tab).append(getText()).append(":\n");
+        for (EntryListItem next : getSorted()) {
+            sb.append(next.toPlainString(tab + "\t")).append("\n");
+        }
+        return sb.toString();
     }
 }

@@ -20,7 +20,9 @@ import androidx.appcompat.app.AlertDialog;
  */
 class ChecklistItemView extends EntryListItemView {
     private static final String TAG = "ChecklistItemView";
-    private boolean mControlsOnRight;
+
+    // True if the checkbox is on the right (which is where the basic layout has it)
+    private boolean mCheckboxOnRight;
 
     /**
      * @param item     the item being viewed
@@ -29,7 +31,7 @@ class ChecklistItemView extends EntryListItemView {
      */
     ChecklistItemView(EntryListItem item, boolean isMoving, Context cxt) {
         super(item, isMoving, cxt, R.layout.checklist_item_view, R.menu.checklist_item_popup);
-        mControlsOnRight = true;
+        mCheckboxOnRight = true;
 
         if (!isMoving) {
             addListeners();
@@ -45,7 +47,7 @@ class ChecklistItemView extends EntryListItemView {
 
     @Override // View.OnClickListener()
     public void onClick(View view) {
-        if (Settings.getBool(Settings.entireRowTogglesItem)) {
+        if (!mIsMoving && Settings.getBool(Settings.entireRowTogglesItem)) {
             CheckBox cb = findViewById(R.id.checklist_checkbox);
             setChecked(!cb.isChecked());
         }
@@ -56,14 +58,14 @@ class ChecklistItemView extends EntryListItemView {
         super.setTextFormatting();
 
         // Transparency
-        float f = 1; // Completely opague
+        float f = Settings.TRANSPARENCY_OPAQUE; // Completely opague
 
         if (((ChecklistItem) mItem).isDone() && Settings.getBool(Settings.greyChecked))
             // Greyed out
-            f = 0.5f;
+            f = Settings.TRANSPARENCY_GREYED;
         else if (!mIsMoving && mItem == mItem.getContainer().mMovingItem)
-            // Moving item
-            f = 0.2f;
+            // Item being moved (but NOT the moving view)
+            f = Settings.TRANSPARENCY_FAINT;
 
         TextView it = findViewById(R.id.item_text);
         it.setAlpha(f);
@@ -81,29 +83,28 @@ class ChecklistItemView extends EntryListItemView {
     public void updateView() {
         super.updateView();
 
-        LinearLayout ll = findViewById(R.id.left_layout);
-        LinearLayout rl = findViewById(R.id.right_layout);
-        CheckBox cb = findViewById(R.id.checklist_checkbox);
-        ImageButton mb = findViewById(R.id.move_button);
+        LinearLayout left = findViewById(R.id.left_layout);
+        LinearLayout right = findViewById(R.id.right_layout);
+        CheckBox checkBox = findViewById(R.id.checklist_checkbox);
+        ImageButton moveButton = findViewById(R.id.move_button);
 
-        if (Settings.getBool(Settings.leftHandOperation) && mControlsOnRight) {
+        if (Settings.getBool(Settings.leftHandOperation) && mCheckboxOnRight) {
             // Move checkbox to left panel
-            rl.removeView(cb);
-            ll.addView(cb);
-            //ll.removeView(mb);
-            if (!Settings.getBool(Settings.forceAlphaSort))
-                rl.addView(mb);
-            mControlsOnRight = false;
-        } else if (!Settings.getBool(Settings.leftHandOperation) && !mControlsOnRight) {
+            right.removeView(checkBox);
+            left.removeView(moveButton);
+            left.addView(checkBox);
+            right.addView(moveButton);
+            mCheckboxOnRight = false;
+        } else if (!Settings.getBool(Settings.leftHandOperation) && !mCheckboxOnRight) {
             // Move checkbox to right panel
-            ll.removeView(cb);
-            rl.addView(cb);
-            //rl.removeView(mb);
-            if (!Settings.getBool(Settings.forceAlphaSort))
-                ll.addView(mb);
-            mControlsOnRight = true;
+            left.removeView(checkBox);
+            right.removeView(moveButton);
+            right.addView(checkBox);
+            left.addView(moveButton);
+            mCheckboxOnRight = true;
         }
-        cb.setChecked(((ChecklistItem) mItem).isDone());
+        moveButton.setVisibility(mItem.getContainer().mShowSorted ? View.GONE : View.VISIBLE);
+        checkBox.setChecked(((ChecklistItem) mItem).isDone());
     }
 
     private void setChecked(boolean isChecked) {

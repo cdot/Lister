@@ -16,6 +16,9 @@ import java.util.Map;
  */
 class Settings {
     static final String UI_PREFERENCES = "UIPreferences";
+    static final float TRANSPARENCY_OPAQUE = 1;
+    static final float TRANSPARENCY_GREYED = 0.5f;
+    static final float TRANSPARENCY_FAINT = 0.2f;
 
     // General
     static String greyChecked = "greyCheckedItems";

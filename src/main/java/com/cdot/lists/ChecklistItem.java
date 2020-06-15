@@ -6,6 +6,8 @@ package com.cdot.lists;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.List;
+
 /**
  * An item in a Checklist
  */
@@ -20,18 +22,6 @@ class ChecklistItem implements EntryListItem {
         mText = str;
         mDone = done;
         mDoneAt = done ? System.currentTimeMillis() : 0;
-    }
-
-    ChecklistItem(Checklist checklist, JSONObject jo) throws JSONException {
-        mList = checklist;
-        mText = jo.getString("name");
-        mDone = false;
-        mDoneAt = 0;
-        try {
-            mDone = jo.getBoolean("done");
-            mDoneAt = jo.getLong("at");
-        } catch (JSONException ignored) {
-        }
     }
 
     ChecklistItem(Checklist checklist, ChecklistItem clone) {
@@ -56,13 +46,13 @@ class ChecklistItem implements EntryListItem {
         mText = str;
     }
 
-    boolean isDone() {
-        return mDone;
-    }
-
     @Override // implement EntryListItem
     public void notifyListChanged(boolean save) {
         getContainer().notifyListChanged(save);
+    }
+
+    boolean isDone() {
+        return mDone;
     }
 
     /**
@@ -90,6 +80,18 @@ class ChecklistItem implements EntryListItem {
         mDoneAt = System.currentTimeMillis();
     }
 
+    public void fromJSON(JSONObject jo) throws JSONException {
+        mText = jo.getString("name");
+        mDone = false;
+        mDoneAt = 0;
+        try {
+            mDone = jo.getBoolean("done");
+            mDoneAt = jo.getLong("at");
+        } catch (JSONException ignored) {
+        }
+    }
+
+    @Override // implement EntryListItem
     public JSONObject toJSON() throws JSONException {
         JSONObject iob = new JSONObject();
         iob.put("name", mText);
@@ -97,5 +99,22 @@ class ChecklistItem implements EntryListItem {
         if (mDone)
             iob.put("at", mDoneAt);
         return iob;
+    }
+
+    @Override // implement EntryListItem
+    public String toCSV() {
+        StringBuilder row = new StringBuilder();
+        row.append('"').append(mText.replaceAll("\"", "\\\"")).append('"');
+        row.append(",").append(mDone ? "TRUE" : "FALSE");
+        return row.toString();
+    }
+
+    @Override // implement EntryListItem
+    public String toPlainString(String tab) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(tab).append(getText());
+        if (mDone)
+            sb.append(" *");
+        return sb.toString();
     }
 }

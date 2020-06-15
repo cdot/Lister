@@ -191,13 +191,23 @@ class Checklists extends EntryList {
         }).start();
     }
 
-    @Override // JSONable
+    @Override // EntryList
     public void fromJSON(JSONObject job) throws JSONException {
         super.fromJSON(job);
         JSONArray lists = job.getJSONArray("items");
         for (int i = 0; i < lists.length(); i++)
             add(new Checklist(lists.getJSONObject(i), this, getContext()));
         Log.d(TAG, "Extracted " + lists.length() + " lists from JSON");
+    }
+
+    @Override // EntryList
+    public String toPlainString(String tab) {
+        StringBuilder sb = new StringBuilder();
+        for (EntryListItem item : getSorted()) {
+            sb.append(tab).append(item.getText()).append(":\n");
+            sb.append(item.toPlainString(tab + "\t")).append("\n");
+        }
+        return sb.toString();
     }
 
     /**

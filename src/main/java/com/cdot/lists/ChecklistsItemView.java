@@ -46,7 +46,7 @@ public class ChecklistsItemView extends EntryListItemView {
             case R.id.action_delete:
                 builder = new AlertDialog.Builder(getContext());
                 builder.setTitle(R.string.confirm_delete);
-                builder.setMessage(R.string.confirm_delete_list);
+                builder.setMessage(getContext().getString(R.string.confirm_delete_list, mItem.getText()));
                 builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialogInterface, int which_button) {
                         EntryList el = mItem.getContainer();
@@ -57,6 +57,7 @@ public class ChecklistsItemView extends EntryListItemView {
                 builder.setNegativeButton(R.string.cancel, null);
                 builder.show();
                 return true;
+
             case R.id.action_rename:
                 builder = new AlertDialog.Builder(getContext());
                 builder.setTitle(R.string.rename_list);
@@ -74,9 +75,11 @@ public class ChecklistsItemView extends EntryListItemView {
                 builder.setNegativeButton(R.string.cancel, null);
                 builder.show();
                 return true;
+
             case R.id.action_copy:
                 checklists.cloneList(mItem, getContext());
                 return true;
+                
             default:
                 return false;
         }

@@ -18,11 +18,12 @@ import org.json.JSONObject;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 /**
  * A checklist of checkable items. Can also be an item in a Checklists
  */
-class Checklist extends EntryList implements EntryListItem, JSONable {
+class Checklist extends EntryList implements EntryListItem {
     private static final String TAG = "Checklist";
 
     /**
@@ -33,31 +34,27 @@ class Checklist extends EntryList implements EntryListItem, JSONable {
             super(cxt, 0);
         }
 
-        /**
-         * @param i         the index of the row in the display
-         * @param view
-         * @param viewGroup
-         * @return
-         */
-        @Override
+        @Override // ArrayAdapter
         public @NonNull
-        View getView(int i, View view, @NonNull ViewGroup viewGroup) {
+        View getView(int i, View convertView, @NonNull ViewGroup viewGroup) {
             ChecklistItem item;
             if (Settings.getBool(Settings.showCheckedAtEnd)) {
-                if (i < getUncheckedCount())
-                    item = getUnchecked(i);
+                int uc = mUnsorted.size() - getCheckedCount();
+                if (i < uc)
+                    // Get ith unchecked
+                    item = getIthInState(i, false);
                 else
-                    item = getChecked(i - getUncheckedCount());
+                    // Get ith checked
+                    item = getIthInState(i - uc, true);
             } else
                 item = (ChecklistItem) getSorted().get(i);
 
             ChecklistItemView itemView;
-            if (view == null) {
+            if (convertView == null) {
                 assert item != null;
                 itemView = new ChecklistItemView(item, false, getContext());
             } else {
-                itemView = (ChecklistItemView) view;
-                // TODO: it this really required? Surely the new should have dealt with it
+                itemView = (ChecklistItemView) convertView;
                 itemView.setItem(item);
             }
             itemView.updateView();
@@ -155,34 +152,19 @@ class Checklist extends EntryList implements EntryListItem, JSONable {
     }
 
     /**
-     * Get the ith checked item in the displayed list
+     * Get the ith checked/nuchecked item in the displayed list
      *
      * @param i index
+     * @param state true to get ith checked item, false to get ith unchecked item
      * @return the ith checked item, or null if no items are checked
      */
-    private ChecklistItem getChecked(int i) {
+    private ChecklistItem getIthInState(int i, boolean state) {
         int count = -1;
         for (EntryListItem item : getSorted()) {
-            if (((ChecklistItem) item).mDone && ++count == i)
+            if (((ChecklistItem) item).mDone == state && ++count == i)
                 return (ChecklistItem) item;
         }
         // No checked items
-        return null;
-    }
-
-    /**
-     * Get the ith unchecked item in the displayed list
-     *
-     * @param i index of unchecked item to get
-     * @return the ith unchecked item, or null if no items are unchecked
-     */
-    private ChecklistItem getUnchecked(int i) {
-        int count = -1;
-        for (EntryListItem item : getSorted()) {
-            if (!((ChecklistItem) item).mDone && ++count == i)
-                return (ChecklistItem) item;
-        }
-        // No items unchecked
         return null;
     }
 
@@ -191,22 +173,13 @@ class Checklist extends EntryList implements EntryListItem, JSONable {
      *
      * @return the number of checked items
      */
-    private int getCheckedCount() {
+    int getCheckedCount() {
         int i = 0;
         for (EntryListItem item : mUnsorted) {
             if (((ChecklistItem) item).mDone)
                 i++;
         }
         return i;
-    }
-
-    /**
-     * Get the number of unchecked items
-     *
-     * @return the number of unchecked items
-     */
-    private int getUncheckedCount() {
-        return mUnsorted.size() - getCheckedCount();
     }
 
     /**
@@ -282,7 +255,7 @@ class Checklist extends EntryList implements EntryListItem, JSONable {
         return kill.size();
     }
 
-    @Override // JSONable
+    @Override // EntryListItem
     public void fromJSON(JSONObject job) throws JSONException {
         super.fromJSON(job);
         mUnsorted.clear();
@@ -290,13 +263,14 @@ class Checklist extends EntryList implements EntryListItem, JSONable {
         mTimestamp = job.getLong("time");
         JSONArray items = job.getJSONArray("items");
         for (int i = 0; i < items.length(); i++) {
-            ChecklistItem ci = new ChecklistItem(this, items.getJSONObject(i));
+            ChecklistItem ci = new ChecklistItem(this, null, false);
+            ci.fromJSON(items.getJSONObject(i));
             mUnsorted.add(ci);
         }
         reSort();
     }
 
-    @Override // JSONable
+    @Override // EntryListItem
     public JSONObject toJSON() throws JSONException {
         JSONObject job = super.toJSON();
         job.put("name", mListName);
@@ -310,15 +284,18 @@ class Checklist extends EntryList implements EntryListItem, JSONable {
     }
 
     /**
-     * Format the list for sending as email
+     * Load from a CSV object
+     *
+     *         CSVReader reader = new CSVReader(new FileReader("yourfile.csv"));
+     *         List<String[]> myEntries = reader.readAll();
+     *
+     * @param rows CSV object
      */
-    public String toPlainString() {
-        StringBuilder sb = new StringBuilder();
-        for (EntryListItem next : getSorted()) {
-            if (((ChecklistItem) next).mDone)
-                sb.append("* ");
-            sb.append(next.getText()).append("\n");
+    public void fromCSV(List<String[]> rows) {
+        for (String[] row : rows) {
+            ChecklistItem it = new ChecklistItem(this, row[0], row[1].equals("TRUE"));
+            mUnsorted.add(it);
         }
-        return sb.toString();
+        reSort();
     }
 }

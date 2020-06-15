@@ -33,13 +33,15 @@ class EntryListItemView extends RelativeLayout implements View.OnClickListener {
      * @param item     the item this is a view of
      * @param isMoving whether this is the special case of an item that is being moved
      * @param cxt      the context for the view
+     * @param layoutR  R.layout of the view
+     * @param menuR    R.menu of the popup menu
      */
-    EntryListItemView(EntryListItem item, boolean isMoving, Context cxt, int rootResource, int menuResource) {
+    EntryListItemView(EntryListItem item, boolean isMoving, Context cxt, int layoutR, int menuR) {
         super(cxt);
-        inflate(getContext(), rootResource, this);
+        inflate(getContext(), layoutR, this);
         mContext = cxt;
         mIsMoving = isMoving;
-        mMenuResource = R.menu.checklist_item_popup;
+        mMenuResource = menuR;
         setItem(item);
     }
 
@@ -97,6 +99,9 @@ class EntryListItemView extends RelativeLayout implements View.OnClickListener {
         mb.setVisibility(mItem.getContainer().mShowSorted ? View.GONE : View.VISIBLE);
     }
 
+    /**
+     * Format the text according to current status of the item. Base class handles global settings.
+     */
     protected void setTextFormatting() {
         TextView it = findViewById(R.id.item_text);
         int padding;
@@ -118,10 +123,18 @@ class EntryListItemView extends RelativeLayout implements View.OnClickListener {
         it.setPadding(0, padding, 0, padding);
     }
 
+    /**
+     * Handle a popup menu action. Default is a NOP.
+     * @param action the action to handle
+     * @return true if the action was handled
+     */
     protected boolean onAction(int action) {
         return false;
     }
 
+    /**
+     * Show the popup menu for the item
+     */
     private void showMenu() {
         PopupMenu popupMenu = new PopupMenu(mContext, this);
         popupMenu.inflate(mMenuResource);

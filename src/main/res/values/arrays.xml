@@ -6,4 +6,14 @@
         <item>Medium</item>
         <item>Large</item>
     </array>
+    <array name="share_format_description">
+        <item>Plain text</item>
+        <item>JSON data (.json)</item>
+        <item>Comma-separated Values (.csv)</item>
+    </array>
+    <array name="share_format_mimetype">
+        <item>text/plain</item>
+        <item>application/json</item>
+        <item>text/csv</item>
+    </array>
 </resources>
