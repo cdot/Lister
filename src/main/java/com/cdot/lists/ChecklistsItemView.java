@@ -1,3 +1,6 @@
+/*
+ * Copyright C-Dot Consultants 2020 - MIT license
+ */
 package com.cdot.lists;
 
 import android.annotation.SuppressLint;

@@ -1,5 +1,5 @@
-/**
- * @copyright C-Dot Consultants 2020 - MIT license
+/*
+ * Copyright C-Dot Consultants 2020 - MIT license
  */
 package com.cdot.lists;
 
@@ -117,15 +117,11 @@ public class ChecklistActivity extends EntryListActivity {
 
     @Override // EntryListActivity
     public boolean onOptionsItemSelected(MenuItem menuItem) {
-        Intent intent;
         switch (menuItem.getItemId()) {
             default:
                 return super.onOptionsItemSelected(menuItem);
             case R.id.action_check_all:
                 getList().checkAll(true);
-                return true;
-            case R.id.action_share:
-                shareWithComponent();
                 return true;
             case R.id.action_delete_checked:
                 Toast.makeText(this, getString(R.string.x_items_deleted, getList().deleteAllChecked()), Toast.LENGTH_SHORT).show();
@@ -166,10 +162,7 @@ public class ChecklistActivity extends EntryListActivity {
                     Toast.makeText(this, getString(R.string.x_items_restored, undone), Toast.LENGTH_SHORT).show();
                 return true;
             case R.id.action_save_list_as:
-                intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
-                intent.addCategory(Intent.CATEGORY_OPENABLE);
-                intent.setType("application/json");
-                startActivityForResult(intent, REQUEST_EXPORT_LIST);
+                exportChecklist();
                 return true;
         }
     }
@@ -254,7 +247,7 @@ public class ChecklistActivity extends EntryListActivity {
     }
 
     private int mPlace;
-    public void shareWithComponent() {
+    public void exportChecklist() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle(R.string.select_share_format);
         final Spinner picker = new Spinner(this);

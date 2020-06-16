@@ -1,5 +1,5 @@
-/**
- * @copyright C-Dot Consultants 2020 - MIT license
+/*
+ * Copyright C-Dot Consultants 2020 - MIT license
  */
 package com.cdot.lists;
 
@@ -397,7 +397,7 @@ abstract class EntryList implements EntryListItem {
      * Load the object from JSON or CSV read from the stream
      *
      * @param stream source of the JSON or CSV
-     * @throws Exception
+     * @throws Exception if something goes wrong
      */
     void fromStream(InputStream stream) throws Exception {
         BufferedReader br = new BufferedReader(new InputStreamReader(stream));
@@ -406,7 +406,6 @@ abstract class EntryList implements EntryListItem {
         while ((data = br.readLine()) != null)
             sb.append(data).append("\n");
         data = sb.toString();
-        Reader reader = new StringReader(data);
         try {
             // See if it's JSON
 
@@ -421,9 +420,8 @@ abstract class EntryList implements EntryListItem {
             }
         } catch (JSONException je) {
             // See if it's CSV...
-            reader = new StringReader(data);
             try {
-                fromCSV(new CSVReader(reader));
+                fromCSV(new CSVReader(new StringReader(data)));
             } catch (CsvException csve) {
                 throw new Exception("Format error");
             }

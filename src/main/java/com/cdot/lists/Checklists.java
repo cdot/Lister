@@ -1,5 +1,5 @@
 /*
-  @copyright C-Dot Consultants 2020 - MIT license
+  Copyright C-Dot Consultants 2020 - MIT license
  */
 package com.cdot.lists;
 
@@ -97,23 +97,19 @@ class Checklists extends EntryList {
 
     @Override // EntryListItem
     public boolean merge(EntryListItem oth) {
-        Checklists other = (Checklists)oth;
+        Checklists other = (Checklists) oth;
         boolean changed = false; // will the list require a save?
         for (EntryListItem it : other.mUnsorted) {
             Checklist cl = (Checklist) it;
             int idx = findByUID(cl.getUID());
             if (idx >= 0) {
                 Checklist known = (Checklist) get(idx);
-                if (cl.mTimestamp > known.mTimestamp) {
-                    if (known != null) {
-                        if (known.merge(cl))
-                            changed = true;
-                    } else {
-                        Checklist newList = new Checklist(cl, Checklists.this, getContext());
-                        add(newList);
-                        changed = true;
-                    }
-                }
+                if (cl.mTimestamp > known.mTimestamp && known.merge(cl))
+                    changed = true;
+            } else {
+                Checklist newList = new Checklist(cl, Checklists.this, getContext());
+                add(newList);
+                changed = true;
             }
         }
         return changed;

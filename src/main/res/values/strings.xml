@@ -21,7 +21,7 @@
     <string name="action_uncheck_all">Uncheck all Items</string>
     <string name="action_undo_delete">Undo Last Delete</string>
     <string name="add_item">Add Item</string>
-    <string name="app_name">Lister</string>
+    <string name="app_name">Mr Lister</string>
     <string name="auto_delete_checked_items">Auto-delete checked items</string>
     <string name="cancel">Cancel</string>
     <string name="confirm_delete">Confirm Delete</string>

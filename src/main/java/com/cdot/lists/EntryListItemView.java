@@ -1,12 +1,11 @@
 /*
- * @copyright C-Dot Consultants 2020 - MIT license
+ * Copyright C-Dot Consultants 2020 - MIT license
  */
 package com.cdot.lists;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.util.Log;
-import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageButton;
@@ -136,11 +135,7 @@ class EntryListItemView extends RelativeLayout implements View.OnClickListener {
     private void showMenu() {
         PopupMenu popupMenu = new PopupMenu(mContext, this);
         popupMenu.inflate(mMenuResource);
-        popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
-            public boolean onMenuItemClick(MenuItem menuItem) {
-                return onAction(menuItem.getItemId());
-            }
-        });
+        popupMenu.setOnMenuItemClickListener(menuItem -> onAction(menuItem.getItemId()));
         popupMenu.show();
     }
 }

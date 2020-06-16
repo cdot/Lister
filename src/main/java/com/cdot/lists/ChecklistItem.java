@@ -1,5 +1,5 @@
 /*
- * @copyright C-Dot Consultants 2020 - MIT license
+ * Copyright C-Dot Consultants 2020 - MIT license
  */
 package com.cdot.lists;
 
@@ -69,9 +69,7 @@ class ChecklistItem implements EntryListItem {
     public boolean equals(EntryListItem ot) {
         if (!getText().equals(ot.getText()))
             return false;
-        if (mDone != ((ChecklistItem)ot).mDone)
-            return false;
-        return true;
+        return mDone == ((ChecklistItem) ot).mDone;
     }
 
     @Override // implement EntryListItem

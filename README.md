@@ -1,4 +1,4 @@
-# Lister
+# Mr Lister
 Android app that provides checkable lists with storage via ContentResolver (lists can be on SDcard,
 or Google Drive, or anything else that supports the Android Content Resolver interface)
 
