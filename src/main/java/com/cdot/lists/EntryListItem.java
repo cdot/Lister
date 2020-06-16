@@ -3,6 +3,9 @@
  */
 package com.cdot.lists;
 
+import com.opencsv.CSVReader;
+import com.opencsv.CSVWriter;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -10,6 +13,11 @@ import org.json.JSONObject;
  * Interface to items in an EntryList
  */
 interface EntryListItem {
+    /**
+     * Get the unique integer that idenitifies this item
+     */
+     long getUID();
+
     /**
      * Get the list that contains this item
      * @return the containing list, or null for the root
@@ -41,6 +49,13 @@ interface EntryListItem {
     void fromJSON(JSONObject jo) throws JSONException;
 
     /**
+     * Load from a Comma-Separated Value object
+     *
+     * @param r a reader
+     */
+    boolean fromCSV(CSVReader r) throws Exception;
+
+    /**
      * Get the JSON object that represents the content of this object
      *
      * @return a JSONObject
@@ -49,14 +64,28 @@ interface EntryListItem {
     JSONObject toJSON() throws JSONException;
 
     /**
-     * Get the CSV object that represents the content of this object
+     * Write the CSV that represents the content of this object
      *
-     * @return a String containing CSV
+     * @param w a CSV writer
      */
-    String toCSV();
+    void toCSV(CSVWriter w);
 
     /**
      * Format the item for inclusion in a text representation
      */
     String toPlainString(String tab);
+
+    /**
+     * Merge this item with another item. Changes are selected based on timestamps.
+     *
+     * @param other the other item
+     */
+    boolean merge(EntryListItem other);
+
+    /**
+     * Deep equality test. This is a comparison of text only; UIDs are ignored
+     *
+     * @param other the other item
+     */
+    boolean equals(EntryListItem other);
 }

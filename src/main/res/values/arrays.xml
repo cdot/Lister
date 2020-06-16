@@ -16,4 +16,9 @@
         <item>application/json</item>
         <item>text/csv</item>
     </array>
+    <array name="share_format_mimeext">
+    <item>.txt</item>
+    <item>.json</item>
+    <item>.csv</item>
+</array>
 </resources>

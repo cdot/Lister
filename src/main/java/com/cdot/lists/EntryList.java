@@ -12,6 +12,8 @@ import android.widget.ArrayAdapter;
 import android.widget.Toast;
 
 import com.opencsv.CSVReader;
+import com.opencsv.CSVWriter;
+import com.opencsv.exceptions.CsvException;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -25,9 +27,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.Reader;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Stack;
@@ -37,7 +40,9 @@ import java.util.Stack;
  */
 abstract class EntryList implements EntryListItem {
     private final String TAG = "Serialisable";
-    ArrayAdapter mArrayAdapter;
+    protected ArrayAdapter<EntryListItem> mArrayAdapter;
+
+    protected long mUID;
 
     // The list that contains this list.
     private EntryList mParent;
@@ -57,7 +62,7 @@ abstract class EntryList implements EntryListItem {
     /**
      * An item that has been removed, and the index it was removed from, for undos
      */
-    private class Remove {
+    private static class Remove {
         int index;
         EntryListItem item;
 
@@ -72,10 +77,12 @@ abstract class EntryList implements EntryListItem {
 
     /**
      * Constructor
+     *
      * @param parent the list that contains this list (or null for the root)
-     * @param cxt the Context, used to access the ContentResolver. Generally the application context.
+     * @param cxt    the Context, used to access the ContentResolver. Generally the application context.
      */
     EntryList(EntryList parent, Context cxt) {
+        mUID = System.currentTimeMillis();
         mParent = parent;
         mContext = cxt;
         mRemoves = new Stack<>();
@@ -84,9 +91,9 @@ abstract class EntryList implements EntryListItem {
     /**
      * Construct by reading content from a Uri
      *
-     * @param uri the URI to read from
+     * @param uri    the URI to read from
      * @param parent the list that contains this list (or null for the root)
-     * @param cxt the context, used to access the ContentResolver. Generally the application context.
+     * @param cxt    the context, used to access the ContentResolver. Generally the application context.
      * @throws Exception if there's a problem reading or decoding
      */
     EntryList(Uri uri, EntryList parent, Context cxt) throws Exception {
@@ -100,6 +107,11 @@ abstract class EntryList implements EntryListItem {
             throw new IOException("Failed to load lists. Unknown uri scheme: " + uri.getScheme());
         }
         fromStream(stream);
+    }
+
+    @Override // implement EntryListItem
+    public long getUID() {
+        return mUID;
     }
 
     @Override // implement EntryListItem
@@ -140,7 +152,6 @@ abstract class EntryList implements EntryListItem {
      * Add a new item to the end of the list
      *
      * @param item the item to add
-     * @return the index of the added item
      */
     void add(EntryListItem item) {
         mUnsorted.add(item);
@@ -151,6 +162,7 @@ abstract class EntryList implements EntryListItem {
      * Get the entry at the given index
      *
      * @param i index of the list to remove
+     * @return the index of the added item
      */
     EntryListItem get(int i) {
         if (i >= mUnsorted.size())
@@ -186,7 +198,7 @@ abstract class EntryList implements EntryListItem {
         Log.d(TAG, "remove");
         if (undo) {
             if (mRemoves.size() == 0)
-                mRemoves.push(new ArrayList<Remove>());
+                mRemoves.push(new ArrayList<>());
             mRemoves.peek().add(new Remove(mUnsorted.indexOf(item), item));
         }
         mUnsorted.remove(item);
@@ -198,7 +210,7 @@ abstract class EntryList implements EntryListItem {
      * recent undo set.
      */
     void newUndoSet() {
-        mRemoves.push(new ArrayList<Remove>());
+        mRemoves.push(new ArrayList<>());
     }
 
     /**
@@ -225,7 +237,7 @@ abstract class EntryList implements EntryListItem {
      * @param matchCase true to match case
      * @return index of matched item or -1 if not found
      */
-    int find(String str, boolean matchCase) {
+    int findByText(String str, boolean matchCase) {
         int i = -1;
         for (EntryListItem next : mUnsorted) {
             i++;
@@ -243,11 +255,27 @@ abstract class EntryList implements EntryListItem {
         return -1;
     }
 
+     /**
+     * Find an item in the list by UID
+     *
+     * @param uid       item to find
+     * @return index of matched item or -1 if not found
+     */
+     int findByUID(long uid) {
+        int i = -1;
+        for (EntryListItem next : mUnsorted) {
+            i++;
+            if (next.getUID() == uid)
+                return i;
+        }
+        return -1;
+    }
+
     /**
      * Get the index of the item in the list, or -1 if it's not there
-     * c.f. find(), sortedIndexOf
+     * c.f. findByText(), sortedIndexOf
      *
-     * @param ci
+     * @param ci item to get the index of
      * @return the index of the item in the list, or -1 if it's not there
      */
     int indexOf(EntryListItem ci) {
@@ -256,20 +284,34 @@ abstract class EntryList implements EntryListItem {
 
     /**
      * Get the index of the item in the sorted list, or -1 if it's not there
-     * c.f. find(), indexOf
+     * c.f. findByText(), indexOf
      *
-     * @param ci
+     * @param ci item to get the index of
      * @return the index of the item in the list, or -1 if it's not there
      */
     int sortedIndexOf(EntryListItem ci) {
         return mSorted.indexOf(ci);
     }
 
+    @Override // implement EntryListItem
+    public boolean equals(EntryListItem other) {
+        EntryList oth = (EntryList)other;
+        if (!oth.getText().equals(getText()) || oth.size() != size())
+            return false;
+
+        for (EntryListItem oit : oth.mUnsorted) {
+            int i = findByText(oit.getText(), true);
+            if (i < 0 || !oit.equals(get(i)))
+                return false;
+        }
+        return true;
+    }
+
     /**
      * Move the item to a new position in the list
      *
      * @param item item to move
-     * @param i   position to move it to, position in the unsorted list!
+     * @param i    position to move it to, position in the unsorted list!
      * @return true if the item moved
      */
     boolean moveItemToPosition(EntryListItem item, int i) {
@@ -309,11 +351,7 @@ abstract class EntryList implements EntryListItem {
      */
     protected void reSort() {
         mSorted = (ArrayList<EntryListItem>) mUnsorted.clone();
-        Collections.sort(mSorted, new Comparator<EntryListItem>() {
-            public int compare(EntryListItem item, EntryListItem item2) {
-                return item.getText().compareToIgnoreCase(item2.getText());
-            }
-        });
+        Collections.sort(mSorted, (item, item2) -> item.getText().compareToIgnoreCase(item2.getText()));
     }
 
     /**
@@ -332,56 +370,64 @@ abstract class EntryList implements EntryListItem {
         } catch (JSONException je) {
             throw new Error("JSON exception " + je.getMessage());
         }
-        new Thread(new Runnable() {
-            public void run() {
-                OutputStream stream;
-                try {
-                    String scheme = uri.getScheme();
-                    if (Objects.equals(scheme, ContentResolver.SCHEME_FILE)) {
-                        String path = uri.getPath();
-                        stream = new FileOutputStream(new File(path));
-                    } else if (Objects.equals(scheme, ContentResolver.SCHEME_CONTENT))
-                        stream = mContext.getContentResolver().openOutputStream(uri);
-                    else
-                        throw new IOException("Unknown uri scheme: " + uri.getScheme());
-                    if (stream == null)
-                        throw new IOException("Stream open failed");
-                    stream.write(data);
-                    stream.close();
-                    Log.d(TAG, "Saved to " + uri);
-                } catch (IOException ioe) {
-                    final String mess = ioe.getMessage();
-                    ((Activity) mContext).runOnUiThread(new Runnable() {
-                        public void run() {
-                            Toast.makeText(mContext, "Exception while saving to Uri " + mess, Toast.LENGTH_LONG).show();
-                        }
-                    });
-                }
+        new Thread(() -> {
+            OutputStream stream;
+            try {
+                String scheme = uri.getScheme();
+                if (Objects.equals(scheme, ContentResolver.SCHEME_FILE)) {
+                    String path = uri.getPath();
+                    stream = new FileOutputStream(new File(path));
+                } else if (Objects.equals(scheme, ContentResolver.SCHEME_CONTENT))
+                    stream = mContext.getContentResolver().openOutputStream(uri);
+                else
+                    throw new IOException("Unknown uri scheme: " + uri.getScheme());
+                if (stream == null)
+                    throw new IOException("Stream open failed");
+                stream.write(data);
+                stream.close();
+                Log.d(TAG, "Saved to " + uri);
+            } catch (IOException ioe) {
+                final String mess = ioe.getMessage();
+                ((Activity) mContext).runOnUiThread(() -> Toast.makeText(mContext, "Exception while saving to Uri " + mess, Toast.LENGTH_LONG).show());
             }
         }).start();
     }
 
     /**
-     * Load the object from JSON read from the stream
+     * Load the object from JSON or CSV read from the stream
      *
-     * @param stream source of the JSON
-     * @throws Exception IOException or JSONException
+     * @param stream source of the JSON or CSV
+     * @throws Exception
      */
     void fromStream(InputStream stream) throws Exception {
+        BufferedReader br = new BufferedReader(new InputStreamReader(stream));
+        String data;
         StringBuilder sb = new StringBuilder();
-        String line;
-        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(stream));
-        while ((line = bufferedReader.readLine()) != null)
-            sb.append(line);
-        JSONObject job;
+        while ((data = br.readLine()) != null)
+            sb.append(data).append("\n");
+        data = sb.toString();
+        Reader reader = new StringReader(data);
         try {
-            job = new JSONObject(sb.toString());
+            // See if it's JSON
+
+            try {
+                fromJSON(new JSONObject(data));
+            } catch (JSONException je) {
+                // Old format?
+                JSONArray ja = new JSONArray(data);
+                JSONObject job = new JSONObject();
+                job.put("items", ja);
+                fromJSON(job);
+            }
         } catch (JSONException je) {
-            // Old format, see if we can handle it as an array of items
-            job = new JSONObject();
-            job.put("items", new JSONArray(sb.toString()));
+            // See if it's CSV...
+            reader = new StringReader(data);
+            try {
+                fromCSV(new CSVReader(reader));
+            } catch (CsvException csve) {
+                throw new Exception("Format error");
+            }
         }
-        fromJSON(job);
     }
 
     @Override // implements EntryListItem
@@ -405,12 +451,11 @@ abstract class EntryList implements EntryListItem {
     }
 
     @Override // implement EntryListItem
-    public String toCSV() {
-        StringBuilder rows = new StringBuilder();
+    public void toCSV(CSVWriter w) {
+        w.writeNext(new String[] { "Item", "Checked" });
         for (EntryListItem it : mUnsorted) {
-            rows.append(it.toCSV()).append("\n");
+            it.toCSV(w);
         }
-        return rows.toString();
     }
 
     @Override // implement EntryListItem

@@ -5,14 +5,11 @@ package com.cdot.lists;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
 import android.text.InputType;
 import android.util.Log;
-import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -20,19 +17,20 @@ import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Spinner;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.FileProvider;
 import androidx.core.view.accessibility.AccessibilityEventCompat;
 
+import com.opencsv.CSVWriter;
+
 import java.io.File;
 import java.io.FileWriter;
+import java.io.Writer;
 import java.util.Objects;
 
 public class ChecklistActivity extends EntryListActivity {
@@ -59,15 +57,12 @@ public class ChecklistActivity extends EntryListActivity {
 
         mAddItemText = findViewById(R.id.add_item_text);
         mAddItemText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_AUTO_COMPLETE | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
-        mAddItemText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
-                if (i == EditorInfo.IME_ACTION_DONE) {
-                    addNewItem();
-                    return true;
-                }
-                return false;
+        mAddItemText.setOnEditorActionListener((textView, i, keyEvent) -> {
+            if (i == EditorInfo.IME_ACTION_DONE) {
+                addNewItem();
+                return true;
             }
+            return false;
         });
 
         mAddItemText.setImeOptions(EditorInfo.IME_ACTION_DONE);
@@ -151,12 +146,10 @@ public class ChecklistActivity extends EntryListActivity {
                 editText.setSingleLine(true);
                 editText.setText(mList.getText());
                 builder.setView(editText);
-                builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        mList.setText(editText.getText().toString());
-                        mChecklists.notifyListChanged(true);
-                        Objects.requireNonNull(getSupportActionBar()).setTitle(getList().getText());
-                    }
+                builder.setPositiveButton(R.string.ok, (dialogInterface, i) -> {
+                    mList.setText(editText.getText().toString());
+                    mChecklists.notifyListChanged(true);
+                    Objects.requireNonNull(getSupportActionBar()).setTitle(getList().getText());
                 });
                 builder.setNegativeButton(R.string.cancel, null);
                 builder.show();
@@ -234,7 +227,7 @@ public class ChecklistActivity extends EntryListActivity {
     private void addNewItem() {
         String obj = mAddItemText.getText().toString();
         if (obj.trim().length() != 0) {
-            int find = mList.find(obj, false);
+            int find = mList.findByText(obj, false);
             if (find < 0 || !Settings.getBool(Settings.warnAboutDuplicates))
                 addItem(obj);
             else
@@ -255,36 +248,11 @@ public class ChecklistActivity extends EntryListActivity {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle(R.string.similar_item_already_in_list);
         builder.setMessage(getString(R.string.similar_item_x_already_in_list, str2, str));
-        builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialogInterface, int i) {
-                addItem(str);
-            }
-        });
+        builder.setPositiveButton(R.string.ok, (dialogInterface, i) -> addItem(str));
         builder.setNegativeButton(R.string.cancel, null);
         builder.show();
     }
 
-/*
-        Log.d(TAG, "Share list");
-        // Sending simple data
-        Intent intent = new Intent("android.intent.action.SEND_MULTIPLE");
-        // Sending it as email
-        intent.setType("message/rfc822");
-        // Message headers
-        intent.putExtra("android.intent.extra.SUBJECT", mContext.getString(R.string.send_list_subject, mListName));
-        intent.putExtra("android.intent.extra.TEXT", mContext.getString(R.string.send_list_body, toPlainString()));
-        // Attachments. Use FileProvider to expose files externally.
-        ArrayList<Uri> arrayList = new ArrayList<>();
-        Uri imageUri = FileProvider.getUriForFile(
-                mContext,
-                "com.cdot.lists.provider",
-                mContext.getFileStreamPath(mFileName));
-        arrayList.add(imageUri);
-        intent.putParcelableArrayListExtra("android.intent.extra.STREAM", arrayList);
-        intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        // Away we go...
-        mContext.startActivity(Intent.createChooser(intent, mContext.getString(R.string.send_list_chooser_headline)));
- */
     private int mPlace;
     public void shareWithComponent() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -304,49 +272,43 @@ public class ChecklistActivity extends EntryListActivity {
         builder.setView(picker);
 
         final Intent intent = new Intent(Intent.ACTION_SEND);
-        intent.putExtra(Intent.EXTRA_SUBJECT, mList.getText());
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
         intent.putExtra(Intent.EXTRA_TITLE, mList.getText());
-        builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int id) {
-                String mimeType = getResources().getStringArray(R.array.share_format_mimetype)[mPlace];
-                String fileName = mList.getText().replaceAll("/|\0", "_");
-                try {
-                    String text, attachment;
-                    switch (mimeType) {
-                        case "text/plain":
-                            fileName += ".txt";
-                            text = getList().toPlainString("");
-                            attachment = text;
-                            break;
-                        case "application/json":
-                            fileName += ".json";
-                            text = getList().toPlainString("");
-                            attachment = getList().toJSON().toString();
-                            break;
-                        case "text/csv":
-                            fileName += ".csv";
-                            text = getList().toPlainString("");
-                            attachment = getList().toCSV();
-                            break;
-                        default:
-                            throw new Exception("Unrecognised share format");
-                    }
-                    File sendFile = new File(getExternalFilesDir("send"), fileName);
-                    FileWriter w = new FileWriter(sendFile);
-                    w.write(attachment);
-                    w.close();
-                    // See https://medium.com/@ali.muzaffar/what-is-android-os-fileuriexposedexception-and-what-you-can-do-about-it-70b9eb17c6d0
-                    String authRoot = getApplicationContext().getPackageName().replace(".debug", "");
-                    Uri uri = FileProvider.getUriForFile(ChecklistActivity.this, authRoot + ".provider", sendFile);
-                    intent.putExtra(Intent.EXTRA_STREAM, uri);
-                    intent.setType("text/plain");
-                    intent.putExtra(Intent.EXTRA_TEXT, text);
-                    startActivity(Intent.createChooser(intent, null));
-                } catch (Exception e) {
-                    Log.d(TAG, "Share failed " + e.getMessage());
-                    Toast.makeText(ChecklistActivity.this, getString(R.string.share_failed, e.getMessage()), Toast.LENGTH_SHORT).show();
+        builder.setPositiveButton(R.string.ok, (dialog, id) -> {
+            String mimeType = getResources().getStringArray(R.array.share_format_mimetype)[mPlace];
+            intent.setType(mimeType);
+            String ext = getResources().getStringArray(R.array.share_format_mimeext)[mPlace];
+            String fileName = mList.getText().replaceAll("[/\u0000]", "_") + ext;
+            // The EXTRA_SUBJECT is used as the document title for Drive saves
+            intent.putExtra(Intent.EXTRA_SUBJECT, fileName);
+            String text = getList().toPlainString("");
+            intent.putExtra(Intent.EXTRA_TEXT, text);
+            try {
+                File sendFile = new File(getExternalFilesDir("send"), fileName);
+                Writer w = new FileWriter(sendFile);
+                switch (mimeType) {
+                    case "text/plain":
+                        w.write(text);
+                        break;
+                    case "application/json":
+                        w.write(getList().toJSON().toString());
+                        break;
+                    case "text/csv":
+                        CSVWriter csvw = new CSVWriter(w);
+                        getList().toCSV(csvw);
+                        break;
+                    default:
+                        throw new Exception("Unrecognised share format");
                 }
+                w.close();
+                // See https://medium.com/@ali.muzaffar/what-is-android-os-fileuriexposedexception-and-what-you-can-do-about-it-70b9eb17c6d0
+                String authRoot = getApplicationContext().getPackageName().replace(".debug", "");
+                Uri uri = FileProvider.getUriForFile(ChecklistActivity.this, authRoot + ".provider", sendFile);
+                intent.putExtra(Intent.EXTRA_STREAM, uri);
+                startActivity(Intent.createChooser(intent, fileName));
+            } catch (Exception e) {
+                Log.d(TAG, "Share failed " + e.getMessage());
+                Toast.makeText(ChecklistActivity.this, getString(R.string.share_failed, e.getMessage()), Toast.LENGTH_SHORT).show();
             }
         });
         builder.setNegativeButton(R.string.cancel, null);

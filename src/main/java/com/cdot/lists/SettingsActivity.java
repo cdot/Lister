@@ -1,4 +1,4 @@
-/**
+/*
  * @copyright C-Dot Consultants 2020 - MIT license
  */
 package com.cdot.lists;
@@ -17,7 +17,6 @@ import com.cdot.lists.databinding.SettingsActivityBinding;
 public class SettingsActivity extends Activity implements AdapterView.OnItemSelectedListener {
     private static final int REQUEST_CHANGE_STORE = 1;
     private static final int REQUEST_CREATE_STORE = 2;
-    static final int REQUEST_SETTINGS_CHANGED = 3;
 
     SettingsActivityBinding mBinding;
 

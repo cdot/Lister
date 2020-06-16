@@ -5,7 +5,6 @@ package com.cdot.lists;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -45,7 +44,7 @@ public class ChecklistsActivity extends EntryListActivity {
         if (Settings.getBool(Settings.openLatest)) {
             String currentList = Settings.getString(Settings.currentList);
             if (currentList != null) {
-                int idx = checklists.find(currentList, true);
+                int idx = checklists.findByText(currentList, true);
                 if (idx >= 0) {
                     Log.d(TAG, "launching " + currentList);
                     launchChecklistActivity(idx);
@@ -90,7 +89,7 @@ public class ChecklistsActivity extends EntryListActivity {
             case R.id.action_import_list:
                 intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
                 intent.addCategory(Intent.CATEGORY_OPENABLE);
-                intent.setType("application/json");
+                intent.setType("*/*");
                 startActivityForResult(intent, REQUEST_IMPORT_LIST);
                 return true;
 
@@ -102,24 +101,20 @@ public class ChecklistsActivity extends EntryListActivity {
                 editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_AUTO_COMPLETE | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
                 editText.setSingleLine(true);
                 builder.setView(editText);
-                builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        String listname = editText.getText().toString();
-                        Checklist newList = new Checklist(listname, mList, ChecklistsActivity.this);
-                        mList.add(newList);
-                        mList.notifyListChanged(true);
-                        launchChecklistActivity(mList.indexOf(newList));
-                    }
+                builder.setPositiveButton(R.string.ok, (dialogInterface, i) -> {
+                    String listname = editText.getText().toString();
+                    Checklist newList = new Checklist(listname, mList, ChecklistsActivity.this);
+                    mList.add(newList);
+                    mList.notifyListChanged(true);
+                    launchChecklistActivity(mList.indexOf(newList));
                 });
                 builder.setNegativeButton(R.string.cancel, null);
                 builder.show();
-                editText.post(new Runnable() {
-                    public void run() {
-                        editText.setFocusable(true);
-                        editText.setFocusableInTouchMode(true);
-                        editText.requestFocus();
-                        ((InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE)).showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT);
-                    }
+                editText.post(() -> {
+                    editText.setFocusable(true);
+                    editText.setFocusableInTouchMode(true);
+                    editText.requestFocus();
+                    ((InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE)).showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT);
                 });
                 return true;
 

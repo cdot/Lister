@@ -4,7 +4,6 @@
 package com.cdot.lists;
 
 import android.content.Context;
-import android.content.DialogInterface;
 import android.graphics.Paint;
 import android.view.View;
 import android.widget.CheckBox;
@@ -36,11 +35,7 @@ class ChecklistItemView extends EntryListItemView {
         if (!isMoving) {
             addListeners();
             final CheckBox cb = findViewById(R.id.checklist_checkbox);
-            cb.setOnClickListener(new View.OnClickListener() {
-                public void onClick(View view) {
-                    setChecked(cb.isChecked());
-                }
-            });
+            cb.setOnClickListener(view -> setChecked(cb.isChecked()));
         }
         updateView();
     }
@@ -138,11 +133,9 @@ class ChecklistItemView extends EntryListItemView {
                 editText.setSingleLine(true);
                 editText.setText(mItem.getText());
                 builder.setView(editText);
-                builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        mItem.setText(editText.getText().toString());
-                        mItem.notifyListChanged(true);
-                    }
+                builder.setPositiveButton(R.string.ok, (dialogInterface, i) -> {
+                    mItem.setText(editText.getText().toString());
+                    mItem.notifyListChanged(true);
                 });
                 builder.setNegativeButton(R.string.cancel, null);
                 builder.show();

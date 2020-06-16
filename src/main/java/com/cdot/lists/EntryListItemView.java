@@ -1,4 +1,4 @@
-/**
+/*
  * @copyright C-Dot Consultants 2020 - MIT license
  */
 package com.cdot.lists;
@@ -75,12 +75,9 @@ class EntryListItemView extends RelativeLayout implements View.OnClickListener {
                 return true;
             }
         });
-        setOnLongClickListener(new View.OnLongClickListener() {
-            @Override
-            public boolean onLongClick(View view) {
-                showMenu();
-                return true;
-            }
+        setOnLongClickListener(view -> {
+            showMenu();
+            return true;
         });
         setOnClickListener(this);
     }
@@ -112,6 +109,7 @@ class EntryListItemView extends RelativeLayout implements View.OnClickListener {
                 padding = 0;
                 break;
             default:
+            case Settings.TEXT_SIZE_MEDIUM:
                 it.setTextAppearance(android.R.style.TextAppearance_DeviceDefault_Medium);
                 padding = 5;
                 break;

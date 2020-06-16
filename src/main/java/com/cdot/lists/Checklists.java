@@ -1,5 +1,5 @@
-/**
- * @copyright C-Dot Consultants 2020 - MIT license
+/*
+  @copyright C-Dot Consultants 2020 - MIT license
  */
 package com.cdot.lists;
 
@@ -16,6 +16,8 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 
+import com.opencsv.CSVReader;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -25,7 +27,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.Objects;
 
 /**
@@ -40,10 +41,10 @@ class Checklists extends EntryList {
     /**
      * Adapter for the array of lists in the list
      */
-    class ListsArrayAdapter extends ArrayAdapter<String> {
+    class ListsArrayAdapter extends ArrayAdapter<EntryListItem> {
 
         ListsArrayAdapter(Context cxt) {
-            super(cxt, 0, new ArrayList<String>());
+            super(cxt, 0);
         }
 
         @Override
@@ -57,6 +58,8 @@ class Checklists extends EntryList {
             } else {
                 itemView = (ChecklistsItemView) view;
                 // TODO: it this really required? Surely the new should have dealt with it
+                if (item != itemView.mItem) // check it
+                    Log.d(TAG, "WARNING: remove this warning!");
                 itemView.setItem(item);
             }
             itemView.updateView();
@@ -92,6 +95,54 @@ class Checklists extends EntryList {
         throw new Error("Unexpected getText in " + TAG);
     }
 
+    @Override // EntryListItem
+    public boolean merge(EntryListItem oth) {
+        Checklists other = (Checklists)oth;
+        boolean changed = false; // will the list require a save?
+        for (EntryListItem it : other.mUnsorted) {
+            Checklist cl = (Checklist) it;
+            int idx = findByUID(cl.getUID());
+            if (idx >= 0) {
+                Checklist known = (Checklist) get(idx);
+                if (cl.mTimestamp > known.mTimestamp) {
+                    if (known != null) {
+                        if (known.merge(cl))
+                            changed = true;
+                    } else {
+                        Checklist newList = new Checklist(cl, Checklists.this, getContext());
+                        add(newList);
+                        changed = true;
+                    }
+                }
+            }
+        }
+        return changed;
+    }
+
+    @Override // EntryList
+    public void fromJSON(JSONObject job) throws JSONException {
+        super.fromJSON(job);
+        JSONArray lists = job.getJSONArray("items");
+        for (int i = 0; i < lists.length(); i++)
+            add(new Checklist(lists.getJSONObject(i), this, getContext()));
+        Log.d(TAG, "Extracted " + lists.length() + " lists from JSON");
+    }
+
+    @Override // EntryListItem
+    public boolean fromCSV(CSVReader r) throws Exception {
+        throw new Exception("Unable to read multiple lists from CSV");
+    }
+
+    @Override // EntryList
+    public String toPlainString(String tab) {
+        StringBuilder sb = new StringBuilder();
+        for (EntryListItem item : getSorted()) {
+            sb.append(tab).append(item.getText()).append(":\n");
+            sb.append(item.toPlainString(tab + "\t")).append("\n");
+        }
+        return sb.toString();
+    }
+
     /**
      * Make a copy of the list at the given index
      *
@@ -122,16 +173,17 @@ class Checklists extends EntryList {
         Log.d(TAG, size() + " lists loaded from cache");
 
         // <DEBUG>
-        /*for (int i = 0; i < size(); i++) {
-            for (int j = 1; j < size(); ) {
-                if (get(j).getText().equals(get(i).getText())) {
+        for (int i = 0; i < size(); i++) {
+            EntryListItem ei = get(i);
+            for (int j = i + 1; j < size(); ) {
+                if (get(j).equals(ei)) {
                     Log.d(TAG, "REMOVE DUPLICATE " + get(j).getText());
                     remove(get(j), false);
                 } else
                     j++;
             }
         }
-        reSort();*/
+        reSort();
         // </DEBUG>
 
         mArrayAdapter.notifyDataSetChanged();
@@ -139,75 +191,31 @@ class Checklists extends EntryList {
         final Uri uri = Settings.getUri("backingStore");
         if (uri == null)
             return;
-        new Thread(new Runnable() {
-            public void run() {
-                Log.d(TAG, "Starting load thread");
-                try {
-                    Checklists backing = new Checklists(cxt, false);
-                    InputStream stream;
-                    if (Objects.equals(uri.getScheme(), ContentResolver.SCHEME_FILE)) {
-                        stream = new FileInputStream(new File((uri.getPath())));
-                    } else if (Objects.equals(uri.getScheme(), ContentResolver.SCHEME_CONTENT)) {
-                        stream = cxt.getContentResolver().openInputStream(uri);
-                    } else {
-                        throw new IOException("Failed to load lists. Unknown uri scheme: " + uri.getScheme());
-                    }
-                    backing.fromStream(stream);
-                    Log.d(TAG, backing.size() + " lists loaded from backing store");
-
-                    boolean changed = false; // will the list require a save?
-                    for (EntryListItem it : backing.mUnsorted) {
-                        Checklist cl = (Checklist) it;
-                        int idx = find(cl.getText(), true);
-                        Checklist known = idx < 0 ? null : (Checklist) get(idx);
-                        if (known == null || cl.mTimestamp > known.mTimestamp) {
-                            if (known != null) {
-                                if (known.merge(cl))
-                                    changed = true;
-                            } else {
-                                add(new Checklist(cl, Checklists.this, cxt));
-                                changed = true;
-                            }
-                        }
-                    }
-                    final boolean save = changed;
-                    new Handler(Looper.getMainLooper()).post(new Runnable() {
-                        public void run() {
-                            notifyListChanged(save);
-                        }
-                    });
-                } catch (final SecurityException se) {
-                    Log.d(TAG, "Security Exception loading backing store " + se);
-                    // run on UI thread
-                    new Handler(Looper.getMainLooper()).post(new Runnable() {
-                        public void run() {
-                            Toast.makeText(getContext(), "Security Exception loading backing store " + se, Toast.LENGTH_LONG).show();
-                        }
-                    });
-                } catch (Exception e) {
-                    Log.d(TAG, "Exception loading backing store: " + e);
+        new Thread(() -> {
+            Log.d(TAG, "Starting load thread");
+            try {
+                Checklists backing = new Checklists(cxt, false);
+                InputStream stream;
+                if (Objects.equals(uri.getScheme(), ContentResolver.SCHEME_FILE)) {
+                    stream = new FileInputStream(new File((uri.getPath())));
+                } else if (Objects.equals(uri.getScheme(), ContentResolver.SCHEME_CONTENT)) {
+                    stream = cxt.getContentResolver().openInputStream(uri);
+                } else {
+                    throw new IOException("Failed to load lists. Unknown uri scheme: " + uri.getScheme());
                 }
+                backing.fromStream(stream);
+                Log.d(TAG, backing.size() + " lists loaded from backing store");
+
+                boolean save = merge(backing);
+                new Handler(Looper.getMainLooper()).post(() -> notifyListChanged(save));
+            } catch (final SecurityException se) {
+                Log.d(TAG, "Security Exception loading backing store " + se);
+                // run on UI thread
+                new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(getContext(), "Security Exception loading backing store " + se, Toast.LENGTH_LONG).show());
+            } catch (Exception e) {
+                Log.d(TAG, "Exception loading backing store: " + e);
             }
         }).start();
-    }
-
-    @Override // EntryList
-    public void fromJSON(JSONObject job) throws JSONException {
-        super.fromJSON(job);
-        JSONArray lists = job.getJSONArray("items");
-        for (int i = 0; i < lists.length(); i++)
-            add(new Checklist(lists.getJSONObject(i), this, getContext()));
-        Log.d(TAG, "Extracted " + lists.length() + " lists from JSON");
-    }
-
-    @Override // EntryList
-    public String toPlainString(String tab) {
-        StringBuilder sb = new StringBuilder();
-        for (EntryListItem item : getSorted()) {
-            sb.append(tab).append(item.getText()).append(":\n");
-            sb.append(item.toPlainString(tab + "\t")).append("\n");
-        }
-        return sb.toString();
     }
 
     /**
