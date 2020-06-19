@@ -14,7 +14,8 @@ import org.json.JSONObject;
  */
 interface EntryListItem {
     /**
-     * Get the unique integer that idenitifies this item
+     * Get a unique integer that identifies this item. We use getTimeMillis to generate this UID,
+     * as the probability of a clash is infinitesmial.
      */
      long getUID();
 
@@ -38,6 +39,10 @@ interface EntryListItem {
      */
     String getText();
 
+    /**
+     * Notify any views of this list that the list contents have changed and redisplay is required.
+     * @param save whether to save
+     */
     void notifyListChanged(boolean save);
 
     /**

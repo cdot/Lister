@@ -33,8 +33,14 @@ import java.io.FileWriter;
 import java.io.Writer;
 import java.util.Objects;
 
+/**
+ * Activity for a checklist of items
+ */
 public class ChecklistActivity extends EntryListActivity {
     private static final String TAG = "ChecklistActivity";
+
+    static final String EXTRA_UID = "uid";
+    static final String EXTRA_NAME = "name";
 
     private static final int REQUEST_EXPORT_LIST = 4;
 
@@ -68,28 +74,36 @@ public class ChecklistActivity extends EntryListActivity {
         mAddItemText.setImeOptions(EditorInfo.IME_ACTION_DONE);
 
         // mChecklists is just a context placeholder here
-        mChecklists = new Checklists(this, true);
+        mChecklists = new Checklists(this);
+        mChecklists.load(this);
 
-        int idx = getIntent().getIntExtra("index", 0);
-        Checklist list = (Checklist) mChecklists.get(idx);
-
-        if (list == null) {
-            // Create the list
-            String listName = getIntent().getStringExtra("name");
-            list = new Checklist(listName, mChecklists, this);
-            mChecklists.add(list);
+        Checklist list = null;
+        long uid = getIntent().getLongExtra(EXTRA_UID, Settings.INVALID_UID);
+        if (uid != Settings.INVALID_UID)
+            list = (Checklist) mChecklists.findByUID(uid);
+        else {
+            String listName = getIntent().getStringExtra(EXTRA_NAME);
+            if (listName != null) {
+                list = new Checklist(mChecklists, listName);
+                mChecklists.add(list);
+            }
         }
-
+        if (list == null) {
+            Settings.setUID(Settings.currentList, Settings.INVALID_UID);
+            // Abort back to the lists activity
+            finish();
+            return;
+        }
         setList(list);
 
-        Settings.setString(Settings.currentList, list.getText());
+        Settings.setUID(Settings.currentList, list.getUID());
         Objects.requireNonNull(getSupportActionBar()).setTitle(list.getText());
 
         enableEditMode(list.size() == 0);
     }
 
     @Override // EntryListActivity
-    protected String getHelpFile() {
+    protected String getHelpAsset() {
         return "Checklist";
     }
 
@@ -102,7 +116,7 @@ public class ChecklistActivity extends EntryListActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent resultData) {
         super.onActivityResult(requestCode, resultCode, resultData);
         if (requestCode == REQUEST_EXPORT_LIST && resultCode == Activity.RESULT_OK && resultData != null)
-            mList.saveToUri(resultData.getData());
+            mList.saveToUri(resultData.getData(), this);
     }
 
     @Override // AppCompatActivity
@@ -124,11 +138,15 @@ public class ChecklistActivity extends EntryListActivity {
                 getList().checkAll(true);
                 return true;
             case R.id.action_delete_checked:
-                Toast.makeText(this, getString(R.string.x_items_deleted, getList().deleteAllChecked()), Toast.LENGTH_SHORT).show();
-                if (mList.size() == 0) {
-                    enableEditMode(true);
+                int deleted = getList().deleteAllChecked();
+                if (deleted > 0) {
                     getList().notifyListChanged(true);
-                    invalidateOptionsMenu();
+                    Toast.makeText(this, getString(R.string.x_items_deleted, deleted), Toast.LENGTH_SHORT).show();
+                    if (mList.size() == 0) {
+                        enableEditMode(true);
+                        getList().notifyListChanged(true);
+                        invalidateOptionsMenu();
+                    }
                 }
                 return true;
             case R.id.action_edit:
@@ -217,41 +235,59 @@ public class ChecklistActivity extends EntryListActivity {
         invalidateOptionsMenu();
     }
 
+    /**
+     * Handle adding an item from the typing area
+     */
     private void addNewItem() {
-        String obj = mAddItemText.getText().toString();
-        if (obj.trim().length() != 0) {
-            int find = mList.findByText(obj, false);
-            if (find < 0 || !Settings.getBool(Settings.warnAboutDuplicates))
-                addItem(obj);
-            else
-                promptSimilarItem(obj, mList.get(find).getText());
-        }
+        String text = mAddItemText.getText().toString();
+        if (text.trim().length() == 0)
+            return;
+        EntryListItem find = mList.findByText(text, false);
+        if (find == null || !Settings.getBool(Settings.warnAboutDuplicates))
+            addItem(text);
+        else
+            promptSimilarItem(text, find.getText());
     }
 
+    /**
+     * Handle adding an item after it's confirmed
+     *
+     * @param str the text of the item
+     */
     private void addItem(String str) {
         ChecklistItem item = new ChecklistItem(getList(), str, false);
         mList.add(item);
         mList.notifyListChanged(true);
         mAddItemText.setText("");
         ListView lv = findViewById(R.id.entry_list_activity_list_view);
-        lv.smoothScrollToPosition(mList.sortedIndexOf(item));
+        lv.smoothScrollToPosition(mList.indexOfDisplayed(item));
     }
 
-    private void promptSimilarItem(final String str, String str2) {
+    /**
+     * Prompt for similar item already in the list
+     *
+     * @param proposed the text of the proposed item
+     * @param similar  the text of a similar item already in the list
+     */
+    private void promptSimilarItem(final String proposed, String similar) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle(R.string.similar_item_already_in_list);
-        builder.setMessage(getString(R.string.similar_item_x_already_in_list, str2, str));
-        builder.setPositiveButton(R.string.ok, (dialogInterface, i) -> addItem(str));
+        builder.setMessage(getString(R.string.similar_item_x_already_in_list, similar, proposed));
+        builder.setPositiveButton(R.string.ok, (dialogInterface, i) -> addItem(proposed));
         builder.setNegativeButton(R.string.cancel, null);
         builder.show();
     }
 
+    /**
+     * Export the checklist in a user-selected format
+     */
     private int mPlace;
-    public void exportChecklist() {
+
+    private void exportChecklist() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle(R.string.select_share_format);
         final Spinner picker = new Spinner(this);
-        ArrayAdapter<String>adapter = new ArrayAdapter<>(this,
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
                 android.R.layout.simple_spinner_item, getResources().getStringArray(R.array.share_format_description));
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         picker.setAdapter(adapter);
@@ -259,6 +295,7 @@ public class ChecklistActivity extends EntryListActivity {
             public void onItemSelected(AdapterView<?> parent, View v, int position, long id) {
                 mPlace = position;
             }
+
             public void onNothingSelected(AdapterView<?> parent) {
             }
         });

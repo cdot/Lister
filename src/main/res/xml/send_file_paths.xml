@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- See https://medium.com/@ali.muzaffar/what-is-android-os-fileuriexposedexception-and-what-you-can-do-about-it-70b9eb17c6d0 -->
-<paths xmlns:android="http://schemas.android.com/apk/res/android">
+<paths>
     <external-files-path name="send_files" path="."/>
 </paths>

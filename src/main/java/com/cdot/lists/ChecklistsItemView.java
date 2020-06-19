@@ -27,12 +27,11 @@ public class ChecklistsItemView extends EntryListItemView {
         updateView();
     }
 
+    @Override // View
     public void onClick(View view) {
+        // A click on a list name will open that list in a ChecklistActivity
         Intent intent = new Intent(getContext(), ChecklistActivity.class);
-        EntryList mList = mItem.getContainer();
-        int idx = mList.indexOf(mItem);
-        intent.putExtra("index", idx);
-        intent.putExtra("name", mItem.getText());
+        intent.putExtra(ChecklistActivity.EXTRA_UID, mItem.getUID());
         getContext().startActivity(intent);
     }
 
@@ -71,7 +70,7 @@ public class ChecklistsItemView extends EntryListItemView {
                 return true;
 
             case R.id.action_copy:
-                checklists.cloneList(mItem, getContext());
+                checklists.cloneList(mItem);
                 return true;
                 
             default:

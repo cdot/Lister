@@ -3,15 +3,11 @@
  */
 package com.cdot.lists;
 
-import android.util.Log;
-
 import com.opencsv.CSVReader;
 import com.opencsv.CSVWriter;
 
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import java.util.List;
 
 /**
  * An item in a Checklist
@@ -26,7 +22,7 @@ class ChecklistItem implements EntryListItem {
     private long mDoneAt; // timestamp, only valid if mDone
 
     ChecklistItem(Checklist checklist, String str, boolean done) {
-        mUID = System.currentTimeMillis();
+        mUID = Settings.getUID();
         mList = checklist;
         mText = str;
         mDone = done;
@@ -34,9 +30,7 @@ class ChecklistItem implements EntryListItem {
     }
 
     ChecklistItem(Checklist checklist, ChecklistItem clone) {
-        mList = checklist;
-        mText = clone.mText;
-        mDone = clone.mDone;
+        this(checklist, clone.mText, clone.mDone);
         mDoneAt = clone.mDoneAt;
     }
 
@@ -101,11 +95,7 @@ class ChecklistItem implements EntryListItem {
 
     @Override // implement EntryListItem
     public void fromJSON(JSONObject jo) throws JSONException {
-        try {
-            mUID = jo.getLong("uid");
-        } catch (JSONException ignored) {
-            Log.d(TAG, "WARNING! No UID");
-        }
+        mUID = jo.getLong("uid");
         mText = jo.getString("name");
         mDone = false;
         mDoneAt = 0;

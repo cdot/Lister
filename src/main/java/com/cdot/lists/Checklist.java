@@ -5,11 +5,6 @@ package com.cdot.lists;
 
 import android.content.Context;
 import android.net.Uri;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
-
-import androidx.annotation.NonNull;
 
 import com.opencsv.CSVReader;
 
@@ -26,47 +21,6 @@ import java.util.Date;
 class Checklist extends EntryList {
     private static final String TAG = "Checklist";
 
-    /**
-     * Adapter for the array of items in the list
-     */
-    private class ItemsArrayAdapter extends ArrayAdapter<EntryListItem> {
-        ItemsArrayAdapter(Context cxt) {
-            super(cxt, 0);
-        }
-
-        @Override // ArrayAdapter
-        public @NonNull
-        View getView(int i, View convertView, @NonNull ViewGroup viewGroup) {
-            ChecklistItem item;
-            if (Settings.getBool(Settings.showCheckedAtEnd)) {
-                int uc = mUnsorted.size() - getCheckedCount();
-                if (i < uc)
-                    // Get ith unchecked
-                    item = getIthInState(i, false);
-                else
-                    // Get ith checked
-                    item = getIthInState(i - uc, true);
-            } else
-                item = (ChecklistItem) getSorted().get(i);
-
-            ChecklistItemView itemView;
-            if (convertView == null) {
-                assert item != null;
-                itemView = new ChecklistItemView(item, false, getContext());
-            } else {
-                itemView = (ChecklistItemView) convertView;
-                itemView.setItem(item);
-            }
-            itemView.updateView();
-            return itemView;
-        }
-
-        @Override
-        public int getCount() {
-            return mUnsorted.size();
-        }
-    }
-
     private String mListName;
     long mTimestamp = 0;
 
@@ -76,53 +30,79 @@ class Checklist extends EntryList {
      * @param name   private file list is stored in
      * @param parent container
      */
-    Checklist(String name, EntryList parent, Context cxt) {
-        super(parent, cxt);
+    Checklist(EntryList parent, String name) {
+        super(parent);
         mListName = name;
-        mArrayAdapter = new ItemsArrayAdapter(cxt);
     }
 
     /**
      * Process the JSON given and load from it
      *
      * @param job the JSON object
+     * @param parent new container list
      * @throws JSONException if something goes wrong
      */
-    Checklist(JSONObject job, EntryList parent, Context cxt) throws JSONException {
-        super(parent, cxt);
+    Checklist(EntryList parent, JSONObject job) throws JSONException {
+        super(parent);
         fromJSON(job);
-        mArrayAdapter = new ItemsArrayAdapter(cxt);
     }
 
     /**
      * Construct by copying an existing list and saving it to a new list
      *
      * @param copy list to clone
+     * @param parent new container list
      */
-    Checklist(Checklist copy, EntryList parent, Context cxt) {
-        super(parent, cxt);
+    Checklist(EntryList parent, Checklist copy) {
+        super(parent);
         mUID = copy.mUID;
         mListName = copy.mListName;
         mShowSorted = copy.mShowSorted;
         for (EntryListItem item : copy.mUnsorted)
             add(new ChecklistItem(this, (ChecklistItem) item));
-        reSort();
-        mArrayAdapter = new ItemsArrayAdapter(cxt);
+        updateDisplayOrder();
     }
 
-    Checklist(Uri uri, Checklists parent, Context cxt) throws Exception {
-        super(uri, parent, cxt);
-        mArrayAdapter = new ItemsArrayAdapter(cxt);
+    /**
+     * Construct by reading content from a URI
+     *
+     * @param parent container list
+     * @param uri source of data
+     * @param cxt context for resolving the uri
+     * @throws Exception if there's an error
+     */
+    Checklist(EntryList parent, Uri uri, Context cxt) throws Exception {
+        super(parent, uri, cxt);
     }
 
-    // implements EntryListItem
-    @Override
+    @Override // implement EntryList
+    EntryListItemView makeItemView(EntryListItem item, Context cxt) {
+        return new ChecklistItemView(item, false, cxt);
+    }
+
+    @Override // implement EntryList
+    protected void updateDisplayOrder() {
+        super.updateDisplayOrder();
+        if (Settings.getBool(Settings.showCheckedAtEnd)) {
+            int top = size();
+            int i = 0;
+            while (i < top) {
+                ChecklistItem item = (ChecklistItem) mDisplayed.get(i);
+                if (item.mDone) {
+                    mDisplayed.add(mDisplayed.remove(i));
+                    top--;
+                } else
+                    i++;
+            }
+        }
+    }
+
+    @Override // implement EntryListItem
     public String getText() {
         return mListName;
     }
 
-    // implements EntryListItem
-    @Override
+    @Override // implement EntryListItem
     public void setText(String name) {
         mListName = name;
     }
@@ -133,27 +113,9 @@ class Checklist extends EntryList {
      * @param ci item
      * @return index of the item
      */
-    // @implements EntryList
-    @Override
+    @Override // implement EntryList
     int indexOf(EntryListItem ci) {
         return mUnsorted.indexOf(ci);
-    }
-
-    /**
-     * Get the ith checked/nuchecked item in the displayed list
-     *
-     * @param i index
-     * @param state true to get ith checked item, false to get ith unchecked item
-     * @return the ith checked item, or null if no items are checked
-     */
-    private ChecklistItem getIthInState(int i, boolean state) {
-        int count = -1;
-        for (EntryListItem item : getSorted()) {
-            if (((ChecklistItem) item).mDone == state && ++count == i)
-                return (ChecklistItem) item;
-        }
-        // No checked items
-        return null;
     }
 
     /**
@@ -176,17 +138,16 @@ class Checklist extends EntryList {
         boolean changed = false;
         for (EntryListItem it : mUnsorted) {
             ChecklistItem cli = (ChecklistItem) it;
-            int ocli = oth.findByUID(cli.getUID());
-            if (ocli >= 0) {
-                if (cli.merge((ChecklistItem) oth.get(ocli)))
+            EntryListItem ocli = oth.findByUID(cli.getUID());
+            if (ocli != null) {
+                if (cli.merge((ChecklistItem) ocli))
                     changed = true;
             } // item not in other list
         }
-        for (EntryListItem it : mUnsorted) {
-            ChecklistItem ocli = (ChecklistItem) it;
-            int cli = findByText(ocli.mText, true);
-            if (cli < 0) {
-                mUnsorted.add(ocli);
+        for (EntryListItem it : oth.mUnsorted) {
+            EntryListItem cli = findByUID(it.getUID());
+            if (cli == null) {
+                mUnsorted.add(it);
                 changed = true;
             }
         }
@@ -213,10 +174,9 @@ class Checklist extends EntryList {
 
     @Override // EntryList
     public void notifyListChanged(boolean doSave) {
-        reSort();
-        mArrayAdapter.notifyDataSetChanged();
-        if (doSave)
-            getContainer().save(getContext());
+        super.notifyListChanged(doSave);
+        getContainer().notifyListChanged(doSave);
+        updateDisplayOrder();
     }
 
     /**
@@ -234,7 +194,6 @@ class Checklist extends EntryList {
         for (ChecklistItem dead : kill) {
             remove(dead, true);
         }
-        mArrayAdapter.notifyDataSetChanged();
         return kill.size();
     }
 
@@ -250,7 +209,7 @@ class Checklist extends EntryList {
             ci.fromJSON(items.getJSONObject(i));
             mUnsorted.add(ci);
         }
-        reSort();
+        updateDisplayOrder();
     }
 
     @Override // EntryListItem
@@ -265,7 +224,7 @@ class Checklist extends EntryList {
                 break;
             mUnsorted.add(ci);
         }
-        reSort();
+        updateDisplayOrder();
         return true;
     }
 

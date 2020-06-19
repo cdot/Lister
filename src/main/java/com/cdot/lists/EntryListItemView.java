@@ -22,8 +22,9 @@ class EntryListItemView extends RelativeLayout implements View.OnClickListener {
 
     // True if this view is of an item being moved
     protected boolean mIsMoving;
+    // The item being moved
     protected EntryListItem mItem;
-    protected Context mContext;
+    // The menu resource for this list item
     protected int mMenuResource;
 
     /**
@@ -37,11 +38,12 @@ class EntryListItemView extends RelativeLayout implements View.OnClickListener {
      */
     EntryListItemView(EntryListItem item, boolean isMoving, Context cxt, int layoutR, int menuR) {
         super(cxt);
-        inflate(getContext(), layoutR, this);
-        mContext = cxt;
+        inflate(cxt, layoutR, this);
         mIsMoving = isMoving;
         mMenuResource = menuR;
         setItem(item);
+        if (!isMoving)
+            addListeners();
     }
 
     /**
@@ -133,7 +135,7 @@ class EntryListItemView extends RelativeLayout implements View.OnClickListener {
      * Show the popup menu for the item
      */
     private void showMenu() {
-        PopupMenu popupMenu = new PopupMenu(mContext, this);
+        PopupMenu popupMenu = new PopupMenu(getContext(), this);
         popupMenu.inflate(mMenuResource);
         popupMenu.setOnMenuItemClickListener(menuItem -> onAction(menuItem.getItemId()));
         popupMenu.show();

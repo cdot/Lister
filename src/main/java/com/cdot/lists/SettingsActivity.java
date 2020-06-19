@@ -14,17 +14,17 @@ import android.widget.AdapterView;
 
 import com.cdot.lists.databinding.SettingsActivityBinding;
 
+/**
+ * This activity is invoked using startActivityForResult, and it will return a RESULT_OK if and only
+ * if a new list store has been attached. Otherwise it will return RESULT_CANCELED
+ */
 public class SettingsActivity extends Activity implements AdapterView.OnItemSelectedListener {
     private static final int REQUEST_CHANGE_STORE = 1;
     private static final int REQUEST_CREATE_STORE = 2;
 
     SettingsActivityBinding mBinding;
 
-    @Override
-    public void onNothingSelected(AdapterView<?> adapterView) {
-    }
-
-    @Override
+    @Override // Activity
     public void onCreate(Bundle bundle) {
         super.onCreate(bundle);
         mBinding = SettingsActivityBinding.inflate(getLayoutInflater());
@@ -51,32 +51,34 @@ public class SettingsActivity extends Activity implements AdapterView.OnItemSele
         setResult(RESULT_CANCELED);
     }
 
+    @Override // Activity
     public void onActivityResult(int requestCode, int resultCode, Intent resultData) {
-        if (resultCode == RESULT_OK && resultData != null) {
-            if (requestCode == REQUEST_CHANGE_STORE || requestCode == REQUEST_CREATE_STORE) {
-                Uri bs = Settings.getUri(Settings.backingStore);
-                Uri nbs = resultData.getData();
-                if (nbs != null) {
-                    if (!nbs.equals(bs))
-                        Settings.setUri(Settings.backingStore, nbs);
+        if (resultCode == RESULT_OK && resultData != null &&
+                (requestCode == REQUEST_CHANGE_STORE || requestCode == REQUEST_CREATE_STORE)) {
+            Uri bs = Settings.getUri(Settings.backingStore);
+            Uri nbs = resultData.getData();
+            if (nbs != null) {
+                if (!nbs.equals(bs))
+                    Settings.setUri(Settings.backingStore, nbs);
 
-                    // Clear the cache
-                    deleteFile(Settings.cacheFile);
+                // Clear the cache
+                deleteFile(Settings.cacheFile);
 
-                    // Persist granted access across reboots
-                    if (requestCode == REQUEST_CREATE_STORE) {
-                        final int takeFlags = resultData.getFlags()
-                                & (Intent.FLAG_GRANT_READ_URI_PERMISSION
-                                | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-                        getContentResolver().takePersistableUriPermission(bs, takeFlags);
-                    }
-                    mBinding.backingStoreUri.setText(nbs.toString());
-                    setResult(RESULT_OK);
+                // Persist granted access across reboots
+                if (requestCode == REQUEST_CREATE_STORE) {
+                    final int takeFlags = resultData.getFlags()
+                            & (Intent.FLAG_GRANT_READ_URI_PERMISSION
+                            | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                    getContentResolver().takePersistableUriPermission(bs, takeFlags);
                 }
+                mBinding.backingStoreUri.setText(nbs.toString());
+                // Only ever return RESULT_OK when the store has been changed
+                setResult(RESULT_OK);
             }
         }
     }
 
+    // Invoked from resource
     public void changeStoreClicked(View view) {
         Uri bs = Settings.getUri(Settings.backingStore);
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
@@ -88,6 +90,7 @@ public class SettingsActivity extends Activity implements AdapterView.OnItemSele
         startActivityForResult(intent, REQUEST_CHANGE_STORE);
     }
 
+    // Invoked from resource
     public void createStoreClicked(View view) {
         Uri bs = Settings.getUri(Settings.backingStore);
         Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
@@ -140,6 +143,10 @@ public class SettingsActivity extends Activity implements AdapterView.OnItemSele
         Settings.setBool(Settings.warnAboutDuplicates, mBinding.warnAboutDuplicates.isChecked());
     }
 
+    @Override // AdapterView.OnItemSelectedListener
+    public void onNothingSelected(AdapterView<?> adapterView) {}
+
+    @Override // AdapterView.OnItemSelectedListener
     public void onItemSelected(AdapterView<?> adapterView, View view, int i, long j) {
         if (adapterView == mBinding.textSizeSpinner)
             Settings.setInt(Settings.textSizeIndex, i);

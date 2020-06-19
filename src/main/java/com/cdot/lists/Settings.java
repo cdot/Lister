@@ -43,6 +43,9 @@ class Settings {
     static final int TEXT_SIZE_MEDIUM = 2;
     static final int TEXT_SIZE_LARGE = 3;
 
+    static final long INVALID_UID = 0;
+    static long sLastUID = INVALID_UID;
+
     private static SharedPreferences mPrefs;
 
     private static Map<String, Boolean> mBoolPrefs = new HashMap<String, Boolean>() {{
@@ -64,8 +67,8 @@ class Settings {
         put(textSizeIndex, TEXT_SIZE_DEFAULT);
     }};
 
-    private static Map<String, String> mStringPrefs = new HashMap<String, String>() {{
-        put(currentList, null);
+    private static Map<String, Long> mUIDPrefs = new HashMap<String, Long>() {{
+        put(currentList, INVALID_UID);
     }};
 
     private static Map<String, Uri> mUriPrefs = new HashMap<String, Uri>() {{
@@ -85,8 +88,11 @@ class Settings {
         for (Map.Entry<String, Integer> entry : mIntPrefs.entrySet()) {
             entry.setValue(mPrefs.getInt(entry.getKey(), entry.getValue()));
         }
-        for (Map.Entry<String, String> entry : mStringPrefs.entrySet()) {
-            entry.setValue(mPrefs.getString(entry.getKey(), entry.getValue()));
+        for (Map.Entry<String, Long> entry : mUIDPrefs.entrySet()) {
+            try {
+                entry.setValue(mPrefs.getLong(entry.getKey(), entry.getValue()));
+            } catch (ClassCastException ignore) {
+            }
         }
         for (Map.Entry<String, Uri> entry : mUriPrefs.entrySet()) {
             Uri ev = entry.getValue();
@@ -117,14 +123,14 @@ class Settings {
         e.apply();
     }
 
-    static String getString(String name) {
-        return mStringPrefs.get(name);
+    static long getUID(String name) {
+        return mUIDPrefs.get(name);
     }
 
-    static void setString(String name, String value) {
+    static void setUID(String name, long value) {
         SharedPreferences.Editor e = mPrefs.edit();
-        mStringPrefs.put(name, value);
-        e.putString(name, value);
+        mUIDPrefs.put(name, value);
+        e.putLong(name, value);
         e.apply();
     }
 
@@ -137,5 +143,16 @@ class Settings {
         mUriPrefs.put(name, value);
         e.putString(name, value.toString());
         e.apply();
+    }
+
+    /**
+     * Generate the next unique ID. Being time based, we can be reasonably confident that these
+     * are unique, though a simultaneous edit on two platforms might just banjax it.
+     * @return a unique ID
+     */
+    static long getUID() {
+        if (sLastUID == INVALID_UID)
+            sLastUID = System.currentTimeMillis();
+        return sLastUID++;
     }
 }

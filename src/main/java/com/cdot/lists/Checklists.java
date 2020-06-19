@@ -9,12 +9,7 @@ import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.Toast;
-
-import androidx.annotation.NonNull;
 
 import com.opencsv.CSVReader;
 
@@ -38,48 +33,21 @@ import java.util.Objects;
 class Checklists extends EntryList {
     private static final String TAG = "Checklists";
 
-    /**
-     * Adapter for the array of lists in the list
-     */
-    class ListsArrayAdapter extends ArrayAdapter<EntryListItem> {
-
-        ListsArrayAdapter(Context cxt) {
-            super(cxt, 0);
-        }
-
-        @Override
-        public @NonNull
-        View getView(int i, View view, @NonNull ViewGroup viewGroup) {
-            Checklist item = (Checklist) getSorted().get(i);
-            ChecklistsItemView itemView;
-            if (view == null) {
-                assert item != null;
-                itemView = new ChecklistsItemView(item, false, getContext());
-            } else {
-                itemView = (ChecklistsItemView) view;
-                itemView.setItem(item);
-            }
-            itemView.updateView();
-            return itemView;
-        }
-
-        @Override
-        public int getCount() {
-            return size();
-        }
-    }
+    private Context mContext;
 
     /**
      * Constructor
      *
-     * @param cxt  Context (Activity) the lists are being used in
-     * @param load true to load the list from cache (and trigger an update from backing store)
+     * @param cxt  Context used for saving
      */
-    Checklists(Context cxt, boolean load) {
-        super(null, cxt);
-        mArrayAdapter = new ListsArrayAdapter(cxt);
-        if (load)
-            load(cxt);
+    Checklists(Context cxt) {
+        super(null);
+        mContext = cxt;
+    }
+
+    @Override // EntryList
+    public EntryListItemView makeItemView(EntryListItem item, Context cxt) {
+        return new ChecklistsItemView(item, false, cxt);
     }
 
     @Override // implement EntryListItem
@@ -98,13 +66,12 @@ class Checklists extends EntryList {
         boolean changed = false; // will the list require a save?
         for (EntryListItem it : other.mUnsorted) {
             Checklist cl = (Checklist) it;
-            int idx = findByUID(cl.getUID());
-            if (idx >= 0) {
-                Checklist known = (Checklist) get(idx);
+            Checklist known = (Checklist) findByUID(cl.getUID());
+            if (known != null) {
                 if (cl.mTimestamp > known.mTimestamp && known.merge(cl))
                     changed = true;
             } else {
-                Checklist newList = new Checklist(cl, Checklists.this, getContext());
+                Checklist newList = new Checklist(this, cl);
                 add(newList);
                 changed = true;
             }
@@ -117,7 +84,7 @@ class Checklists extends EntryList {
         super.fromJSON(job);
         JSONArray lists = job.getJSONArray("items");
         for (int i = 0; i < lists.length(); i++)
-            add(new Checklist(lists.getJSONObject(i), this, getContext()));
+            add(new Checklist(this, lists.getJSONObject(i)));
         Log.d(TAG, "Extracted " + lists.length() + " lists from JSON");
     }
 
@@ -129,7 +96,7 @@ class Checklists extends EntryList {
     @Override // EntryList
     public String toPlainString(String tab) {
         StringBuilder sb = new StringBuilder();
-        for (EntryListItem item : getSorted()) {
+        for (EntryListItem item : getDisplayOrder()) {
             sb.append(tab).append(item.getText()).append(":\n");
             sb.append(item.toPlainString(tab + "\t")).append("\n");
         }
@@ -141,8 +108,8 @@ class Checklists extends EntryList {
      *
      * @param i index of the list to clone
      */
-    void cloneList(EntryListItem i, Context cxt) {
-        Checklist checklist = new Checklist((Checklist) i, this, cxt);
+    void cloneList(EntryListItem i) {
+        Checklist checklist = new Checklist(this, (Checklist) i);
         String newname = checklist.getText() + " (copy)";
         checklist.setText(newname);
         add(checklist);
@@ -159,15 +126,13 @@ class Checklists extends EntryList {
         // if it has changed
         try {
             FileInputStream fis = cxt.openFileInput(Settings.cacheFile);
-            fromStream(fis);
+            fromStream(fis, cxt);
         } catch (Exception e) {
             Log.d(TAG, "Exception loading from cache " + Settings.cacheFile + ": " + e);
         }
         Log.d(TAG, size() + " lists loaded from cache");
-
-        mArrayAdapter.notifyDataSetChanged();
-
-        removeDuplicates();
+        //removeDuplicates();
+        notifyListChanged(false);
 
         final Uri uri = Settings.getUri("backingStore");
         if (uri == null)
@@ -175,7 +140,7 @@ class Checklists extends EntryList {
         new Thread(() -> {
             Log.d(TAG, "Starting load thread");
             try {
-                Checklists backing = new Checklists(cxt, false);
+                Checklists backing = new Checklists(cxt);
                 InputStream stream;
                 if (Objects.equals(uri.getScheme(), ContentResolver.SCHEME_FILE)) {
                     stream = new FileInputStream(new File((uri.getPath())));
@@ -184,24 +149,24 @@ class Checklists extends EntryList {
                 } else {
                     throw new IOException("Failed to load lists. Unknown uri scheme: " + uri.getScheme());
                 }
-                backing.fromStream(stream);
+                backing.fromStream(stream, cxt);
                 Log.d(TAG, backing.size() + " lists loaded from backing store");
 
                 boolean save = merge(backing);
-                removeDuplicates();
+                //removeDuplicates();
                 new Handler(Looper.getMainLooper()).post(() -> notifyListChanged(save));
             } catch (final SecurityException se) {
                 Log.d(TAG, "Security Exception loading backing store " + se);
                 // run on UI thread
-                new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(getContext(), "Security Exception loading backing store " + se, Toast.LENGTH_LONG).show());
+                new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(cxt, "Security Exception loading backing store " + se, Toast.LENGTH_LONG).show());
             } catch (Exception e) {
                 Log.d(TAG, "Exception loading backing store: " + e);
             }
         }).start();
     }
 
+    // DEBUG ONLY
     private void removeDuplicates() {
-        // <DEBUG>
         for (int i = 0; i < size(); i++) {
             EntryListItem ei = get(i);
             for (int j = i + 1; j < size(); ) {
@@ -212,14 +177,20 @@ class Checklists extends EntryList {
                     j++;
             }
         }
-        reSort();
-        // </DEBUG>
+        updateDisplayOrder();
+    }
+
+    public void notifyListChanged(boolean save) {
+        super.notifyListChanged(save);
+        if (save)
+            saveList(mContext);
     }
 
     /**
      * Save the checklists. Saves to the cache first, and then the backing store (if configured)
+     * @param cxt context of the save
      */
-    void save(Context cxt) {
+    void saveList(Context cxt) {
         // Save to the cache, then refresh the backing store. That way the
         // cache will always be older than the backing store if the backing store save
         // succeeds
@@ -236,6 +207,6 @@ class Checklists extends EntryList {
         final Uri uri = Settings.getUri("backingStore");
         if (uri == null)
             return;
-        saveToUri(uri);
+        saveToUri(uri, cxt);
     }
 }

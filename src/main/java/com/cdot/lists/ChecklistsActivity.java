@@ -36,24 +36,17 @@ public class ChecklistsActivity extends EntryListActivity {
 
         setLayout(R.layout.checklists_activity);
 
-        // onCreate is always followed by onResume, so delay loading the lists
-        // until then
-        Checklists checklists = new Checklists(this, false);
+        // onCreate is always followed by onResume
+        Checklists checklists = new Checklists(this);
         setList(checklists);
 
         if (Settings.getBool(Settings.openLatest)) {
-            String currentList = Settings.getString(Settings.currentList);
-            if (currentList != null) {
-                int idx = checklists.findByText(currentList, true);
-                if (idx >= 0) {
-                    Log.d(TAG, "launching " + currentList);
-                    launchChecklistActivity(idx);
-                    return;
-                }
+            long uid = Settings.getUID(Settings.currentList);
+            if (uid != Settings.INVALID_UID) {
+                Log.d(TAG, "launching " + uid);
+                launchChecklistActivity(uid);
             }
-            Log.d(TAG, "no list to launch " + currentList);
         }
-
     }
 
     @Override // EntryListActivity
@@ -62,7 +55,7 @@ public class ChecklistsActivity extends EntryListActivity {
     }
 
     @Override // EntryListActivity
-    protected String getHelpFile() {
+    protected String getHelpAsset() {
         return "Checklists";
     }
 
@@ -103,10 +96,7 @@ public class ChecklistsActivity extends EntryListActivity {
                 builder.setView(editText);
                 builder.setPositiveButton(R.string.ok, (dialogInterface, i) -> {
                     String listname = editText.getText().toString();
-                    Checklist newList = new Checklist(listname, mList, ChecklistsActivity.this);
-                    mList.add(newList);
-                    mList.notifyListChanged(true);
-                    launchChecklistActivity(mList.indexOf(newList));
+                    launchChecklistActivity(listname);
                 });
                 builder.setNegativeButton(R.string.cancel, null);
                 builder.show();
@@ -124,13 +114,6 @@ public class ChecklistsActivity extends EntryListActivity {
         }
     }
 
-    /**
-     * Handle results from activities started with startActivityForResult
-     *
-     * @param requestCode startActivityForResult
-     * @param resultCode  did it work?
-     * @param resultData  and what's the data?
-     */
     @Override // AppCompatActivity
     public void onActivityResult(int requestCode, int resultCode, Intent resultData) {
         super.onActivityResult(requestCode, resultCode, resultData);
@@ -140,12 +123,12 @@ public class ChecklistsActivity extends EntryListActivity {
                     Uri uri = resultData.getData();
                     if (uri == null)
                         return;
-                    Checklist newList = new Checklist(uri, (Checklists) mList, this);
+                    Checklist newList = new Checklist(mList, uri, this);
                     mList.add(newList);
                     mList.notifyListChanged(true);
                     Log.d(TAG, "imported list: " + newList.getText());
                     Toast.makeText(this, getString(R.string.import_report, newList.getText()), Toast.LENGTH_LONG).show();
-                    launchChecklistActivity(mList.indexOf(newList));
+                    launchChecklistActivity(newList.getUID());
                 } catch (Exception e) {
                     Log.d(TAG, "import failed " + e.getMessage());
                     Toast.makeText(this, R.string.import_failed, Toast.LENGTH_LONG).show();
@@ -157,18 +140,30 @@ public class ChecklistsActivity extends EntryListActivity {
     }
 
     /**
-     * Launch the checklist reading content from the given private filename
+     * Launch the checklist
      *
-     * @param idx index of Checklist to open
+     * @param uid UID of checklist to launch
      */
-    private void launchChecklistActivity(int idx) {
+    private void launchChecklistActivity(long uid) {
         Intent intent = new Intent(this, ChecklistActivity.class);
-        intent.putExtra("index", idx);
-        intent.putExtra("name", mList.get(idx).getText());
+        intent.putExtra(ChecklistActivity.EXTRA_UID, uid);
         startActivity(intent);
     }
 
-    // Load the list of known lists
+    /**
+     * Launch a checklist activity to create the named list
+     *
+     * @param name new list name
+     */
+    private void launchChecklistActivity(String name) {
+        Intent intent = new Intent(this, ChecklistActivity.class);
+        intent.putExtra(ChecklistActivity.EXTRA_NAME, name);
+        startActivity(intent);
+    }
+
+    /**
+     * Load the list of known lists
+     * */
     private void loadLists() {
         Log.d(TAG, "Loading lists");
         mList.clear();
