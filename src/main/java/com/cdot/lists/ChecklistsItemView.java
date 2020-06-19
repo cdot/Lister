@@ -29,7 +29,8 @@ public class ChecklistsItemView extends EntryListItemView {
 
     public void onClick(View view) {
         Intent intent = new Intent(getContext(), ChecklistActivity.class);
-        int idx = mItem.getContainer().indexOf(mItem);
+        EntryList mList = mItem.getContainer();
+        int idx = mList.indexOf(mItem);
         intent.putExtra("index", idx);
         intent.putExtra("name", mItem.getText());
         getContext().startActivity(intent);

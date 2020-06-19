@@ -57,9 +57,6 @@ class Checklists extends EntryList {
                 itemView = new ChecklistsItemView(item, false, getContext());
             } else {
                 itemView = (ChecklistsItemView) view;
-                // TODO: it this really required? Surely the new should have dealt with it
-                if (item != itemView.mItem) // check it
-                    Log.d(TAG, "WARNING: remove this warning!");
                 itemView.setItem(item);
             }
             itemView.updateView();
@@ -168,21 +165,9 @@ class Checklists extends EntryList {
         }
         Log.d(TAG, size() + " lists loaded from cache");
 
-        // <DEBUG>
-        for (int i = 0; i < size(); i++) {
-            EntryListItem ei = get(i);
-            for (int j = i + 1; j < size(); ) {
-                if (get(j).equals(ei)) {
-                    Log.d(TAG, "REMOVE DUPLICATE " + get(j).getText());
-                    remove(get(j), false);
-                } else
-                    j++;
-            }
-        }
-        reSort();
-        // </DEBUG>
-
         mArrayAdapter.notifyDataSetChanged();
+
+        removeDuplicates();
 
         final Uri uri = Settings.getUri("backingStore");
         if (uri == null)
@@ -203,6 +188,7 @@ class Checklists extends EntryList {
                 Log.d(TAG, backing.size() + " lists loaded from backing store");
 
                 boolean save = merge(backing);
+                removeDuplicates();
                 new Handler(Looper.getMainLooper()).post(() -> notifyListChanged(save));
             } catch (final SecurityException se) {
                 Log.d(TAG, "Security Exception loading backing store " + se);
@@ -214,6 +200,22 @@ class Checklists extends EntryList {
         }).start();
     }
 
+    private void removeDuplicates() {
+        // <DEBUG>
+        for (int i = 0; i < size(); i++) {
+            EntryListItem ei = get(i);
+            for (int j = i + 1; j < size(); ) {
+                if (get(j).equals(ei)) {
+                    Log.d(TAG, "REMOVE DUPLICATE " + get(j).getText());
+                    remove(get(j), false);
+                } else
+                    j++;
+            }
+        }
+        reSort();
+        // </DEBUG>
+    }
+
     /**
      * Save the checklists. Saves to the cache first, and then the backing store (if configured)
      */
@@ -221,6 +223,7 @@ class Checklists extends EntryList {
         // Save to the cache, then refresh the backing store. That way the
         // cache will always be older than the backing store if the backing store save
         // succeeds
+        Log.d(TAG, "Saving to cache");
         try {
             FileOutputStream stream = cxt.openFileOutput(Settings.cacheFile, Context.MODE_PRIVATE);
             String s = this.toJSON().toString(1);
@@ -228,7 +231,7 @@ class Checklists extends EntryList {
             stream.close();
         } catch (Exception e) {
             // Would really like to toast this
-            Log.d(TAG, "Exception saving to cache " + e);
+            Log.d(TAG, "Exception saving to cache: " + e);
         }
         final Uri uri = Settings.getUri("backingStore");
         if (uri == null)

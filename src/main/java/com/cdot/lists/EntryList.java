@@ -39,7 +39,7 @@ import java.util.Stack;
  * Base class of things that can be serialised to a JSON representation and saved.
  */
 abstract class EntryList implements EntryListItem {
-    private final String TAG = "Serialisable";
+    private final String TAG = "EntryList";
     protected ArrayAdapter<EntryListItem> mArrayAdapter;
 
     protected long mUID;
@@ -431,6 +431,11 @@ abstract class EntryList implements EntryListItem {
     @Override // implements EntryListItem
     public void fromJSON(JSONObject job) throws JSONException {
         try {
+            mUID = job.getLong("uid");
+        } catch (JSONException ignore) {
+            Log.d(TAG, "WARNING! No UID");
+        }
+        try {
             mShowSorted = job.getBoolean("sort");
         } catch (JSONException je) {
             mShowSorted = Settings.getBool(Settings.forceAlphaSort);
@@ -443,6 +448,7 @@ abstract class EntryList implements EntryListItem {
         JSONArray its = new JSONArray();
         for (EntryListItem cl : mUnsorted)
             its.put(cl.toJSON());
+        job.put("uid", getUID());
         job.put("items", its);
         job.put("sort", mShowSorted);
         return job;

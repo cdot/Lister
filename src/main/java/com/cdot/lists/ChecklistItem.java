@@ -3,6 +3,8 @@
  */
 package com.cdot.lists;
 
+import android.util.Log;
+
 import com.opencsv.CSVReader;
 import com.opencsv.CSVWriter;
 
@@ -15,6 +17,8 @@ import java.util.List;
  * An item in a Checklist
  */
 class ChecklistItem implements EntryListItem {
+    private static final String TAG = "ChecklistItem";
+
     private final Checklist mList;
     private long mUID;
     String mText;
@@ -98,8 +102,9 @@ class ChecklistItem implements EntryListItem {
     @Override // implement EntryListItem
     public void fromJSON(JSONObject jo) throws JSONException {
         try {
-            mUID = jo.getLong("at");
+            mUID = jo.getLong("uid");
         } catch (JSONException ignored) {
+            Log.d(TAG, "WARNING! No UID");
         }
         mText = jo.getString("name");
         mDone = false;
