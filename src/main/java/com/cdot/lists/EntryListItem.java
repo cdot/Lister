@@ -33,6 +33,11 @@ interface EntryListItem {
     void setText(String str);
 
     /**
+     * Return false if the item is not moveable in the current list view
+     */
+    boolean isMoveable();
+
+    /**
      * Get the item's text
      *
      * @return a text string representing the item in the list

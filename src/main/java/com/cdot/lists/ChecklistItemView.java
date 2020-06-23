@@ -99,9 +99,10 @@ class ChecklistItemView extends EntryListItemView {
             left.addView(moveButton);
             mCheckboxOnRight = true;
         }
-        moveButton.setVisibility((mItem.getContainer().mShowSorted ||
-                ((ChecklistItem)mItem).mDone && Settings.getBool(Settings.showCheckedAtEnd)) ? View.GONE : View.VISIBLE);
-    checkBox.setChecked(((ChecklistItem) mItem).isDone());
+        ChecklistItem it = (ChecklistItem)mItem;
+        Checklist list = (Checklist)it.getContainer();
+        moveButton.setVisibility(list.mInEditMode ? View.VISIBLE : View.GONE);
+        checkBox.setChecked(((ChecklistItem) mItem).isDone());
     }
 
     /**

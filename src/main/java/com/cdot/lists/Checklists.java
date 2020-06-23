@@ -60,6 +60,11 @@ class Checklists extends EntryList {
         throw new Error("Unexpected getText in " + TAG);
     }
 
+    @Override // implement EntryListItem
+    public boolean isMoveable() {
+        return false;
+    }
+
     @Override // EntryListItem
     public boolean merge(EntryListItem oth) {
         Checklists other = (Checklists) oth;

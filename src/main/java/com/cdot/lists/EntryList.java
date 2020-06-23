@@ -56,7 +56,10 @@ abstract class EntryList implements EntryListItem {
     // A sorted version of the list (sorts on getText())
     protected ArrayList<EntryListItem> mDisplayed = new ArrayList<>();
 
+    // A temporary item used in dragging
     transient EntryListItem mMovingItem = null;
+
+    boolean mInEditMode = false;
 
     /**
      * Adapter for the list. This is only created when the list is actually displayed.
@@ -218,6 +221,7 @@ abstract class EntryList implements EntryListItem {
     void clear() {
         mUnsorted.clear();
         mDisplayed.clear();
+        mRemoves.clear();
     }
 
     /**
@@ -234,6 +238,14 @@ abstract class EntryList implements EntryListItem {
         }
         mUnsorted.remove(item);
         mDisplayed.remove(item);
+    }
+
+    /**
+     * Enable/disable edit mode
+     */
+    void setEditMode(boolean on) {
+        mInEditMode = on;
+        updateDisplayOrder();
     }
 
     /**
@@ -333,18 +345,6 @@ abstract class EntryList implements EntryListItem {
     }
 
     /**
-     * Move the item to a new position in the list
-     *
-     * @param item item to move
-     * @param i    position to move it to, position in the unsorted list!
-     */
-    void moveItemToPosition(EntryListItem item, int i) {
-        Log.d(TAG, "M" + i);
-        remove(item, false);
-        put(i, item);
-    }
-
-    /**
      * Set the item in the list that is currently being moved
      *
      * @param item the item being moved
@@ -370,7 +370,7 @@ abstract class EntryList implements EntryListItem {
      */
     protected void updateDisplayOrder() {
         mDisplayed = (ArrayList<EntryListItem>) mUnsorted.clone();
-        if (mShowSorted)
+        if (!mInEditMode && mShowSorted)
             Collections.sort(mDisplayed, (item, item2) -> item.getText().compareToIgnoreCase(item2.getText()));
     }
 

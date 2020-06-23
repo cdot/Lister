@@ -83,7 +83,7 @@ class Checklist extends EntryList {
     @Override // implement EntryList
     protected void updateDisplayOrder() {
         super.updateDisplayOrder();
-        if (Settings.getBool(Settings.showCheckedAtEnd)) {
+        if (!mInEditMode && Settings.getBool(Settings.showCheckedAtEnd)) {
             int top = size();
             int i = 0;
             while (i < top) {
@@ -105,6 +105,11 @@ class Checklist extends EntryList {
     @Override // implement EntryListItem
     public void setText(String name) {
         mListName = name;
+    }
+
+    @Override // implement EntryListItem
+    public boolean isMoveable() {
+        return true;
     }
 
     /**
@@ -170,6 +175,13 @@ class Checklist extends EntryList {
         }
         if (changed)
             notifyListChanged(true);
+    }
+
+    @Override // EntryList
+    void setEditMode(boolean on) {
+        if (on != mInEditMode)
+            notifyListChanged(false);
+        super.setEditMode(on);
     }
 
     @Override // EntryList

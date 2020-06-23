@@ -45,7 +45,6 @@ public class ChecklistActivity extends EntryListActivity {
     private static final int REQUEST_EXPORT_LIST = 4;
 
     private Checklists mChecklists;
-    private boolean mIsBeingEdited;
 
     private EditText mAddItemText;
 
@@ -58,8 +57,6 @@ public class ChecklistActivity extends EntryListActivity {
         super.onCreate(bundle);
 
         setLayout(R.layout.checklist_activity);
-
-        mIsBeingEdited = false;
 
         mAddItemText = findViewById(R.id.add_item_text);
         mAddItemText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_AUTO_COMPLETE | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
@@ -150,7 +147,7 @@ public class ChecklistActivity extends EntryListActivity {
                 }
                 return true;
             case R.id.action_edit:
-                enableEditMode(!mIsBeingEdited);
+                enableEditMode(!mList.mInEditMode);
                 return true;
             case R.id.action_rename_list:
                 AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
@@ -188,7 +185,7 @@ public class ChecklistActivity extends EntryListActivity {
     @Override // EntryListActivity
     public boolean onPrepareOptionsMenu(Menu menu) {
         MenuItem menuItem = menu.findItem(R.id.action_edit);
-        if (mIsBeingEdited) {
+        if (mList.mInEditMode) {
             menuItem.setIcon(R.drawable.ic_action_item_add_off);
             menuItem.setTitle(R.string.action_item_add_off);
         } else {
@@ -215,18 +212,19 @@ public class ChecklistActivity extends EntryListActivity {
      * @param isOn new state
      */
     private void enableEditMode(boolean isOn) {
-        mIsBeingEdited = isOn;
+        mList.setEditMode(isOn);
         View nic = findViewById(R.id.new_item_container);
-        nic.setVisibility(isOn ? View.VISIBLE : View.INVISIBLE);
 
         // Show/hide soft keyboard
         InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-        if (isOn) {
+        if (mList.mInEditMode) {
+            nic.setVisibility(View.VISIBLE);
             mAddItemText.setFocusable(true);
             mAddItemText.setFocusableInTouchMode(true);
             mAddItemText.requestFocus();
             inputMethodManager.showSoftInput(mAddItemText, InputMethodManager.SHOW_IMPLICIT);
         } else {
+            nic.setVisibility(View.INVISIBLE);
             View currentFocus = getCurrentFocus();
             if (currentFocus == null)
                 currentFocus = mAddItemText;

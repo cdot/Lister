@@ -64,6 +64,11 @@ class ChecklistItem implements EntryListItem {
     }
 
     @Override // implement EntryListItem
+    public boolean isMoveable() {
+        return !(mDone && Settings.getBool(Settings.showCheckedAtEnd));
+    }
+
+    @Override // implement EntryListItem
     public boolean equals(EntryListItem ot) {
         if (!getText().equals(ot.getText()))
             return false;

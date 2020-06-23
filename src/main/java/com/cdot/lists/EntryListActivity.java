@@ -68,15 +68,27 @@ abstract class EntryListActivity extends AppCompatActivity {
     }
 
     /**
+     * Move the item to a new position in the list. Does not affect the display order.
+     *
+     * @param item item to move
+     * @param i    position to move it to, position in the unsorted list!
+     */
+    private void moveItemToPosition(EntryListItem item, int i) {
+        mList.remove(item, false);
+        mList.put(i, item);
+        mList.notifyListChanged(true);
+    }
+
+    /**
      * Moving items in the list
      * @param motionEvent the event
      * @return true if the event is handled
      */
     @Override
     public boolean dispatchTouchEvent(MotionEvent motionEvent) {
-        ChecklistItem movingItem = (ChecklistItem)mList.mMovingItem;
-        if (movingItem == null || (movingItem.mDone && Settings.getBool(Settings.showCheckedAtEnd)))
-            // Cannot move a checked item if it has been sorted to the bottom
+        EntryListItem movingItem = mList.mMovingItem;
+        // Check the item can be moved
+        if (movingItem == null || !movingItem.isMoveable())
             return super.dispatchTouchEvent(motionEvent);
 
         // get screen position of the ListView and the Activity
@@ -114,11 +126,9 @@ abstract class EntryListActivity extends AppCompatActivity {
 
         int halfItemHeight = cl.getChildAt(viewIndex).getHeight() / 2;
         if (y < prevBottom && itemIndex > 0) {
-            mList.moveItemToPosition(movingItem, itemIndex - 1);
-            mList.notifyListChanged(true);
+            moveItemToPosition(movingItem, itemIndex - 1);
         } else if (y > nextTop && itemIndex < mList.size() - 1) {
-            mList.moveItemToPosition(movingItem, itemIndex + 1);
-            mList.notifyListChanged(true);
+            moveItemToPosition(movingItem, itemIndex + 1);
         }
 
         if (motionEvent.getAction() == MotionEvent.ACTION_MOVE) {
