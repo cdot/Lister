@@ -121,7 +121,13 @@ class Checklists extends EntryList {
      * is merged with it, replacing the lists on the backing store if the last save date on the
      * cache is more recent.
      */
+    Thread mLoadThread = null;
+
     void load(final Context cxt) {
+        if (mLoadThread != null && mLoadThread.isAlive()) {
+            mLoadThread.interrupt();
+            mLoadThread = null;
+        }
         // First load the cache, then asynchronously load the backing store and update the list
         // if it has changed
         try {
@@ -137,7 +143,7 @@ class Checklists extends EntryList {
         final Uri uri = Settings.getUri("backingStore");
         if (uri == null)
             return;
-        new Thread(() -> {
+        mLoadThread = new Thread(() -> {
             Log.d(TAG, "Starting load thread");
             try {
                 Checklists backing = new Checklists(cxt);
@@ -149,6 +155,8 @@ class Checklists extends EntryList {
                 } else {
                     throw new IOException("Failed to load lists. Unknown uri scheme: " + uri.getScheme());
                 }
+                if (mLoadThread.isInterrupted())
+                    return;
                 backing.fromStream(stream, cxt);
                 Log.d(TAG, backing.size() + " lists loaded from backing store");
 
@@ -162,7 +170,8 @@ class Checklists extends EntryList {
             } catch (Exception e) {
                 Log.d(TAG, "Exception loading backing store: " + e);
             }
-        }).start();
+        });
+        mLoadThread.start();
     }
 
     // DEBUG ONLY
