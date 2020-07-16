@@ -3,7 +3,6 @@
  */
 package com.cdot.lists;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
@@ -18,9 +17,9 @@ import com.cdot.lists.databinding.SettingsActivityBinding;
  * This activity is invoked using startActivityForResult, and it will return a RESULT_OK if and only
  * if a new list store has been attached. Otherwise it will return RESULT_CANCELED
  */
-public class SettingsActivity extends Activity implements AdapterView.OnItemSelectedListener {
-    private static final int REQUEST_CHANGE_STORE = 1;
-    private static final int REQUEST_CREATE_STORE = 2;
+public class SettingsActivity extends ActivityWithSettings implements AdapterView.OnItemSelectedListener {
+
+    static final String ENABLE_GENERAL_SETTINGS = "com.cdot.lists.ENABLE_GENERAL_SETTINGS";
 
     SettingsActivityBinding mBinding;
 
@@ -46,40 +45,39 @@ public class SettingsActivity extends Activity implements AdapterView.OnItemSele
         Uri uri = Settings.getUri(Settings.backingStore);
         mBinding.backingStoreUri.setText(uri != null ? uri.toString() : getString(R.string.not_set));
 
+        findViewById(R.id.general_settings).setVisibility((getIntent().getBooleanExtra(ENABLE_GENERAL_SETTINGS, false)) ? View.VISIBLE : View.GONE);
+
         // Default result is cancelled, unless the data store is changed and lists need to be
         // reloaded in which case it's RESULT_OK
         setResult(RESULT_CANCELED);
     }
 
-    @Override // Activity
+    @Override // implement ActivityWithSettings
+    protected void onSettingsChanged() {
+    }
+
+    @Override // ActivityWithSettings
     public void onActivityResult(int requestCode, int resultCode, Intent resultData) {
-        if (resultCode == RESULT_OK && resultData != null &&
-                (requestCode == REQUEST_CHANGE_STORE || requestCode == REQUEST_CREATE_STORE)) {
-            Uri bs = Settings.getUri(Settings.backingStore);
-            Uri nbs = resultData.getData();
-            if (nbs != null) {
-                if (!nbs.equals(bs))
-                    Settings.setUri(Settings.backingStore, nbs);
+        boolean bsChanged = false;
+        if (requestCode == Settings.REQUEST_CHANGE_STORE || requestCode == Settings.REQUEST_CREATE_STORE) {
+            // Change requestCode to signal to ActivityWithSettings that preferences have changed
+            requestCode = Settings.REQUEST_PREFERENCES;
+            bsChanged = true;
+        }
 
-                // Clear the cache
-                deleteFile(Settings.cacheFile);
+        // Handle REQUEST_PREFERENCES
+        super.onActivityResult(requestCode, resultCode, resultData);
 
-                // Persist granted access across reboots
-                if (requestCode == REQUEST_CREATE_STORE) {
-                    final int takeFlags = resultData.getFlags()
-                            & (Intent.FLAG_GRANT_READ_URI_PERMISSION
-                            | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-                    getContentResolver().takePersistableUriPermission(bs, takeFlags);
-                }
-                mBinding.backingStoreUri.setText(nbs.toString());
-                // Only ever return RESULT_OK when the store has been changed
-                setResult(RESULT_OK);
-            }
+        if (bsChanged && resultCode == RESULT_OK) {
+            mBinding.backingStoreUri.setText(Settings.getUri(Settings.backingStore).toString());
+            // Only ever return RESULT_OK when the store has been changed
+            setResult(RESULT_OK);
         }
     }
 
     // Invoked from resource
     public void changeStoreClicked(View view) {
+
         Uri bs = Settings.getUri(Settings.backingStore);
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
@@ -87,7 +85,7 @@ public class SettingsActivity extends Activity implements AdapterView.OnItemSele
         if (bs != null && Build.VERSION.SDK_INT >= 26)
             intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, bs);
         intent.setType("application/json");
-        startActivityForResult(intent, REQUEST_CHANGE_STORE);
+        startActivityForResult(intent, Settings.REQUEST_CHANGE_STORE);
     }
 
     // Invoked from resource
@@ -98,7 +96,7 @@ public class SettingsActivity extends Activity implements AdapterView.OnItemSele
         if (bs != null && Build.VERSION.SDK_INT >= 26)
             intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, bs);
         intent.setType("application/json");
-        startActivityForResult(intent, REQUEST_CREATE_STORE);
+        startActivityForResult(intent, Settings.REQUEST_CREATE_STORE);
     }
 
     // Checkbox click handlers, invoked from resource
@@ -144,7 +142,8 @@ public class SettingsActivity extends Activity implements AdapterView.OnItemSele
     }
 
     @Override // AdapterView.OnItemSelectedListener
-    public void onNothingSelected(AdapterView<?> adapterView) {}
+    public void onNothingSelected(AdapterView<?> adapterView) {
+    }
 
     @Override // AdapterView.OnItemSelectedListener
     public void onItemSelected(AdapterView<?> adapterView, View view, int i, long j) {

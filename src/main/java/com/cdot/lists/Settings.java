@@ -3,9 +3,12 @@
  */
 package com.cdot.lists;
 
+import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
+import android.util.Log;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -15,10 +18,18 @@ import java.util.Map;
  * defaults.
  */
 class Settings {
+    static final String TAG = "Settings";
+
     static final String UI_PREFERENCES = "UIPreferences";
     static final float TRANSPARENCY_OPAQUE = 1;
     static final float TRANSPARENCY_GREYED = 0.5f;
     static final float TRANSPARENCY_FAINT = 0.2f;
+
+    // Activity request codes
+    static final int REQUEST_CHANGE_STORE = 1;
+    static final int REQUEST_CREATE_STORE = 2;
+    static final int REQUEST_IMPORT_LIST = 3;
+    static final int REQUEST_PREFERENCES = 4;
 
     // General
     static String greyChecked = "greyCheckedItems";

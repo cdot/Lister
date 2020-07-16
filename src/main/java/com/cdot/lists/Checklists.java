@@ -5,11 +5,16 @@ package com.cdot.lists;
 
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
+import android.provider.DocumentsContract;
 import android.util.Log;
-import android.widget.Toast;
+
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.opencsv.CSVReader;
 
@@ -65,18 +70,19 @@ class Checklists extends EntryList {
         return false;
     }
 
+    // Called on the cache to merge the backing list
     @Override // EntryListItem
-    public boolean merge(EntryListItem oth) {
-        Checklists other = (Checklists) oth;
+    public boolean merge(EntryListItem backing) {
+        Checklists backLists = (Checklists) backing;
         boolean changed = false; // will the list require a save?
-        for (EntryListItem it : other.mUnsorted) {
-            Checklist cl = (Checklist) it;
-            Checklist known = (Checklist) findByUID(cl.getUID());
-            if (known != null) {
-                if (cl.mTimestamp > known.mTimestamp && known.merge(cl))
+        for (EntryListItem backIt : backLists.mUnsorted) {
+            Checklist backList = (Checklist) backIt;
+            Checklist cacheList = (Checklist) findByUID(backList.getUID());
+            if (cacheList != null) {
+                if (cacheList.merge(backList))
                     changed = true;
             } else {
-                Checklist newList = new Checklist(this, cl);
+                Checklist newList = new Checklist(this, backList);
                 add(newList);
                 changed = true;
             }
@@ -128,13 +134,15 @@ class Checklists extends EntryList {
      */
     Thread mLoadThread = null;
 
-    void load(final Context cxt) {
+    void load(final AppCompatActivity cxt) {
         if (mLoadThread != null && mLoadThread.isAlive()) {
             mLoadThread.interrupt();
             mLoadThread = null;
         }
-        // First load the cache, then asynchronously load the backing store and update the list
-        // if it has changed
+
+        clear();
+
+        // First load the cache, then asynchronously load the backing store
         try {
             FileInputStream fis = cxt.openFileInput(Settings.cacheFile);
             fromStream(fis, cxt);
@@ -164,14 +172,35 @@ class Checklists extends EntryList {
                     return;
                 backing.fromStream(stream, cxt);
                 Log.d(TAG, backing.size() + " lists loaded from backing store");
-
+                clear(); // kill the cache
                 boolean save = merge(backing);
                 //removeDuplicates();
                 new Handler(Looper.getMainLooper()).post(() -> notifyListChanged(save));
             } catch (final SecurityException se) {
+                // openInputStream denied, reroute through picker to re-establish permissions
                 Log.d(TAG, "Security Exception loading backing store " + se);
-                // run on UI thread
-                new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(cxt, "Security Exception loading backing store " + se, Toast.LENGTH_LONG).show());
+                new Handler(Looper.getMainLooper()).post(new Runnable() {
+                    @Override
+                    public void run() {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(cxt);
+                        builder.setTitle(R.string.access_denied);
+                        builder.setMessage(R.string.reconfirm_backing_store);
+                        builder.setPositiveButton(R.string.ok, (dialogInterface, i) -> {
+                            Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                            // Callers must include CATEGORY_OPENABLE in the Intent to obtain URIs that can be opened with ContentResolver#openFileDescriptor(Uri, String)
+                            intent.addCategory(Intent.CATEGORY_OPENABLE);
+                            // Indicate the permissions should be persistable across device reboots
+                            intent.setFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                            if (Build.VERSION.SDK_INT >= 26)
+                                intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, uri);
+                            intent.setType("application/json");
+                            cxt.startActivityForResult(intent, Settings.REQUEST_CHANGE_STORE);
+                            // onActivityResult will re-load the list in response to a successful
+                            // REQUEST_CHANGE_STORE
+                        });
+                        builder.show();
+                    }
+                });
             } catch (Exception e) {
                 Log.d(TAG, "Exception loading backing store: " + e);
             }

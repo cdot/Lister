@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="access_denied">Access Denied</string>
+    <string name="reconfirm_backing_store">Access to backing store denied. Please re-confirm backing store location</string>
     <string name="action_alpha_sort_off">Sorting Off</string>
     <string name="action_alpha_sort_on">Sorting On</string>
     <string name="action_change_store">Change Store</string>
@@ -16,7 +18,7 @@
     <string name="action_item_add_on">Add on</string>
     <string name="action_import_list">Import List</string>
     <string name="action_new_list">New List</string>
-    <string name="action_rename">Rename</string>
+    <string name="action_rename_list">Rename</string>
     <string name="action_settings">Settings</string>
     <string name="action_uncheck_all">Uncheck all Items</string>
     <string name="action_undo_delete">Undo Last Delete</string>
@@ -57,4 +59,5 @@
     <string name="warn_about_duplicates">Warn before adding duplicate item to list</string>
     <string name="x_items_deleted">%d items deleted</string>
     <string name="x_items_restored">%d items restored</string>
+    <string name="general_settings">General Settings</string>
 </resources>

@@ -18,16 +18,18 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Objects;
+
 /**
  * Activity that displays a list of checklists. The checklists are stored in a paired Checklists
  * object.
  */
 public class ChecklistsActivity extends EntryListActivity {
     private static final String TAG = "ChecklistsActivity";
-
-    // Activity request codes
-    private static final int REQUEST_IMPORT_LIST = 3;
-    private static final int REQUEST_PREFERENCES = 4;
 
     @Override // EntryListActivity
     public void onCreate(Bundle bundle) {
@@ -62,8 +64,10 @@ public class ChecklistsActivity extends EntryListActivity {
     @Override // AppCompatActivity
     protected void onResume() {
         super.onResume();
-        Log.d(TAG, "onResume");
-        loadLists();
+        Log.d(TAG, "onResume - loading lists");
+        ((Checklists) mList).load(this);
+        if (mList.size() == 0)
+            Toast.makeText(this, R.string.no_lists, Toast.LENGTH_LONG).show();
     }
 
     @Override // AppCompatActivity
@@ -83,7 +87,7 @@ public class ChecklistsActivity extends EntryListActivity {
                 intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
                 intent.addCategory(Intent.CATEGORY_OPENABLE);
                 intent.setType("*/*");
-                startActivityForResult(intent, REQUEST_IMPORT_LIST);
+                startActivityForResult(intent, Settings.REQUEST_IMPORT_LIST);
                 return true;
 
             case R.id.action_new_list:
@@ -96,7 +100,11 @@ public class ChecklistsActivity extends EntryListActivity {
                 builder.setView(editText);
                 builder.setPositiveButton(R.string.ok, (dialogInterface, i) -> {
                     String listname = editText.getText().toString();
-                    launchChecklistActivity(listname);
+                    Checklist newList = new Checklist(mList, listname);
+                    mList.add(newList);
+                    mList.notifyListChanged(true);
+                    Log.d(TAG, "created list: " + newList.getText());
+                    launchChecklistActivity(newList.getUID());
                 });
                 builder.setNegativeButton(R.string.cancel, null);
                 builder.show();
@@ -109,33 +117,42 @@ public class ChecklistsActivity extends EntryListActivity {
                 return true;
 
             case R.id.action_settings:
-                startActivityForResult(new Intent(this, SettingsActivity.class), REQUEST_PREFERENCES);
+                intent = new Intent(this, SettingsActivity.class);
+                intent.putExtra(SettingsActivity.ENABLE_GENERAL_SETTINGS, true);
+                startActivityForResult(intent, Settings.REQUEST_PREFERENCES);
                 return true;
         }
     }
 
-    @Override // AppCompatActivity
+    @Override // ActivityWithSettings
     public void onActivityResult(int requestCode, int resultCode, Intent resultData) {
         super.onActivityResult(requestCode, resultCode, resultData);
-        if (resultCode == Activity.RESULT_OK) {
-            if (requestCode == REQUEST_IMPORT_LIST && resultData != null) {
-                try {
-                    Uri uri = resultData.getData();
-                    if (uri == null)
-                        return;
-                    Checklist newList = new Checklist(mList, uri, this);
-                    mList.add(newList);
-                    mList.notifyListChanged(true);
-                    Log.d(TAG, "imported list: " + newList.getText());
-                    Toast.makeText(this, getString(R.string.import_report, newList.getText()), Toast.LENGTH_LONG).show();
-                    launchChecklistActivity(newList.getUID());
-                } catch (Exception e) {
-                    Log.d(TAG, "import failed " + e.getMessage());
-                    Toast.makeText(this, R.string.import_failed, Toast.LENGTH_LONG).show();
+
+        if (requestCode == Settings.REQUEST_IMPORT_LIST && resultCode == Activity.RESULT_OK && resultData != null) {
+            try {
+                Uri uri = resultData.getData();
+                if (uri == null)
+                    return;
+                InputStream stream;
+                if (Objects.equals(uri.getScheme(), "file")) {
+                    stream = new FileInputStream(new File((uri.getPath())));
+                } else if (Objects.equals(uri.getScheme(), "content")) {
+                    stream = getContentResolver().openInputStream(uri);
+                } else {
+                    throw new IOException("Failed to load lists. Unknown uri scheme: " + uri.getScheme());
                 }
-            } else if (requestCode == REQUEST_PREFERENCES)
-                // An OK result from the settings activity means list source has changed
-                loadLists();
+                Checklist newList = new Checklist(mList, "Unknown");
+                newList.fromStream(stream, this);
+
+                mList.add(newList);
+                mList.notifyListChanged(true);
+                Log.d(TAG, "imported list: " + newList.getText());
+                Toast.makeText(this, getString(R.string.import_report, newList.getText()), Toast.LENGTH_LONG).show();
+                launchChecklistActivity(newList.getUID());
+            } catch (Exception e) {
+                Log.d(TAG, "import failed " + e.getMessage());
+                Toast.makeText(this, R.string.import_failed, Toast.LENGTH_LONG).show();
+            }
         }
     }
 
@@ -150,25 +167,7 @@ public class ChecklistsActivity extends EntryListActivity {
         startActivity(intent);
     }
 
-    /**
-     * Launch a checklist activity to create the named list
-     *
-     * @param name new list name
-     */
-    private void launchChecklistActivity(String name) {
-        Intent intent = new Intent(this, ChecklistActivity.class);
-        intent.putExtra(ChecklistActivity.EXTRA_NAME, name);
-        startActivity(intent);
-    }
-
-    /**
-     * Load the list of known lists
-     * */
-    private void loadLists() {
-        Log.d(TAG, "Loading lists");
-        mList.clear();
-        ((Checklists) mList).load(this);
-        if (mList.size() == 0)
-            Toast.makeText(this, R.string.no_lists, Toast.LENGTH_LONG).show();
+    @Override // ActivityWithSettings
+    protected void onSettingsChanged() {
     }
 }

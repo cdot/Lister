@@ -3,6 +3,7 @@
  */
 package com.cdot.lists;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.util.Log;
 import android.view.Menu;
@@ -23,7 +24,7 @@ import androidx.appcompat.widget.Toolbar;
  * RelativeLayout R.id.entry_list_activity_layout
  * The common code here supports moving items in the list and some base menu functionality.
  */
-abstract class EntryListActivity extends AppCompatActivity {
+abstract class EntryListActivity extends ActivityWithSettings {
     private static final String TAG = "EntryListActivity";
 
     protected EntryList mList;
@@ -43,10 +44,10 @@ abstract class EntryListActivity extends AppCompatActivity {
      */
     protected abstract String getHelpAsset();
 
-    /**
-     * Associate an EntryList with this activity
-     * @param list the list to associate
-     */
+        /**
+         * Associate an EntryList with this activity
+         * @param list the list to associate
+         */
     void setList(EntryList list) {
         mList = list;
         EntryList.Adapter adapter = new EntryList.Adapter(list, this);

@@ -120,27 +120,6 @@ abstract class EntryList implements EntryListItem {
         mRemoves = new Stack<>();
     }
 
-    /**
-     * Construct by reading content from a Uri
-     *
-     * @param uri    the URI to read from
-     * @param parent the list that contains this list (or null for the root)
-     * @param cxt    the context, used to access the ContentResolver. Generally the application context.
-     * @throws Exception if there's a problem reading or decoding
-     */
-    EntryList(EntryList parent, Uri uri, Context cxt) throws Exception {
-        this(parent);
-        InputStream stream;
-        if (Objects.equals(uri.getScheme(), "file")) {
-            stream = new FileInputStream(new File((uri.getPath())));
-        } else if (Objects.equals(uri.getScheme(), "content")) {
-            stream = cxt.getContentResolver().openInputStream(uri);
-        } else {
-            throw new IOException("Failed to load lists. Unknown uri scheme: " + uri.getScheme());
-        }
-        fromStream(stream, cxt);
-    }
-
     @Override // implement EntryListItem
     public long getUID() {
         return mUID;
@@ -464,7 +443,7 @@ abstract class EntryList implements EntryListItem {
         JSONArray its = new JSONArray();
         for (EntryListItem cl : mUnsorted)
             its.put(cl.toJSON());
-        job.put("uid", getUID());
+        job.put("uid", mUID);
         job.put("items", its);
         job.put("sort", mShowSorted);
         return job;

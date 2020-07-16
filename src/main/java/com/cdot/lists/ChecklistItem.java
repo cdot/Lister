@@ -19,19 +19,16 @@ class ChecklistItem implements EntryListItem {
     private long mUID;
     String mText;
     boolean mDone;
-    private long mDoneAt; // timestamp, only valid if mDone
 
     ChecklistItem(Checklist checklist, String str, boolean done) {
         mUID = Settings.getUID();
         mList = checklist;
         mText = str;
         mDone = done;
-        mDoneAt = done ? mUID : 0;
     }
 
     ChecklistItem(Checklist checklist, ChecklistItem clone) {
         this(checklist, clone.mText, clone.mDone);
-        mDoneAt = clone.mDoneAt;
     }
 
     @Override // implement EntryListItem
@@ -75,15 +72,18 @@ class ChecklistItem implements EntryListItem {
         return mDone == ((ChecklistItem) ot).mDone;
     }
 
+    // Called on the cache to merge the backing list
     @Override // implement EntryListItem
-    public boolean merge(EntryListItem other) {
-        if (other.getUID() != getUID())
-            return false;
-        ChecklistItem ocli = (ChecklistItem)other;
-        mDoneAt = Math.max(mDoneAt, ocli.mDoneAt);
-        if (mDone == ocli.mDone) // no changes
-            return false;
-        mDone = ocli.mDone;
+    public boolean merge(EntryListItem backIt) {
+        boolean changed = false;
+        if (!getText().equals(backIt.getText())) {
+            setText(backIt.getText());
+            changed = true;
+        }
+        ChecklistItem backLit = (ChecklistItem)backIt;
+        if (mDone == backLit.mDone) // no changes
+            return changed;
+        mDone = backLit.mDone;
         return true;
     }
 
@@ -94,8 +94,6 @@ class ChecklistItem implements EntryListItem {
      */
     void setDone(boolean done) {
         mDone = done;
-        if (done)
-            mDoneAt = System.currentTimeMillis();
     }
 
     @Override // implement EntryListItem
@@ -103,10 +101,8 @@ class ChecklistItem implements EntryListItem {
         mUID = jo.getLong("uid");
         mText = jo.getString("name");
         mDone = false;
-        mDoneAt = 0;
         try {
             mDone = jo.getBoolean("done");
-            mDoneAt = jo.getLong("at");
         } catch (JSONException ignored) {
         }
     }
@@ -127,9 +123,8 @@ class ChecklistItem implements EntryListItem {
         JSONObject iob = new JSONObject();
         iob.put("uid", mUID);
         iob.put("name", mText);
-        iob.put("done", mDone);
         if (mDone)
-            iob.put("at", mDoneAt);
+            iob.put("done", true);
         return iob;
     }
 

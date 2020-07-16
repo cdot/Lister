@@ -86,7 +86,24 @@ interface EntryListItem {
     String toPlainString(String tab);
 
     /**
-     * Merge this item with another item. Changes are selected based on timestamps.
+     * Approach 1:
+     * Assume that the backing store is private to one user.
+     * So if the local cache is more recent than the backing store, use it.
+     * Otherwise use the backing store.
+     * Approach 2:
+     * As approach 1, but prompt if the backing store is more recent than the cache
+     * Approach 3:
+     * Merge. Cases to consider:
+     * List exists in cache but not in backing store
+     *      If the list uid is more recent than the backing store root timestamp, keep it
+     *      Otherwise discard it
+     * List exists in backing store but not in cache
+     * List exists in both backing store and cache
+     *      Cache version is more recent than backing store version
+     *      Backing store version is more recent than cache
+     * Where a list exists in both the cache and the backing store,
+     * it is merged at an item level. Where it only exists in the cache, then the time is considered;
+     * if the time on the list is more recent than the backing store timestamp, it is retained.
      *
      * @param other the other item
      */

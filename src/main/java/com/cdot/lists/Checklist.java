@@ -4,7 +4,6 @@
 package com.cdot.lists;
 
 import android.content.Context;
-import android.net.Uri;
 
 import com.opencsv.CSVReader;
 
@@ -13,7 +12,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
-import java.util.Date;
 
 /**
  * A checklist of checkable items. Can also be an item in a Checklists
@@ -61,18 +59,6 @@ class Checklist extends EntryList {
         for (EntryListItem item : copy.mUnsorted)
             add(new ChecklistItem(this, (ChecklistItem) item));
         updateDisplayOrder();
-    }
-
-    /**
-     * Construct by reading content from a URI
-     *
-     * @param parent container list
-     * @param uri source of data
-     * @param cxt context for resolving the uri
-     * @throws Exception if there's an error
-     */
-    Checklist(EntryList parent, Uri uri, Context cxt) throws Exception {
-        super(parent, uri, cxt);
     }
 
     @Override // implement EntryList
@@ -137,22 +123,26 @@ class Checklist extends EntryList {
         return i;
     }
 
+    // Called on the cache to merge the backing list
     @Override // implement EntryListItem
-    public boolean merge(EntryListItem other) {
-        Checklist oth = (Checklist)other;
+    public boolean merge(EntryListItem backing) {
         boolean changed = false;
-        for (EntryListItem it : mUnsorted) {
-            ChecklistItem cli = (ChecklistItem) it;
-            EntryListItem ocli = oth.findByUID(cli.getUID());
-            if (ocli != null) {
-                if (cli.merge((ChecklistItem) ocli))
-                    changed = true;
-            } // item not in other list
+        if (!getText().equals(backing.getText())) {
+            setText(backing.getText());
+            changed = true;
         }
-        for (EntryListItem it : oth.mUnsorted) {
-            EntryListItem cli = findByUID(it.getUID());
-            if (cli == null) {
-                mUnsorted.add(it);
+        EntryList backList = (EntryList)backing;
+        for (EntryListItem cacheIt : mUnsorted) {
+            EntryListItem backIt = backList.findByUID(cacheIt.getUID());
+            if (backIt != null) {
+                if (cacheIt.merge(backIt))
+                    changed = true;
+            } // item not in backing list, only in cache
+        }
+        for (EntryListItem backIt : backList.mUnsorted) {
+            EntryListItem cacheIt = findByUID(backIt.getUID());
+            if (cacheIt == null) {
+                mUnsorted.add(backIt);
                 changed = true;
             }
         }
@@ -244,7 +234,7 @@ class Checklist extends EntryList {
     public JSONObject toJSON() throws JSONException {
         JSONObject job = super.toJSON();
         job.put("name", mListName);
-        job.put("time", new Date().getTime());
+        job.put("time", mTimestamp);
         JSONArray items = new JSONArray();
         for (EntryListItem item : mUnsorted) {
             items.put(item.toJSON());

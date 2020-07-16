@@ -3,7 +3,6 @@
  */
 package com.cdot.lists;
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
@@ -109,11 +108,17 @@ public class ChecklistActivity extends EntryListActivity {
         return new ChecklistItemView(item, true, this);
     }
 
-    @Override // AppCompatActivity
-    protected void onActivityResult(int requestCode, int resultCode, Intent resultData) {
+    @Override // ActivityWithSettings
+    public void onActivityResult(int requestCode, int resultCode, Intent resultData) {
         super.onActivityResult(requestCode, resultCode, resultData);
-        if (requestCode == REQUEST_EXPORT_LIST && resultCode == Activity.RESULT_OK && resultData != null)
+
+        if (requestCode == REQUEST_EXPORT_LIST && resultCode == RESULT_OK && resultData != null)
             mList.saveToUri(resultData.getData(), this);
+    }
+
+    @Override // implement ActivityWithSettings
+    protected void onSettingsChanged() {
+        mList.notifyListChanged(false);
     }
 
     @Override // AppCompatActivity
@@ -122,7 +127,12 @@ public class ChecklistActivity extends EntryListActivity {
         return true;
     }
 
-    private Checklist getList() {
+    /**
+     * Helper to cast the list in the superclass to a Checklist
+     *
+     * @return the superclass managed list as a Checklist
+     */
+    private Checklist checklist() {
         return (Checklist) mList;
     }
 
@@ -131,24 +141,28 @@ public class ChecklistActivity extends EntryListActivity {
         switch (menuItem.getItemId()) {
             default:
                 return super.onOptionsItemSelected(menuItem);
+
             case R.id.action_check_all:
-                getList().checkAll(true);
+                checklist().checkAll(true);
                 return true;
+
             case R.id.action_delete_checked:
-                int deleted = getList().deleteAllChecked();
+                int deleted = checklist().deleteAllChecked();
                 if (deleted > 0) {
-                    getList().notifyListChanged(true);
+                    checklist().notifyListChanged(true);
                     Toast.makeText(this, getString(R.string.x_items_deleted, deleted), Toast.LENGTH_SHORT).show();
                     if (mList.size() == 0) {
                         enableEditMode(true);
-                        getList().notifyListChanged(true);
+                        checklist().notifyListChanged(true);
                         invalidateOptionsMenu();
                     }
                 }
                 return true;
+
             case R.id.action_edit:
                 enableEditMode(!mList.mInEditMode);
                 return true;
+
             case R.id.action_rename_list:
                 AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
                 builder.setTitle(R.string.rename_list);
@@ -160,24 +174,33 @@ public class ChecklistActivity extends EntryListActivity {
                 builder.setPositiveButton(R.string.ok, (dialogInterface, i) -> {
                     mList.setText(editText.getText().toString());
                     mChecklists.notifyListChanged(true);
-                    Objects.requireNonNull(getSupportActionBar()).setTitle(getList().getText());
+                    Objects.requireNonNull(getSupportActionBar()).setTitle(checklist().getText());
                 });
                 builder.setNegativeButton(R.string.cancel, null);
                 builder.show();
                 return true;
+
             case R.id.action_uncheck_all:
-                getList().checkAll(false);
+                checklist().checkAll(false);
                 return true;
+
             case R.id.action_undo_delete:
-                int undone = getList().undoRemove();
-                getList().notifyListChanged(true);
+                int undone = checklist().undoRemove();
+                checklist().notifyListChanged(true);
                 if (undone == 0)
                     Toast.makeText(this, R.string.no_deleted_items, Toast.LENGTH_SHORT).show();
                 else
                     Toast.makeText(this, getString(R.string.x_items_restored, undone), Toast.LENGTH_SHORT).show();
                 return true;
+
             case R.id.action_save_list_as:
                 exportChecklist();
+                return true;
+
+            case R.id.action_settings:
+                Intent intent = new Intent(this, SettingsActivity.class);
+                intent.putExtra(SettingsActivity.ENABLE_GENERAL_SETTINGS, false);
+                startActivityForResult(intent, Settings.REQUEST_PREFERENCES);
                 return true;
         }
     }
@@ -192,10 +215,11 @@ public class ChecklistActivity extends EntryListActivity {
             menuItem.setIcon(R.drawable.ic_action_item_add_on);
             menuItem.setTitle(R.string.action_item_add_on);
         }
-        menuItem = menu.findItem(R.id.action_undo_delete);
-        menuItem.setEnabled(((Checklist) mList).mRemoves.size() > 0);
-        menuItem = menu.findItem(R.id.action_delete_checked);
-        menuItem.setEnabled(((Checklist) mList).getCheckedCount() > 0);
+
+        menu.findItem(R.id.action_settings).setEnabled(!mList.mInEditMode);
+        menu.findItem(R.id.action_undo_delete).setEnabled(((Checklist) mList).mRemoves.size() > 0);
+        menu.findItem(R.id.action_delete_checked).setEnabled(((Checklist) mList).getCheckedCount() > 0);
+
         return super.onPrepareOptionsMenu(menu);
     }
 
@@ -253,7 +277,7 @@ public class ChecklistActivity extends EntryListActivity {
      * @param str the text of the item
      */
     private void addItem(String str) {
-        ChecklistItem item = new ChecklistItem(getList(), str, false);
+        ChecklistItem item = new ChecklistItem(checklist(), str, false);
         mList.add(item);
         mList.notifyListChanged(true);
         mAddItemText.setText("");
@@ -299,41 +323,58 @@ public class ChecklistActivity extends EntryListActivity {
         });
         builder.setView(picker);
 
-        final Intent intent = new Intent(Intent.ACTION_SEND);
-        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        intent.putExtra(Intent.EXTRA_TITLE, mList.getText());
+        final String listName = mList.getText();
+
         builder.setPositiveButton(R.string.ok, (dialog, id) -> {
+            final Intent intent = new Intent(Intent.ACTION_SEND);
+
+            intent.putExtra(Intent.EXTRA_TITLE, listName); // Dialog title
+
             String mimeType = getResources().getStringArray(R.array.share_format_mimetype)[mPlace];
             intent.setType(mimeType);
+
             String ext = getResources().getStringArray(R.array.share_format_mimeext)[mPlace];
-            String fileName = mList.getText().replaceAll("[/\u0000]", "_") + ext;
-            // The EXTRA_SUBJECT is used as the document title for Drive saves
+            String fileName = listName.replaceAll("[/\u0000]", "_") + ext;
+            // WTF! The EXTRA_SUBJECT is used as the document title for Drive saves!
             intent.putExtra(Intent.EXTRA_SUBJECT, fileName);
-            String text = getList().toPlainString("");
+
+            // text body e.g. for email
+            String text = checklist().toPlainString("");
             intent.putExtra(Intent.EXTRA_TEXT, text);
+
             try {
+                // Write a local file for the attachment
                 File sendFile = new File(getExternalFilesDir("send"), fileName);
                 Writer w = new FileWriter(sendFile);
                 switch (mimeType) {
                     case "text/plain":
+                        // Re-write the text body in the attachment
                         w.write(text);
                         break;
+
                     case "application/json":
-                        w.write(getList().toJSON().toString());
+                        w.write(checklist().toJSON().toString());
                         break;
+
                     case "text/csv":
                         CSVWriter csvw = new CSVWriter(w);
-                        getList().toCSV(csvw);
+                        checklist().toCSV(csvw);
                         break;
+
                     default:
                         throw new Exception("Unrecognised share format");
                 }
                 w.close();
+
+                // Expose the local file using a URI from the FileProvider, and add the URI to the intent
                 // See https://medium.com/@ali.muzaffar/what-is-android-os-fileuriexposedexception-and-what-you-can-do-about-it-70b9eb17c6d0
                 String authRoot = getApplicationContext().getPackageName().replace(".debug", "");
                 Uri uri = FileProvider.getUriForFile(ChecklistActivity.this, authRoot + ".provider", sendFile);
                 intent.putExtra(Intent.EXTRA_STREAM, uri);
+
+                // Fire off the intent
                 startActivity(Intent.createChooser(intent, fileName));
+
             } catch (Exception e) {
                 Log.d(TAG, "Share failed " + e.getMessage());
                 Toast.makeText(ChecklistActivity.this, getString(R.string.share_failed, e.getMessage()), Toast.LENGTH_SHORT).show();
