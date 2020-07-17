@@ -20,13 +20,13 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 
-import com.cdot.lists.model.Checklist;
-import com.cdot.lists.model.Checklists;
-import com.cdot.lists.view.ChecklistsItemView;
-import com.cdot.lists.model.EntryListItem;
-import com.cdot.lists.view.EntryListItemView;
 import com.cdot.lists.R;
 import com.cdot.lists.databinding.ChecklistsFragmentBinding;
+import com.cdot.lists.model.Checklist;
+import com.cdot.lists.model.Checklists;
+import com.cdot.lists.model.EntryListItem;
+import com.cdot.lists.view.ChecklistsItemView;
+import com.cdot.lists.view.EntryListItemView;
 
 /**
  * Activity that displays a list of checklists. The checklists are stored in a paired Checklists
@@ -121,7 +121,8 @@ public class ChecklistsFragment extends EntryListFragment {
                     String listname = editText.getText().toString();
                     Checklist newList = new Checklist(mList, listname);
                     mList.add(newList);
-                    mList.notifyListChanged(true);
+                    mList.notifyListChanged();
+                    getMainActivity().saveLists();
                     Log.d(TAG, "created list: " + newList.getText());
                     getMainActivity().pushFragment(new ChecklistFragment(newList));
                 });

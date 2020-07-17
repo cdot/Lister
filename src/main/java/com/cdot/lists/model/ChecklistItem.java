@@ -42,8 +42,9 @@ public class ChecklistItem extends EntryListItem {
     }
 
     @Override // implement EntryListItem
-    public void notifyListChanged(boolean save) {
-        getContainer().notifyListChanged(save);
+    public void notifyListChanged() {
+        // Listeners are attached to the root item, so pass the signal up
+        getContainer().notifyListChanged();
     }
 
     public boolean isDone() {
@@ -70,7 +71,7 @@ public class ChecklistItem extends EntryListItem {
             setText(backIt.getText());
             changed = true;
         }
-        ChecklistItem backLit = (ChecklistItem)backIt;
+        ChecklistItem backLit = (ChecklistItem) backIt;
         if (mDone == backLit.mDone) // no changes
             return changed;
         mDone = backLit.mDone;
@@ -78,12 +79,17 @@ public class ChecklistItem extends EntryListItem {
     }
 
     /**
-     * Set the item's done status and trigger a save
+     * Set the items done status
      *
      * @param done new done status
+     * @return true if the status changed
      */
-    public void setDone(boolean done) {
-        mDone = done;
+    public boolean setDone(boolean done) {
+        if (mDone != done) {
+            mDone = done;
+            return true;
+        }
+        return false;
     }
 
     @Override // implement EntryListItem

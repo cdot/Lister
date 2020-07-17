@@ -3,17 +3,12 @@
  */
 package com.cdot.lists.model;
 
-import android.app.Activity;
-import android.content.ContentResolver;
-import android.content.Context;
-import android.net.Uri;
 import android.util.Log;
-import android.widget.Toast;
 
-import com.cdot.lists.fragment.EntryListFragment;
-import com.cdot.lists.view.EntryListItemView;
 import com.cdot.lists.MainActivity;
 import com.cdot.lists.Settings;
+import com.cdot.lists.fragment.EntryListFragment;
+import com.cdot.lists.view.EntryListItemView;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVWriter;
 import com.opencsv.exceptions.CsvException;
@@ -23,16 +18,11 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Stack;
 
 /**
@@ -126,7 +116,6 @@ public abstract class EntryList extends EntryListItem {
      */
     public void add(EntryListItem item) {
         mData.add(item);
-        notifyListChanged(true);
     }
 
     /**
@@ -149,7 +138,6 @@ public abstract class EntryList extends EntryListItem {
      */
     public void put(int i, EntryListItem item) {
         mData.add(i, item);
-        notifyListChanged(true);
     }
 
     /**
@@ -158,7 +146,6 @@ public abstract class EntryList extends EntryListItem {
     public void clear() {
         mData.clear();
         mRemoves.clear();
-        notifyListChanged(true);
     }
 
     public int getRemoveCount() {
@@ -209,7 +196,7 @@ public abstract class EntryList extends EntryListItem {
             return 0;
         for (Remove it : items)
             mData.add(it.index, it.item);
-        notifyListChanged(true);
+        notifyListChanged();
         return items.size();
     }
 
@@ -271,45 +258,6 @@ public abstract class EntryList extends EntryListItem {
                 return false;
         }
         return true;
-    }
-
-    /**
-     * Launch a thread to perform an asynchronous save to a URI. If there's an error, it will
-     * be reported in a Toast on the UI thread.
-     *
-     * @param uri the URI to save to
-     */
-    public void saveToUri(final Uri uri, Context cxt) {
-        // Launch a thread to do this save, so we don't block the ui thread
-        Log.d(TAG, "Saving to " + uri);
-        final byte[] data;
-        try {
-            String s = toJSON().toString(1);
-            data = s.getBytes();
-        } catch (JSONException je) {
-            throw new Error("JSON exception " + je.getMessage());
-        }
-        new Thread(() -> {
-            OutputStream stream;
-            try {
-                String scheme = uri.getScheme();
-                if (Objects.equals(scheme, ContentResolver.SCHEME_FILE)) {
-                    String path = uri.getPath();
-                    stream = new FileOutputStream(new File(path));
-                } else if (Objects.equals(scheme, ContentResolver.SCHEME_CONTENT))
-                    stream = cxt.getContentResolver().openOutputStream(uri);
-                else
-                    throw new IOException("Unknown uri scheme: " + uri.getScheme());
-                if (stream == null)
-                    throw new IOException("Stream open failed");
-                stream.write(data);
-                stream.close();
-                Log.d(TAG, "Saved to " + uri);
-            } catch (IOException ioe) {
-                final String mess = ioe.getMessage();
-                ((Activity) cxt).runOnUiThread(() -> Toast.makeText(cxt, "Exception while saving to Uri " + mess, Toast.LENGTH_LONG).show());
-            }
-        }).start();
     }
 
     /**

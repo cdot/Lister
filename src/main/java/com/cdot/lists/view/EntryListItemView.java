@@ -22,7 +22,7 @@ import com.cdot.lists.model.EntryListItem;
  * Base class of views on list entries. Provides the basic functionality of a sortable text view.
  */
 @SuppressLint("ViewConstructor")
-public class EntryListItemView extends RelativeLayout implements View.OnClickListener, EntryListItem.ChangeListener {
+public class EntryListItemView extends RelativeLayout implements View.OnClickListener {
 
     private final String TAG = "EntryListItemView";
 
@@ -64,10 +64,6 @@ public class EntryListItemView extends RelativeLayout implements View.OnClickLis
         return mItem;
     }
 
-    @Override // implements EntryListItem.ChangeListener
-    public void onListItemChanged(EntryListItem l, boolean doSave) {
-    }
-
     public MainActivity getMainActivity() {
         return mFragment.getMainActivity();
     }
@@ -83,7 +79,6 @@ public class EntryListItemView extends RelativeLayout implements View.OnClickLis
      */
     public void setItem(EntryListItem item) {
         mItem = item;
-        mItem.addChangeListener(this);
     }
 
     @SuppressLint("ClickableViewAccessibility")

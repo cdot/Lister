@@ -29,7 +29,7 @@ public abstract class EntryListItem {
     }
 
     public interface ChangeListener {
-        void onListItemChanged(EntryListItem item, boolean save);
+        void onListChanged(EntryListItem item);
     }
 
     List<ChangeListener> mListeners = new ArrayList<>();
@@ -40,11 +40,10 @@ public abstract class EntryListItem {
 
     /**
      * Notify any views of this list that the list contents have changed and redisplay is required.
-     * @param doSave whether to save
      */
-    public void notifyListChanged(boolean doSave) {
+    public void notifyListChanged() {
         for (ChangeListener cl : mListeners)
-            cl.onListItemChanged(this, doSave);
+            cl.onListChanged(this);
     }
 
     protected long mUID = Settings.getUID();

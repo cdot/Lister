@@ -20,7 +20,6 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
-import android.widget.ListView;
 import android.widget.Spinner;
 import android.widget.Toast;
 
@@ -28,14 +27,14 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.FileProvider;
 
-import com.cdot.lists.model.Checklist;
-import com.cdot.lists.model.ChecklistItem;
-import com.cdot.lists.view.ChecklistItemView;
-import com.cdot.lists.model.EntryListItem;
-import com.cdot.lists.view.EntryListItemView;
 import com.cdot.lists.R;
 import com.cdot.lists.Settings;
 import com.cdot.lists.databinding.ChecklistFragmentBinding;
+import com.cdot.lists.model.Checklist;
+import com.cdot.lists.model.ChecklistItem;
+import com.cdot.lists.model.EntryListItem;
+import com.cdot.lists.view.ChecklistItemView;
+import com.cdot.lists.view.EntryListItemView;
 import com.opencsv.CSVWriter;
 
 import java.io.File;
@@ -121,17 +120,22 @@ public class ChecklistFragment extends EntryListFragment {
                 return super.onOptionsItemSelected(menuItem);
 
             case R.id.action_check_all:
-                checklist().checkAll(true);
+                if (checklist().checkAll(true)) {
+                    mList.notifyListChanged();
+                    getMainActivity().saveLists();
+                }
                 return true;
 
             case R.id.action_delete_checked:
                 int deleted = checklist().deleteAllChecked();
                 if (deleted > 0) {
-                    checklist().notifyListChanged(true);
+                    checklist().notifyListChanged();
+                    getMainActivity().saveLists();
                     Toast.makeText(getMainActivity(), getString(R.string.x_items_deleted, deleted), Toast.LENGTH_SHORT).show();
                     if (mList.size() == 0) {
                         enableEditMode(true);
-                        checklist().notifyListChanged(true);
+                        checklist().notifyListChanged();
+                        getMainActivity().saveLists();
                         getMainActivity().invalidateOptionsMenu();
                     }
                 }
@@ -151,7 +155,8 @@ public class ChecklistFragment extends EntryListFragment {
                 builder.setView(editText);
                 builder.setPositiveButton(R.string.ok, (dialogInterface, i) -> {
                     mList.setText(editText.getText().toString());
-                    getMainActivity().mLists.notifyListChanged(true);
+                    getMainActivity().mLists.notifyListChanged();
+                    getMainActivity().saveLists();
                     //Objects.requireNonNull(getSupportActionBar()).setTitle(checklist().getText());
                 });
                 builder.setNegativeButton(R.string.cancel, null);
@@ -159,12 +164,16 @@ public class ChecklistFragment extends EntryListFragment {
                 return true;
 
             case R.id.action_uncheck_all:
-                checklist().checkAll(false);
+                if (checklist().checkAll(false)) {
+                    mList.notifyListChanged();
+                    getMainActivity().saveLists();
+                }
                 return true;
 
             case R.id.action_undo_delete:
                 int undone = checklist().undoRemove();
-                checklist().notifyListChanged(true);
+                checklist().notifyListChanged();
+                getMainActivity().saveLists();
                 if (undone == 0)
                     Toast.makeText(getMainActivity(), R.string.no_deleted_items, Toast.LENGTH_SHORT).show();
                 else
@@ -250,9 +259,10 @@ public class ChecklistFragment extends EntryListFragment {
     private void addItem(String str) {
         ChecklistItem item = new ChecklistItem(checklist(), str, false);
         mList.add(item);
-        mList.notifyListChanged(true);
+        mList.notifyListChanged();
         mBinding.addItemText.setText("");
         mBinding.itemListView.smoothScrollToPosition(getDisplayOrder().indexOf(item));
+        getMainActivity().saveLists();
     }
 
     @Override // EntryListFragment

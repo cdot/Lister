@@ -99,12 +99,12 @@ public class Checklists extends EntryList {
      *
      * @param i index of the list to clone
      */
-    public void cloneList(EntryListItem i) {
+    public void copyList(EntryListItem i) {
         Checklist checklist = new Checklist(this, (Checklist) i);
         String newname = checklist.getText() + " (copy)";
         checklist.setText(newname);
         add(checklist);
-        notifyListChanged(true);
+        notifyListChanged();
     }
 
     // DEBUG ONLY

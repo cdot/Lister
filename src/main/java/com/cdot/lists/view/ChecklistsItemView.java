@@ -52,7 +52,8 @@ public class ChecklistsItemView extends EntryListItemView {
                 builder.setPositiveButton(R.string.ok, (dialogInterface, which_button) -> {
                     EntryList el = mItem.getContainer();
                     el.remove(mItem, true);
-                    el.notifyListChanged(true);
+                    el.notifyListChanged();
+                    getMainActivity().saveLists();
                 });
                 builder.setNegativeButton(R.string.cancel, null);
                 builder.show();
@@ -68,14 +69,16 @@ public class ChecklistsItemView extends EntryListItemView {
                 builder.setView(editText);
                 builder.setPositiveButton(R.string.ok, (dialogInterface, i) -> {
                     mItem.setText(editText.getText().toString());
-                    mItem.getContainer().notifyListChanged(true);
+                    mItem.getContainer().notifyListChanged();
+                    getMainActivity().saveLists();
                 });
                 builder.setNegativeButton(R.string.cancel, null);
                 builder.show();
                 return true;
 
             case R.id.action_copy:
-                checklists.cloneList(mItem);
+                checklists.copyList(mItem);
+                getMainActivity().saveLists();
                 return true;
                 
             default:

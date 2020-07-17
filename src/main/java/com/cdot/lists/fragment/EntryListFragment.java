@@ -5,7 +5,6 @@ package com.cdot.lists.fragment;
 
 import android.util.Log;
 import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
@@ -17,12 +16,12 @@ import android.widget.RelativeLayout;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 
-import com.cdot.lists.view.EntryListItemView;
 import com.cdot.lists.MainActivity;
 import com.cdot.lists.R;
 import com.cdot.lists.Settings;
 import com.cdot.lists.model.EntryList;
 import com.cdot.lists.model.EntryListItem;
+import com.cdot.lists.view.EntryListItemView;
 
 import java.util.Collections;
 import java.util.List;
@@ -94,7 +93,7 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
     }
 
     @Override // Implement EntryListItem.ChangeListener
-    public void onListItemChanged(EntryListItem item, boolean doSave) {
+    public void onListChanged(EntryListItem item) {
         notifyDataSetChanged();
     }
 
@@ -136,7 +135,8 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
     private void moveItemToPosition(EntryListItem item, int i) {
         mList.remove(item, false);
         mList.put(i, item);
-        mList.notifyListChanged(true);
+        mList.notifyListChanged();
+        getMainActivity().saveLists();
     }
 
     /**
@@ -223,8 +223,9 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
         switch (menuItem.getItemId()) {
             case R.id.action_alpha_sort:
                 mList.toggleShownSorted();
-                mList.notifyListChanged(true);
+                mList.notifyListChanged();
                 getMainActivity().invalidateOptionsMenu();
+                getMainActivity().saveLists();
                 return true;
             case R.id.action_help:
                 getMainActivity().pushFragment(new HelpFragment(getHelpAsset()));

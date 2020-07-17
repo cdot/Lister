@@ -124,7 +124,7 @@ public class Checklist extends EntryList {
      *
      * @param check true to set items as checked, false to set as unchecked
      */
-    public void checkAll(boolean check) {
+    public boolean checkAll(boolean check) {
         boolean changed = false;
         for (EntryListItem item : getData()) {
             ChecklistItem ci = (ChecklistItem) item;
@@ -133,8 +133,7 @@ public class Checklist extends EntryList {
                 changed = true;
             }
         }
-        if (changed)
-            notifyListChanged(true);
+        return changed;
     }
 
     /**
