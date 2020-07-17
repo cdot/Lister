@@ -1,20 +1,19 @@
 /*
  * Copyright C-Dot Consultants 2020 - MIT license
  */
-package com.cdot.lists;
+package com.cdot.lists.model;
 
 import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.net.Uri;
 import android.util.Log;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
-
+import com.cdot.lists.fragment.EntryListFragment;
+import com.cdot.lists.view.EntryListItemView;
+import com.cdot.lists.MainActivity;
+import com.cdot.lists.Settings;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVWriter;
 import com.opencsv.exceptions.CsvException;
@@ -25,7 +24,6 @@ import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,65 +31,24 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.StringReader;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.Stack;
 
 /**
  * Base class of things that can be serialised to a JSON representation and saved.
  */
-abstract class EntryList implements EntryListItem {
+public abstract class EntryList extends EntryListItem {
     private final String TAG = "EntryList";
-
-    protected long mUID;
 
     // The list that contains this list.
     private EntryList mParent;
 
     // The basic list
-    protected ArrayList<EntryListItem> mUnsorted = new ArrayList<>();
+    private ArrayList<EntryListItem> mData = new ArrayList<>();
 
     // Is this list being displayed sorted?
-    protected boolean mShowSorted = false;
-    // A sorted version of the list (sorts on getText())
-    protected ArrayList<EntryListItem> mDisplayed = new ArrayList<>();
-
-    // A temporary item used in dragging
-    transient EntryListItem mMovingItem = null;
-
-    boolean mInEditMode = false;
-
-    /**
-     * Adapter for the list. This is only created when the list is actually displayed.
-     */
-    static class Adapter extends ArrayAdapter<EntryListItem> {
-        private final EntryList mList;
-
-        Adapter(EntryList list, Context cxt) {
-            super(cxt, 0);
-            mList = list;
-        }
-
-        @Override // ArrayAdapter
-        public @NonNull
-        View getView(int i, View convertView, @NonNull ViewGroup viewGroup) {
-            EntryListItem item = mList.getDisplayOrder().get(i);
-            EntryListItemView itemView = (EntryListItemView) convertView;
-            if (itemView == null)
-                itemView = mList.makeItemView(item, getContext());
-            else
-                itemView.setItem(item);
-            itemView.updateView();
-            return itemView;
-        }
-
-        @Override
-        public int getCount() {
-            return mList.size();
-        }
-    }
-
-    private EntryList.Adapter mArrayAdapter;
+    private boolean mShownSorted = false;
 
     /**
      * An item that has been removed, and the index it was removed from, for undos
@@ -115,32 +72,33 @@ abstract class EntryList implements EntryListItem {
      * @param parent the list that contains this list (or null for the root)
      */
     EntryList(EntryList parent) {
-        mUID = Settings.getUID();
+        super();
         mParent = parent;
         mRemoves = new Stack<>();
     }
 
-    @Override // implement EntryListItem
-    public long getUID() {
-        return mUID;
+    EntryList(EntryList parent, EntryList copy) {
+        super(copy);
+        mParent = parent;
+        mRemoves = new Stack<>();
+        mShownSorted = copy.isShownSorted();
     }
 
-    @Override // implement EntryListItem
+    MainActivity getMainActivity() {
+        return mParent.getMainActivity();
+    }
+
+    public List<EntryListItem> getData() {
+        return mData;
+    }
+
+    public List<EntryListItem> cloneItemList() {
+        return (List<EntryListItem>) mData.clone();
+    }
+
+    @Override // EntryListItem
     public EntryList getContainer() {
         return mParent;
-    }
-
-    void setArrayAdapter(EntryList.Adapter adapter) {
-        mArrayAdapter = adapter;
-    }
-
-    /**
-     * Get an array giving the current ordering of the items in the displayed list.
-     *
-     * @return a sorted array of items
-     */
-    protected ArrayList<EntryListItem> getDisplayOrder() {
-        return mDisplayed;
     }
 
     /**
@@ -148,8 +106,8 @@ abstract class EntryList implements EntryListItem {
      *
      * @return size
      */
-    int size() {
-        return mUnsorted.size();
+    public int size() {
+        return mData.size();
     }
 
     /**
@@ -159,16 +117,16 @@ abstract class EntryList implements EntryListItem {
      * @param cxt  context of the view
      * @return a new view
      */
-    abstract EntryListItemView makeItemView(EntryListItem item, Context cxt);
+    public abstract EntryListItemView makeItemView(EntryListItem item, EntryListFragment cxt);
 
     /**
      * Add a new item to the end of the list
      *
      * @param item the item to add
      */
-    void add(EntryListItem item) {
-        mUnsorted.add(item);
-        updateDisplayOrder();
+    public void add(EntryListItem item) {
+        mData.add(item);
+        notifyListChanged(true);
     }
 
     /**
@@ -178,9 +136,9 @@ abstract class EntryList implements EntryListItem {
      * @return the index of the added item
      */
     EntryListItem get(int i) {
-        if (i >= mUnsorted.size())
+        if (i >= mData.size())
             return null;
-        return mUnsorted.get(i);
+        return mData.get(i);
     }
 
     /**
@@ -189,18 +147,30 @@ abstract class EntryList implements EntryListItem {
      * @param item the item to add
      * @param i    the index of the added item
      */
-    void put(int i, EntryListItem item) {
-        mUnsorted.add(i, item);
-        updateDisplayOrder();
+    public void put(int i, EntryListItem item) {
+        mData.add(i, item);
+        notifyListChanged(true);
     }
 
     /**
      * Empty the list
      */
-    void clear() {
-        mUnsorted.clear();
-        mDisplayed.clear();
+    public void clear() {
+        mData.clear();
         mRemoves.clear();
+        notifyListChanged(true);
+    }
+
+    public int getRemoveCount() {
+        return mRemoves.size();
+    }
+
+    public boolean isShownSorted() {
+        return mShownSorted;
+    }
+
+    public void toggleShownSorted() {
+        mShownSorted = !mShownSorted;
     }
 
     /**
@@ -208,30 +178,21 @@ abstract class EntryList implements EntryListItem {
      *
      * @param item item to remove
      */
-    void remove(EntryListItem item, boolean undo) {
+    public void remove(EntryListItem item, boolean undo) {
         Log.d(TAG, "remove");
         if (undo) {
             if (mRemoves.size() == 0)
                 mRemoves.push(new ArrayList<>());
-            mRemoves.peek().add(new Remove(mUnsorted.indexOf(item), item));
+            mRemoves.peek().add(new Remove(mData.indexOf(item), item));
         }
-        mUnsorted.remove(item);
-        mDisplayed.remove(item);
-    }
-
-    /**
-     * Enable/disable edit mode
-     */
-    void setEditMode(boolean on) {
-        mInEditMode = on;
-        updateDisplayOrder();
+        mData.remove(item);
     }
 
     /**
      * Call to start a new undo set. An undo will undo all the delete operations in the most
      * recent undo set.
      */
-    void newUndoSet() {
+    public void newUndoSet() {
         mRemoves.push(new ArrayList<>());
     }
 
@@ -240,15 +201,15 @@ abstract class EntryList implements EntryListItem {
      *
      * @return the number of items restored
      */
-    int undoRemove() {
+    public int undoRemove() {
         if (mRemoves.size() == 0)
             return 0;
         ArrayList<Remove> items = mRemoves.pop();
         if (items.size() == 0)
             return 0;
         for (Remove it : items)
-            mUnsorted.add(it.index, it.item);
-        updateDisplayOrder();
+            mData.add(it.index, it.item);
+        notifyListChanged(true);
         return items.size();
     }
 
@@ -259,14 +220,14 @@ abstract class EntryList implements EntryListItem {
      * @param matchCase true to match case
      * @return matched item or null if not found
      */
-    EntryListItem findByText(String str, boolean matchCase) {
-        for (EntryListItem item : mUnsorted) {
+    public EntryListItem findByText(String str, boolean matchCase) {
+        for (EntryListItem item : mData) {
             if (item.getText().equalsIgnoreCase(str))
                 return item;
         }
         if (matchCase)
             return null;
-        for (EntryListItem item : mUnsorted) {
+        for (EntryListItem item : mData) {
             if (item.getText().toLowerCase().contains(str.toLowerCase()))
                 return item;
         }
@@ -279,8 +240,8 @@ abstract class EntryList implements EntryListItem {
      * @param uid item to find
      * @return matched item or null if not found
      */
-    EntryListItem findByUID(long uid) {
-        for (EntryListItem item : mUnsorted) {
+    public EntryListItem findByUID(long uid) {
+        for (EntryListItem item : mData) {
             if (item.getUID() == uid)
                 return item;
         }
@@ -294,19 +255,8 @@ abstract class EntryList implements EntryListItem {
      * @param ci item to get the index of
      * @return the index of the item in the list, or -1 if it's not there
      */
-    int indexOf(EntryListItem ci) {
-        return mUnsorted.indexOf(ci);
-    }
-
-    /**
-     * Get the index of the item in the sorted list, or -1 if it's not there
-     * c.f. findByText(), indexOf
-     *
-     * @param ci item to get the index of
-     * @return the index of the item in the list, or -1 if it's not there
-     */
-    int indexOfDisplayed(EntryListItem ci) {
-        return mDisplayed.indexOf(ci);
+    public int indexOf(EntryListItem ci) {
+        return mData.indexOf(ci);
     }
 
     @Override // implement EntryListItem
@@ -315,7 +265,7 @@ abstract class EntryList implements EntryListItem {
         if (!oth.getText().equals(getText()) || oth.size() != size())
             return false;
 
-        for (EntryListItem oit : oth.mUnsorted) {
+        for (EntryListItem oit : oth.mData) {
             EntryListItem i = findByText(oit.getText(), true);
             if (i == null || !oit.equals(i))
                 return false;
@@ -324,42 +274,12 @@ abstract class EntryList implements EntryListItem {
     }
 
     /**
-     * Set the item in the list that is currently being moved
-     *
-     * @param item the item being moved
-     */
-    void setMovingItem(EntryListItem item) {
-        mMovingItem = item;
-        if (mArrayAdapter != null)
-            mArrayAdapter.notifyDataSetChanged();
-    }
-
-    /**
-     * Inform the UI that the list changed and needs refreshing.
-     *
-     * @param doSave true to save the list
-     */
-    public void notifyListChanged(boolean doSave) {
-        if (mArrayAdapter != null)
-            mArrayAdapter.notifyDataSetChanged();
-    }
-
-    /**
-     * After an edit to the list, re-order the display representation
-     */
-    protected void updateDisplayOrder() {
-        mDisplayed = (ArrayList<EntryListItem>) mUnsorted.clone();
-        if (!mInEditMode && mShowSorted)
-            Collections.sort(mDisplayed, (item, item2) -> item.getText().compareToIgnoreCase(item2.getText()));
-    }
-
-    /**
      * Launch a thread to perform an asynchronous save to a URI. If there's an error, it will
      * be reported in a Toast on the UI thread.
      *
      * @param uri the URI to save to
      */
-    void saveToUri(final Uri uri, Context cxt) {
+    public void saveToUri(final Uri uri, Context cxt) {
         // Launch a thread to do this save, so we don't block the ui thread
         Log.d(TAG, "Saving to " + uri);
         final byte[] data;
@@ -398,7 +318,7 @@ abstract class EntryList implements EntryListItem {
      * @param stream source of the JSON or CSV
      * @throws Exception if something goes wrong
      */
-    void fromStream(InputStream stream, Context cxt) throws Exception {
+    public void fromStream(InputStream stream) throws Exception {
         BufferedReader br = new BufferedReader(new InputStreamReader(stream));
         String data;
         StringBuilder sb = new StringBuilder();
@@ -431,9 +351,9 @@ abstract class EntryList implements EntryListItem {
     public void fromJSON(JSONObject job) throws JSONException {
         mUID = job.getLong("uid");
         try {
-            mShowSorted = job.getBoolean("sort");
+            mShownSorted = job.getBoolean("sort");
         } catch (JSONException je) {
-            mShowSorted = Settings.getBool(Settings.forceAlphaSort);
+            mShownSorted = getMainActivity().getSettings().getBool(Settings.forceAlphaSort);
         }
     }
 
@@ -441,18 +361,18 @@ abstract class EntryList implements EntryListItem {
     public JSONObject toJSON() throws JSONException {
         JSONObject job = new JSONObject();
         JSONArray its = new JSONArray();
-        for (EntryListItem cl : mUnsorted)
+        for (EntryListItem cl : mData)
             its.put(cl.toJSON());
-        job.put("uid", mUID);
+        job.put("uid", getUID());
         job.put("items", its);
-        job.put("sort", mShowSorted);
+        job.put("sort", mShownSorted);
         return job;
     }
 
     @Override // implement EntryListItem
     public void toCSV(CSVWriter w) {
         w.writeNext(new String[]{"Item", "Checked"});
-        for (EntryListItem it : mUnsorted) {
+        for (EntryListItem it : mData) {
             it.toCSV(w);
         }
     }
@@ -461,7 +381,7 @@ abstract class EntryList implements EntryListItem {
     public String toPlainString(String tab) {
         StringBuilder sb = new StringBuilder();
         sb.append(tab).append(getText()).append(":\n");
-        for (EntryListItem next : getDisplayOrder()) {
+        for (EntryListItem next : mData) {
             sb.append(next.toPlainString(tab + "\t")).append("\n");
         }
         return sb.toString();

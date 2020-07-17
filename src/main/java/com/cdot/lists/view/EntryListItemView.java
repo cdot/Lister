@@ -1,10 +1,9 @@
 /*
  * Copyright C-Dot Consultants 2020 - MIT license
  */
-package com.cdot.lists;
+package com.cdot.lists.view;
 
 import android.annotation.SuppressLint;
-import android.content.Context;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
@@ -13,10 +12,17 @@ import android.widget.PopupMenu;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import com.cdot.lists.MainActivity;
+import com.cdot.lists.R;
+import com.cdot.lists.Settings;
+import com.cdot.lists.fragment.EntryListFragment;
+import com.cdot.lists.model.EntryListItem;
+
 /**
  * Base class of views on list entries. Provides the basic functionality of a sortable text view.
  */
-class EntryListItemView extends RelativeLayout implements View.OnClickListener {
+@SuppressLint("ViewConstructor")
+public class EntryListItemView extends RelativeLayout implements View.OnClickListener, EntryListItem.ChangeListener {
 
     private final String TAG = "EntryListItemView";
 
@@ -27,6 +33,8 @@ class EntryListItemView extends RelativeLayout implements View.OnClickListener {
     // The menu resource for this list item
     protected int mMenuResource;
 
+    protected EntryListFragment mFragment;
+
     /**
      * Constructor
      *
@@ -36,9 +44,10 @@ class EntryListItemView extends RelativeLayout implements View.OnClickListener {
      * @param layoutR  R.layout of the view
      * @param menuR    R.menu of the popup menu
      */
-    EntryListItemView(EntryListItem item, boolean isMoving, Context cxt, int layoutR, int menuR) {
-        super(cxt);
-        inflate(cxt, layoutR, this);
+    EntryListItemView(EntryListItem item, boolean isMoving, EntryListFragment cxt, int layoutR, int menuR) {
+        super(cxt.getActivity());
+        inflate(cxt.getActivity(), layoutR, this);
+        mFragment = cxt;
         mIsMoving = isMoving;
         mMenuResource = menuR;
         setItem(item);
@@ -51,8 +60,20 @@ class EntryListItemView extends RelativeLayout implements View.OnClickListener {
      *
      * @return the item
      */
-    EntryListItem getItem() {
+    public EntryListItem getItem() {
         return mItem;
+    }
+
+    @Override // implements EntryListItem.ChangeListener
+    public void onListItemChanged(EntryListItem l, boolean doSave) {
+    }
+
+    public MainActivity getMainActivity() {
+        return mFragment.getMainActivity();
+    }
+
+    public EntryListFragment getFragment() {
+        return mFragment;
     }
 
     /**
@@ -60,8 +81,9 @@ class EntryListItemView extends RelativeLayout implements View.OnClickListener {
      *
      * @param item the item we are a view of
      */
-    void setItem(EntryListItem item) {
+    public void setItem(EntryListItem item) {
         mItem = item;
+        mItem.addChangeListener(this);
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -72,7 +94,7 @@ class EntryListItemView extends RelativeLayout implements View.OnClickListener {
             public boolean onTouch(View view, MotionEvent motionEvent) {
                 Log.d(TAG, "OnTouch " + motionEvent.getAction() + " " + Integer.toHexString(System.identityHashCode(this)));
                 if (motionEvent.getAction() == MotionEvent.ACTION_DOWN)
-                    mItem.getContainer().setMovingItem(mItem);
+                    getFragment().mMovingItem = mItem;
                 return true;
             }
         });
@@ -94,7 +116,7 @@ class EntryListItemView extends RelativeLayout implements View.OnClickListener {
         it.setText(mItem.getText());
         setTextFormatting();
         ImageButton mb = findViewById(R.id.move_button);
-        mb.setVisibility(mItem.getContainer().mShowSorted ? View.GONE : View.VISIBLE);
+        mb.setVisibility(mItem.getContainer().isShownSorted() ? View.GONE : View.VISIBLE);
     }
 
     /**
@@ -104,7 +126,7 @@ class EntryListItemView extends RelativeLayout implements View.OnClickListener {
         TextView it = findViewById(R.id.item_text);
         int padding;
         // Size
-        switch (Settings.getInt("textSizeIndex")) {
+        switch (getMainActivity().getSettings().getInt(Settings.textSizeIndex)) {
             case Settings.TEXT_SIZE_SMALL:
                 it.setTextAppearance(android.R.style.TextAppearance_DeviceDefault_Small);
                 padding = 0;

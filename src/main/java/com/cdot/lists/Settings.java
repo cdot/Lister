@@ -3,12 +3,9 @@
  */
 package com.cdot.lists;
 
-import android.app.Activity;
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
-import android.util.Log;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -17,49 +14,40 @@ import java.util.Map;
  * Simpleton settings. Some settings are repeated in individual lists, where they override the
  * defaults.
  */
-class Settings {
+public class Settings {
     static final String TAG = "Settings";
 
     static final String UI_PREFERENCES = "UIPreferences";
-    static final float TRANSPARENCY_OPAQUE = 1;
-    static final float TRANSPARENCY_GREYED = 0.5f;
-    static final float TRANSPARENCY_FAINT = 0.2f;
-
-    // Activity request codes
-    static final int REQUEST_CHANGE_STORE = 1;
-    static final int REQUEST_CREATE_STORE = 2;
-    static final int REQUEST_IMPORT_LIST = 3;
-    static final int REQUEST_PREFERENCES = 4;
 
     // General
-    static String greyChecked = "greyCheckedItems";
-    static String strikeThroughChecked = "strikeThroughCheckedItems";
-    static String leftHandOperation = "checkBoxOnLeftSide";
-    static String entireRowTogglesItem = "entireRowTogglesItem";
-    static String alwaysShow = "showListInFrontOfLockScreen";
-    static String openLatest = "openLatestListAtStartup";
-    static String warnAboutDuplicates = "warnAboutDuplicates";
-    static String textSizeIndex = "textSizeIndex";
-    static String currentList = "currentList";
-    static String backingStore = "backingStore";
-    static String showCheckedAtEnd = "moveCheckedItemsToBottom";
-    static String forceAlphaSort = "forceAlphaSort";
-    static String autoDeleteChecked = "autoDeleteCheckedItems";
+    public static final String greyChecked = "greyCheckedItems";
+    public static final String strikeThroughChecked = "strikeThroughCheckedItems";
+    public static final String leftHandOperation = "checkBoxOnLeftSide";
+    public static final String entireRowTogglesItem = "entireRowTogglesItem";
+    public static final String alwaysShow = "showListInFrontOfLockScreen";
+    public static final String openLatest = "openLatestListAtStartup";
+    public static final String warnAboutDuplicates = "warnAboutDuplicates";
+    public static final String textSizeIndex = "textSizeIndex";
+    public static final String currentList = "currentList";
+    public static final String backingStore = "backingStore";
+    public static final String showCheckedAtEnd = "moveCheckedItemsToBottom";
+    public static final String forceAlphaSort = "forceAlphaSort";
+    public static final String autoDeleteChecked = "autoDeleteCheckedItems";
 
-    static String cacheFile = "checklists.json";
+    public static final String cacheFile = "checklists.json";
 
     // Must match res/values/arrays.xml/text_size_list
-    static final int TEXT_SIZE_DEFAULT = 0;
-    static final int TEXT_SIZE_SMALL = 1;
-    static final int TEXT_SIZE_MEDIUM = 2;
-    static final int TEXT_SIZE_LARGE = 3;
+    public static final int TEXT_SIZE_DEFAULT = 0;
+    public static final int TEXT_SIZE_SMALL = 1;
+    public static final int TEXT_SIZE_MEDIUM = 2;
+    public static final int TEXT_SIZE_LARGE = 3;
 
-    static final long INVALID_UID = 0;
-    static long sLastUID = INVALID_UID;
+    public static final long INVALID_UID = 0;
+    private static long sLastUID = INVALID_UID;
 
-    private static SharedPreferences mPrefs;
+    private SharedPreferences mPrefs;
 
-    private static Map<String, Boolean> mBoolPrefs = new HashMap<String, Boolean>() {{
+    private Map<String, Boolean> mBoolPrefs = new HashMap<String, Boolean>() {{
         put(autoDeleteChecked, false);
         put(greyChecked, true);
         put(forceAlphaSort, false);
@@ -74,15 +62,15 @@ class Settings {
         put(leftHandOperation, false);
     }};
 
-    private static Map<String, Integer> mIntPrefs = new HashMap<String, Integer>() {{
+    private Map<String, Integer> mIntPrefs = new HashMap<String, Integer>() {{
         put(textSizeIndex, TEXT_SIZE_DEFAULT);
     }};
 
-    private static Map<String, Long> mUIDPrefs = new HashMap<String, Long>() {{
+    private Map<String, Long> mUIDPrefs = new HashMap<String, Long>() {{
         put(currentList, INVALID_UID);
     }};
 
-    private static Map<String, Uri> mUriPrefs = new HashMap<String, Uri>() {{
+    private Map<String, Uri> mUriPrefs = new HashMap<String, Uri>() {{
         put(backingStore, null);
     }};
 
@@ -91,7 +79,8 @@ class Settings {
      *
      * @param cxt the application context, used for all preferences
      */
-    static void setContext(Context cxt) {
+    Settings(Context cxt) {
+        sLastUID = System.currentTimeMillis();
         mPrefs = cxt.getSharedPreferences(UI_PREFERENCES, Context.MODE_PRIVATE);
         for (Map.Entry<String, Boolean> entry : mBoolPrefs.entrySet()) {
             entry.setValue(mPrefs.getBoolean(entry.getKey(), entry.getValue()));
@@ -112,44 +101,44 @@ class Settings {
         }
     }
 
-    static int getInt(String name) {
+    public int getInt(String name) {
         return mIntPrefs.get(name);
     }
 
-    static void setInt(String name, int value) {
+    public void setInt(String name, int value) {
         SharedPreferences.Editor e = mPrefs.edit();
         mIntPrefs.put(name, value);
         e.putInt(name, value);
         e.apply();
     }
 
-    static boolean getBool(String name) {
+    public boolean getBool(String name) {
         return mBoolPrefs.get(name);
     }
 
-    static void setBool(String name, boolean value) {
+    public void setBool(String name, boolean value) {
         SharedPreferences.Editor e = mPrefs.edit();
         mBoolPrefs.put(name, value);
         e.putBoolean(name, value);
         e.apply();
     }
 
-    static long getUID(String name) {
+    public long getUID(String name) {
         return mUIDPrefs.get(name);
     }
 
-    static void setUID(String name, long value) {
+    public void setUID(String name, long value) {
         SharedPreferences.Editor e = mPrefs.edit();
         mUIDPrefs.put(name, value);
         e.putLong(name, value);
         e.apply();
     }
 
-    static Uri getUri(String name) {
+    public Uri getUri(String name) {
         return mUriPrefs.get(name);
     }
 
-    static void setUri(String name, Uri value) {
+    public void setUri(String name, Uri value) {
         SharedPreferences.Editor e = mPrefs.edit();
         mUriPrefs.put(name, value);
         e.putString(name, value.toString());
@@ -159,9 +148,10 @@ class Settings {
     /**
      * Generate the next unique ID. Being time based, we can be reasonably confident that these
      * are unique, though a simultaneous edit on two platforms might just banjax it.
+     *
      * @return a unique ID
      */
-    static long getUID() {
+    public static long getUID() {
         if (sLastUID == INVALID_UID)
             sLastUID = System.currentTimeMillis();
         return sLastUID++;

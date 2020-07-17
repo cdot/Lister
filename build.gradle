@@ -5,7 +5,7 @@ buildscript {
     }
     dependencies {
         //classpath 'com.android.tools.build:gradle:3.6.3'
-        classpath 'com.android.tools.build:gradle:4.0.0'
+        classpath 'com.android.tools.build:gradle:4.0.1'
     }
 }
 apply plugin: 'com.android.application'
@@ -64,6 +64,7 @@ android {
 
 dependencies {
     implementation 'androidx.appcompat:appcompat:1.1.0'
+    implementation "androidx.fragment:fragment:1.2.5"
     implementation 'com.google.android.material:material:1.1.0'
     implementation 'com.google.android.gms:play-services-auth:18.0.0'
     implementation 'com.google.android.gms:play-services-drive:17.0.0'

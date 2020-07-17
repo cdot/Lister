@@ -1,8 +1,9 @@
 /*
  * Copyright C-Dot Consultants 2020 - MIT license
  */
-package com.cdot.lists;
+package com.cdot.lists.model;
 
+import com.cdot.lists.Settings;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVWriter;
 
@@ -12,23 +13,22 @@ import org.json.JSONObject;
 /**
  * An item in a Checklist
  */
-class ChecklistItem implements EntryListItem {
+public class ChecklistItem extends EntryListItem {
     private static final String TAG = "ChecklistItem";
 
     private final Checklist mList;
     private long mUID;
-    String mText;
-    boolean mDone;
+    private boolean mDone; // has it been checked?
 
-    ChecklistItem(Checklist checklist, String str, boolean done) {
+    public ChecklistItem(Checklist checklist, String str, boolean done) {
         mUID = Settings.getUID();
         mList = checklist;
-        mText = str;
+        setText(str);
         mDone = done;
     }
 
     ChecklistItem(Checklist checklist, ChecklistItem clone) {
-        this(checklist, clone.mText, clone.mDone);
+        this(checklist, clone.getText(), clone.mDone);
     }
 
     @Override // implement EntryListItem
@@ -41,28 +41,18 @@ class ChecklistItem implements EntryListItem {
         return mList;
     }
 
-    @Override // EntryListItem
-    public String getText() {
-        return mText;
-    }
-
-    @Override // EntryListItem
-    public void setText(String str) {
-        mText = str;
-    }
-
     @Override // implement EntryListItem
     public void notifyListChanged(boolean save) {
         getContainer().notifyListChanged(save);
     }
 
-    boolean isDone() {
+    public boolean isDone() {
         return mDone;
     }
 
     @Override // implement EntryListItem
     public boolean isMoveable() {
-        return !(mDone && Settings.getBool(Settings.showCheckedAtEnd));
+        return !mDone;
     }
 
     @Override // implement EntryListItem
@@ -92,14 +82,14 @@ class ChecklistItem implements EntryListItem {
      *
      * @param done new done status
      */
-    void setDone(boolean done) {
+    public void setDone(boolean done) {
         mDone = done;
     }
 
     @Override // implement EntryListItem
     public void fromJSON(JSONObject jo) throws JSONException {
         mUID = jo.getLong("uid");
-        mText = jo.getString("name");
+        setText(jo.getString("name"));
         mDone = false;
         try {
             mDone = jo.getBoolean("done");
@@ -122,7 +112,7 @@ class ChecklistItem implements EntryListItem {
     public JSONObject toJSON() throws JSONException {
         JSONObject iob = new JSONObject();
         iob.put("uid", mUID);
-        iob.put("name", mText);
+        iob.put("name", getText());
         if (mDone)
             iob.put("done", true);
         return iob;

@@ -17,56 +17,48 @@
             android:id="@+id/grey_out_checked"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:onClick="greyOutCheckedItemsClicked"
             android:text="@string/dim_checked_items" />
 
         <CheckBox
             android:id="@+id/strike_checked"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:onClick="strikeCheckedItemsClicked"
             android:text="@string/strike_through_checked_items" />
 
         <CheckBox
             android:id="@+id/show_checked_at_end"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:onClick="showCheckedAtEndClicked"
             android:text="@string/show_checked_at_end" />
 
         <CheckBox
             android:id="@+id/auto_delete_checked"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:onClick="autoDeleteCheckedItemsClicked"
             android:text="@string/auto_delete_checked_items" />
 
         <CheckBox
             android:id="@+id/entire_row_toggles"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:onClick="entireRowTogglesClicked"
             android:text="@string/entire_row_toggles_check_box" />
 
         <CheckBox
             android:id="@+id/left_hand_operation"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:onClick="leftHandOperationClicked"
             android:text="@string/left_hand_operation" />
 
         <CheckBox
             android:id="@+id/always_show"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:onClick="alwaysShowClicked"
             android:text="@string/show_list_in_front_of_lock_screen" />
 
         <CheckBox
             android:id="@+id/warn_about_duplicates"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:onClick="warnAboutDuplicatesClicked"
             android:text="@string/warn_about_duplicates" />
 
         <TextView
@@ -100,14 +92,12 @@
             android:id="@+id/force_alpha_sort"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:onClick="forceAlphaSortClicked"
             android:text="@string/default_alpha_sort" />
 
         <CheckBox
             android:id="@+id/open_latest"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:onClick="openLatestClicked"
             android:text="@string/open_latest_list_at_startup" />
 
         <TextView
@@ -126,8 +116,7 @@
                 android:layout_height="@android:dimen/app_icon_size"
                 android:layout_alignParentStart="true"
                 android:background="@drawable/ic_action_store_open"
-                android:contentDescription="@string/action_change_store"
-                android:onClick="changeStoreClicked" />
+                android:contentDescription="@string/action_change_store" />
 
             <ImageButton
                 android:id="@+id/create_store"
@@ -135,8 +124,7 @@
                 android:layout_height="48dp"
                 android:layout_alignParentEnd="true"
                 android:background="@drawable/ic_action_store_new"
-                android:contentDescription="@string/action_create_store"
-                android:onClick="createStoreClicked" />
+                android:contentDescription="@string/action_create_store" />
         </RelativeLayout>
     </LinearLayout>
 </LinearLayout>

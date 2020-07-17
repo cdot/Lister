@@ -6,25 +6,17 @@
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher_round"
         android:label="@string/app_name"
-        android:theme="@style/Theme.MaterialComponents.DayNight.NoActionBar">
+        android:theme="@style/AppTheme">
 
         <activity
-            android:name="com.cdot.lists.ChecklistsActivity"
+            android:name="com.cdot.lists.MainActivity"
             android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name="com.cdot.lists.ChecklistActivity"
-            android:label="@string/app_name" />
-        <activity
-            android:name="com.cdot.lists.SettingsActivity"
-            android:label="@string/settings" />
-        <activity
-            android:name="com.cdot.lists.HelpActivity"
-            android:label="@string/app_name" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="com.cdot.lists.provider"

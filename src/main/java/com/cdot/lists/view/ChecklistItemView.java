@@ -1,9 +1,9 @@
 /*
  * Copyright C-Dot Consultants 2020 - MIT license
  */
-package com.cdot.lists;
+package com.cdot.lists.view;
 
-import android.content.Context;
+import android.annotation.SuppressLint;
 import android.graphics.Paint;
 import android.view.View;
 import android.widget.CheckBox;
@@ -14,11 +14,24 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AlertDialog;
 
+import com.cdot.lists.R;
+import com.cdot.lists.Settings;
+import com.cdot.lists.fragment.ChecklistFragment;
+import com.cdot.lists.fragment.EntryListFragment;
+import com.cdot.lists.model.ChecklistItem;
+import com.cdot.lists.model.EntryList;
+import com.cdot.lists.model.EntryListItem;
+
 /**
  * View for a single item in a checklist, and for moving same.
  */
-class ChecklistItemView extends EntryListItemView {
+@SuppressLint("ViewConstructor")
+public class ChecklistItemView extends EntryListItemView {
     private static final String TAG = "ChecklistItemView";
+
+    private static final float TRANSPARENCY_OPAQUE = 1;
+    private static final float TRANSPARENCY_GREYED = 0.5f;
+    private static final float TRANSPARENCY_FAINT = 0.2f;
 
     // True if the checkbox is on the right (which is where the basic layout has it)
     private boolean mCheckboxOnRight;
@@ -26,9 +39,9 @@ class ChecklistItemView extends EntryListItemView {
     /**
      * @param item     the item being viewed
      * @param isMoving true if this is to be used as a view for dragging an item to a new position, false for an item in a fixed list
-     * @param cxt      activity
+     * @param cxt      fragment
      */
-    ChecklistItemView(EntryListItem item, boolean isMoving, Context cxt) {
+    public ChecklistItemView(EntryListItem item, boolean isMoving, EntryListFragment cxt) {
         super(item, isMoving, cxt, R.layout.checklist_item_view, R.menu.checklist_item_popup);
         mCheckboxOnRight = true;
         updateView();
@@ -36,7 +49,7 @@ class ChecklistItemView extends EntryListItemView {
 
     @Override // View.OnClickListener()
     public void onClick(View view) {
-        if (!mIsMoving && Settings.getBool(Settings.entireRowTogglesItem)) {
+        if (!mIsMoving && getMainActivity().getSettings().getBool(Settings.entireRowTogglesItem)) {
             CheckBox cb = findViewById(R.id.checklist_checkbox);
             setChecked(!cb.isChecked());
         }
@@ -54,14 +67,14 @@ class ChecklistItemView extends EntryListItemView {
         super.setTextFormatting();
 
         // Transparency
-        float f = Settings.TRANSPARENCY_OPAQUE; // Completely opague
+        float f = TRANSPARENCY_OPAQUE; // Completely opague
 
-        if (((ChecklistItem) mItem).isDone() && Settings.getBool(Settings.greyChecked))
+        if (((ChecklistItem) mItem).isDone() && getMainActivity().getSettings().getBool(Settings.greyChecked))
             // Greyed out
-            f = Settings.TRANSPARENCY_GREYED;
-        else if (!mIsMoving && mItem == mItem.getContainer().mMovingItem)
+            f = TRANSPARENCY_GREYED;
+        else if (!mIsMoving && mItem == getFragment().mMovingItem)
             // Item being moved (but NOT the moving view)
-            f = Settings.TRANSPARENCY_FAINT;
+            f = TRANSPARENCY_FAINT;
 
         TextView it = findViewById(R.id.item_text);
         it.setAlpha(f);
@@ -69,7 +82,7 @@ class ChecklistItemView extends EntryListItemView {
         findViewById(R.id.left_layout).setAlpha(f);
 
         // Strike through
-        if (!((ChecklistItem) mItem).isDone() || !Settings.getBool(Settings.strikeThroughChecked))
+        if (!((ChecklistItem) mItem).isDone() || !getMainActivity().getSettings().getBool(Settings.strikeThroughChecked))
             it.setPaintFlags(it.getPaintFlags() & ~Paint.STRIKE_THRU_TEXT_FLAG);
         else
             it.setPaintFlags(it.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
@@ -84,14 +97,14 @@ class ChecklistItemView extends EntryListItemView {
         CheckBox checkBox = findViewById(R.id.checklist_checkbox);
         ImageButton moveButton = findViewById(R.id.move_button);
 
-        if (Settings.getBool(Settings.leftHandOperation) && mCheckboxOnRight) {
+        if (getMainActivity().getSettings().getBool(Settings.leftHandOperation) && mCheckboxOnRight) {
             // Move checkbox to left panel
             right.removeView(checkBox);
             left.removeView(moveButton);
             left.addView(checkBox);
             right.addView(moveButton);
             mCheckboxOnRight = false;
-        } else if (!Settings.getBool(Settings.leftHandOperation) && !mCheckboxOnRight) {
+        } else if (!getMainActivity().getSettings().getBool(Settings.leftHandOperation) && !mCheckboxOnRight) {
             // Move checkbox to right panel
             left.removeView(checkBox);
             right.removeView(moveButton);
@@ -99,9 +112,7 @@ class ChecklistItemView extends EntryListItemView {
             left.addView(moveButton);
             mCheckboxOnRight = true;
         }
-        ChecklistItem it = (ChecklistItem)mItem;
-        Checklist list = (Checklist)it.getContainer();
-        moveButton.setVisibility(list.mInEditMode ? View.VISIBLE : View.GONE);
+        moveButton.setVisibility(((ChecklistFragment)getFragment()).mInEditMode ? View.VISIBLE : View.GONE);
         checkBox.setChecked(((ChecklistItem) mItem).isDone());
     }
 
@@ -110,7 +121,7 @@ class ChecklistItemView extends EntryListItemView {
      * @param isChecked the check status
      */
     private void setChecked(boolean isChecked) {
-        if (Settings.getBool(Settings.autoDeleteChecked) && isChecked) {
+        if (getMainActivity().getSettings().getBool(Settings.autoDeleteChecked) && isChecked) {
             EntryList el = mItem.getContainer();
             el.newUndoSet();
             el.remove(mItem, true);

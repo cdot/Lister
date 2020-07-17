@@ -1,54 +1,90 @@
 /*
  * Copyright C-Dot Consultants 2020 - MIT license
  */
-package com.cdot.lists;
+package com.cdot.lists.model;
 
+import com.cdot.lists.Settings;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVWriter;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Interface to items in an EntryList
  */
-interface EntryListItem {
+public abstract class EntryListItem {
+
+    private String mText;
+
+    EntryListItem() {
+        mText = null;
+    }
+
+    EntryListItem(EntryListItem copy) {
+        setText(copy.getText());
+    }
+
+    public interface ChangeListener {
+        void onListItemChanged(EntryListItem item, boolean save);
+    }
+
+    List<ChangeListener> mListeners = new ArrayList<>();
+
+    public void addChangeListener(ChangeListener l) {
+        mListeners.add(l);
+    }
+
+    /**
+     * Notify any views of this list that the list contents have changed and redisplay is required.
+     * @param doSave whether to save
+     */
+    public void notifyListChanged(boolean doSave) {
+        for (ChangeListener cl : mListeners)
+            cl.onListItemChanged(this, doSave);
+    }
+
+    protected long mUID = Settings.getUID();
+
     /**
      * Get a unique integer that identifies this item. We use getTimeMillis to generate this UID,
      * as the probability of a clash is infinitesmial.
      */
-     long getUID();
+    public long getUID() {
+        return mUID;
+    }
 
     /**
      * Get the list that contains this item
      * @return the containing list, or null for the root
      */
-    EntryList getContainer();
+    public abstract EntryList getContainer();
 
     /**
      * Set the item's text
      *
      * @param str new text
      */
-    void setText(String str);
+    public void setText(String str) {
+        mText = str;
+    }
 
     /**
      * Return false if the item is not moveable in the current list view
      */
-    boolean isMoveable();
+    public abstract boolean isMoveable();
 
     /**
      * Get the item's text
      *
      * @return a text string representing the item in the list
      */
-    String getText();
-
-    /**
-     * Notify any views of this list that the list contents have changed and redisplay is required.
-     * @param save whether to save
-     */
-    void notifyListChanged(boolean save);
+    public String getText() {
+        return mText;
+    }
 
     /**
      * Load from a JSON object
@@ -56,14 +92,14 @@ interface EntryListItem {
      * @param jo JSON object
      * @throws JSONException if anything goes wrong
      */
-    void fromJSON(JSONObject jo) throws JSONException;
+    abstract void fromJSON(JSONObject jo) throws JSONException;
 
     /**
      * Load from a Comma-Separated Value object
      *
      * @param r a reader
      */
-    boolean fromCSV(CSVReader r) throws Exception;
+    abstract boolean fromCSV(CSVReader r) throws Exception;
 
     /**
      * Get the JSON object that represents the content of this object
@@ -71,19 +107,19 @@ interface EntryListItem {
      * @return a JSONObject
      * @throws JSONException if it fails
      */
-    JSONObject toJSON() throws JSONException;
+    abstract JSONObject toJSON() throws JSONException;
 
     /**
      * Write the CSV that represents the content of this object
      *
      * @param w a CSV writer
      */
-    void toCSV(CSVWriter w);
+    abstract void toCSV(CSVWriter w);
 
     /**
      * Format the item for inclusion in a text representation
      */
-    String toPlainString(String tab);
+    abstract String toPlainString(String tab);
 
     /**
      * Approach 1:
@@ -107,12 +143,12 @@ interface EntryListItem {
      *
      * @param other the other item
      */
-    boolean merge(EntryListItem other);
+    abstract boolean merge(EntryListItem other);
 
     /**
      * Deep equality test. This is a comparison of text only; UIDs are ignored
      *
      * @param other the other item
      */
-    boolean equals(EntryListItem other);
+    abstract boolean equals(EntryListItem other);
 }
