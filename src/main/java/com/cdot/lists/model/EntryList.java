@@ -285,7 +285,7 @@ public abstract class EntryList extends EntryListItem {
             try {
                 fromCSV(new CSVReader(new StringReader(data)));
             } catch (CsvException csve) {
-                throw new Exception("Format error");
+                throw new Exception("Format error, could not read JSON or CSV");
             }
         }
     }

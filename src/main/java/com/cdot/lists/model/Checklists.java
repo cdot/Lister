@@ -87,12 +87,14 @@ public class Checklists extends EntryList {
     public void fromJSON(JSONObject job) throws JSONException {
         try {
             super.fromJSON(job);
+            // List of lists?
             JSONArray lists = job.getJSONArray("items");
             for (int i = 0; i < lists.length(); i++)
                 add(new Checklist(this, lists.getJSONObject(i)));
             Log.d(TAG, "Extracted " + lists.length() + " lists from JSON");
         } catch (JSONException je) {
-            // Old format?
+            // Only one list
+            Log.d(TAG, "Could not get lists from JSON, assume one list only");
             add(new Checklist(this, job));
         }
     }
