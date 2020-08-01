@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Required to share files with other applications (i.e. file export)
+See https://medium.com/@ali.muzaffar/what-is-android-os-fileuriexposedexception-and-what-you-can-do-about-it-70b9eb17c6d0 -->
+<paths>
+    <external-files-path name="send_files" path="."/>
+</paths>

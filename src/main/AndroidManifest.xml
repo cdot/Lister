@@ -16,5 +16,18 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Required to share files with other applications (i.e. file export)
+        See https://medium.com/@ali.muzaffar/what-is-android-os-fileuriexposedexception-and-what-you-can-do-about-it-70b9eb17c6d0 -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="com.cdot.lists.provider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/send_file_paths">
+            </meta-data>
+        </provider>
     </application>
 </manifest>

@@ -121,7 +121,7 @@ public class EntryListItemView extends RelativeLayout implements View.OnClickLis
         TextView it = findViewById(R.id.item_text);
         int padding;
         // Size
-        switch (getMainActivity().getSettings().getInt(Settings.textSizeIndex)) {
+        switch (Settings.getInt(Settings.textSizeIndex)) {
             case Settings.TEXT_SIZE_SMALL:
                 it.setTextAppearance(android.R.style.TextAppearance_DeviceDefault_Small);
                 padding = 0;

@@ -1,11 +1,25 @@
 /*
- * Copyright C-Dot Consultants 2020 - MIT license
+ * Copyright © 2020 C-Dot Consultants
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software
+ * and associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
+ * BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.cdot.lists.model;
 
 import android.util.Log;
 
-import com.cdot.lists.MainActivity;
 import com.cdot.lists.Settings;
 import com.cdot.lists.fragment.EntryListFragment;
 import com.cdot.lists.view.EntryListItemView;
@@ -26,13 +40,10 @@ import java.util.List;
 import java.util.Stack;
 
 /**
- * Base class of things that can be serialised to a JSON representation and saved.
+ * Base class for lists of items
  */
 public abstract class EntryList extends EntryListItem {
     private final String TAG = "EntryList";
-
-    // The list that contains this list.
-    private EntryList mParent;
 
     // The basic list
     private ArrayList<EntryListItem> mData = new ArrayList<>();
@@ -40,9 +51,7 @@ public abstract class EntryList extends EntryListItem {
     // Is this list being displayed sorted?
     private boolean mShownSorted = false;
 
-    /**
-     * An item that has been removed, and the index it was removed from, for undos
-     */
+    // An item that has been removed, and the index it was removed from, for undos
     private static class Remove {
         int index;
         EntryListItem item;
@@ -62,20 +71,20 @@ public abstract class EntryList extends EntryListItem {
      * @param parent the list that contains this list (or null for the root)
      */
     EntryList(EntryList parent) {
-        super();
-        mParent = parent;
+        super(parent);
         mRemoves = new Stack<>();
     }
 
-    EntryList(EntryList parent, EntryList copy) {
-        super(copy);
-        mParent = parent;
+     /**
+     * Copy constructor
+     *
+     * @param parent the list that contains this list (or null for the root)
+      * @param copy the item being copied
+     */
+   EntryList(EntryList parent, EntryList copy) {
+        super(parent, copy);
         mRemoves = new Stack<>();
         mShownSorted = copy.isShownSorted();
-    }
-
-    MainActivity getMainActivity() {
-        return mParent.getMainActivity();
     }
 
     public List<EntryListItem> getData() {
@@ -84,11 +93,6 @@ public abstract class EntryList extends EntryListItem {
 
     public List<EntryListItem> cloneItemList() {
         return (List<EntryListItem>) mData.clone();
-    }
-
-    @Override // EntryListItem
-    public EntryList getContainer() {
-        return mParent;
     }
 
     /**
@@ -196,7 +200,7 @@ public abstract class EntryList extends EntryListItem {
             return 0;
         for (Remove it : items)
             mData.add(it.index, it.item);
-        notifyListChanged();
+        notifyListeners();
         return items.size();
     }
 
@@ -249,7 +253,7 @@ public abstract class EntryList extends EntryListItem {
     @Override // implement EntryListItem
     public boolean equals(EntryListItem other) {
         EntryList oth = (EntryList) other;
-        if (!oth.getText().equals(getText()) || oth.size() != size())
+        if (!super.equals(oth) || oth.size() != size())
             return false;
 
         for (EntryListItem oit : oth.mData) {
@@ -275,16 +279,7 @@ public abstract class EntryList extends EntryListItem {
         data = sb.toString();
         try {
             // See if it's JSON
-
-            try {
-                fromJSON(new JSONObject(data));
-            } catch (JSONException je) {
-                // Old format?
-                JSONArray ja = new JSONArray(data);
-                JSONObject job = new JSONObject();
-                job.put("items", ja);
-                fromJSON(job);
-            }
+            fromJSON(new JSONObject(data));
         } catch (JSONException je) {
             // See if it's CSV...
             try {
@@ -301,7 +296,7 @@ public abstract class EntryList extends EntryListItem {
         try {
             mShownSorted = job.getBoolean("sort");
         } catch (JSONException je) {
-            mShownSorted = getMainActivity().getSettings().getBool(Settings.forceAlphaSort);
+            mShownSorted = Settings.getBool(Settings.forceAlphaSort);
         }
     }
 

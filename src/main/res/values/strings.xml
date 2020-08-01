@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="access_denied">Access Denied</string>
-    <string name="reconfirm_backing_store">Access to backing store denied. Please re-confirm backing store location</string>
     <string name="action_alpha_sort_off">Sorting Off</string>
     <string name="action_alpha_sort_on">Sorting On</string>
     <string name="action_change_store">Change Store</string>
@@ -45,6 +44,7 @@
     <string name="no_lists">No Lists Created</string>
     <string name="ok">OK</string>
     <string name="open_latest_list_at_startup">Open latest list on startup</string>
+    <string name="reconfirm_backing_store">Access to backing store denied. Please re-confirm backing store location</string>
     <string name="rename_list">Rename List</string>
     <string name="select_share_format">Format to Share</string>
     <string name="settings">Settings</string>
@@ -60,4 +60,5 @@
     <string name="x_items_deleted">%d items deleted</string>
     <string name="x_items_restored">%d items restored</string>
     <string name="general_settings">General Settings</string>
+    <string name="save_delay">Save Delay</string>
 </resources>

@@ -49,21 +49,20 @@ public class ChecklistItemView extends EntryListItemView {
 
     @Override // View.OnClickListener()
     public void onClick(View view) {
-        if (!mIsMoving && getMainActivity().getSettings().getBool(Settings.entireRowTogglesItem)) {
+        if (!mIsMoving && Settings.getBool(Settings.entireRowTogglesItem)) {
             CheckBox cb = findViewById(R.id.checklist_checkbox);
             if (setChecked(!cb.isChecked()))
-                getMainActivity().saveLists();
+                getMainActivity().saveAdvised();
         }
     }
 
-    @Override
-        // EntryListItemView
+    @Override // EntryListItemView
     void addListeners() {
         super.addListeners();
         final CheckBox cb = findViewById(R.id.checklist_checkbox);
         cb.setOnClickListener(view -> {
             if (setChecked(cb.isChecked()))
-                getMainActivity().saveLists();
+                getMainActivity().saveAdvised();
         });
     }
 
@@ -74,7 +73,7 @@ public class ChecklistItemView extends EntryListItemView {
         // Transparency
         float f = TRANSPARENCY_OPAQUE; // Completely opague
 
-        if (((ChecklistItem) mItem).isDone() && getMainActivity().getSettings().getBool(Settings.greyChecked))
+        if (((ChecklistItem) mItem).isDone() && Settings.getBool(Settings.greyChecked))
             // Greyed out
             f = TRANSPARENCY_GREYED;
         else if (!mIsMoving && mItem == getFragment().mMovingItem)
@@ -87,7 +86,7 @@ public class ChecklistItemView extends EntryListItemView {
         findViewById(R.id.left_layout).setAlpha(f);
 
         // Strike through
-        if (!((ChecklistItem) mItem).isDone() || !getMainActivity().getSettings().getBool(Settings.strikeThroughChecked))
+        if (!((ChecklistItem) mItem).isDone() || !Settings.getBool(Settings.strikeThroughChecked))
             it.setPaintFlags(it.getPaintFlags() & ~Paint.STRIKE_THRU_TEXT_FLAG);
         else
             it.setPaintFlags(it.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
@@ -102,14 +101,14 @@ public class ChecklistItemView extends EntryListItemView {
         CheckBox checkBox = findViewById(R.id.checklist_checkbox);
         ImageButton moveButton = findViewById(R.id.move_button);
 
-        if (getMainActivity().getSettings().getBool(Settings.leftHandOperation) && mCheckboxOnRight) {
+        if (Settings.getBool(Settings.leftHandOperation) && mCheckboxOnRight) {
             // Move checkbox to left panel
             right.removeView(checkBox);
             left.removeView(moveButton);
             left.addView(checkBox);
             right.addView(moveButton);
             mCheckboxOnRight = false;
-        } else if (!getMainActivity().getSettings().getBool(Settings.leftHandOperation) && !mCheckboxOnRight) {
+        } else if (!Settings.getBool(Settings.leftHandOperation) && !mCheckboxOnRight) {
             // Move checkbox to right panel
             left.removeView(checkBox);
             right.removeView(moveButton);
@@ -126,17 +125,17 @@ public class ChecklistItemView extends EntryListItemView {
      * @param isChecked the check status
      */
     private boolean setChecked(boolean isChecked) {
-        if (getMainActivity().getSettings().getBool(Settings.autoDeleteChecked) && isChecked) {
+        if (Settings.getBool(Settings.autoDeleteChecked) && isChecked) {
             EntryList el = mItem.getContainer();
             el.newUndoSet();
             el.remove(mItem, true);
-            mItem.notifyListChanged();
+            el.notifyListeners();
             return true;
         }
         CheckBox cb = findViewById(R.id.checklist_checkbox);
         cb.setChecked(isChecked);
         if (((ChecklistItem) mItem).setDone(isChecked)) {
-            mItem.notifyListChanged();
+            mItem.notifyListeners();
             return true;
         }
         return false;
@@ -149,8 +148,8 @@ public class ChecklistItemView extends EntryListItemView {
                 EntryList list = mItem.getContainer();
                 list.newUndoSet();
                 list.remove(mItem, true);
-                list.notifyListChanged();
-                getMainActivity().saveLists();
+                list.notifyListeners();
+                getMainActivity().saveRequired();
                 return true;
 
             case R.id.action_rename:
@@ -162,8 +161,8 @@ public class ChecklistItemView extends EntryListItemView {
                 builder.setView(editText);
                 builder.setPositiveButton(R.string.ok, (dialogInterface, i) -> {
                     mItem.setText(editText.getText().toString());
-                    mItem.notifyListChanged();
-                    getMainActivity().saveLists();
+                    mItem.notifyListeners();
+                    getMainActivity().saveRequired();
                 });
                 builder.setNegativeButton(R.string.cancel, null);
                 builder.show();

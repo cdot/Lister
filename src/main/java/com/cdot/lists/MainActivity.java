@@ -1,3 +1,21 @@
+/*
+ * Copyright © 2020 C-Dot Consultants
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software
+ * and associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
+ * BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
 package com.cdot.lists;
 
 import android.app.Activity;
@@ -37,6 +55,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Objects;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity {
     // AppCompatActivity is a subclass of androidx.fragment.app.FragmentActivity
@@ -48,15 +68,6 @@ public class MainActivity extends AppCompatActivity {
     public static final int REQUEST_IMPORT_LIST = 3;
 
     public Checklists mLists; // List of lists
-    private Settings mSettings; // Global preferences
-
-    /**
-     * Get the settings
-     * @return a Settings
-     */
-    public Settings getSettings() {
-        return mSettings;
-    }
 
     /**
      * Get the fragment at the top of the back stack
@@ -80,7 +91,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
 
         mLists = new Checklists();
-        mSettings = new Settings(this);
+        Settings.setContext(this);
 
         loadLists();
 
@@ -92,7 +103,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override // FragmentActivity
     public void onAttachedToWindow() {
-        if (mSettings.getBool(Settings.alwaysShow)) {
+        if (Settings.getBool(Settings.alwaysShow)) {
             getWindow().addFlags(AccessibilityEventCompat.TYPE_GESTURE_DETECTION_END);
         }
     }
@@ -129,33 +140,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Save the checklists. Saves to the cache first, and then the backing store (if configured)
-     */
-    public void saveLists() {
-        // Save to the cache, then refresh the backing store. That way the
-        // cache will always be older than the backing store if the backing store save
-        // succeeds
-        Log.d(TAG, "Saving to cache");
-        try {
-            FileOutputStream stream = openFileOutput(Settings.cacheFile, Context.MODE_PRIVATE);
-            String s = mLists.toJSON().toString(1);
-            stream.write(s.getBytes());
-            stream.close();
-        } catch (Exception e) {
-            // Would really like to toast this
-            Log.d(TAG, "Exception saving to cache: " + e);
-        }
-        final Uri uri = mSettings.getUri("backingStore");
-        if (uri == null)
-            return;
-        try {
-            saveToUri(uri, mLists.toJSON().toString(1));
-        } catch (JSONException je) {
-            throw new Error("JSON exception " + je.getMessage());
-        }
-    }
-
-    /**
      * Load the list of checklists. The backing store has the master list, the local cache
      * is merged with it, replacing the lists on the backing store if the last save date on the
      * cache is more recent.
@@ -178,8 +162,8 @@ public class MainActivity extends AppCompatActivity {
             newList.fromStream(stream);
 
             mLists.add(newList);
-            mLists.notifyListChanged();
-            saveLists();
+            mLists.notifyListeners();
+            saveRequired();
             Log.d(TAG, "imported list: " + newList.getText());
             Toast.makeText(this, getString(R.string.import_report, newList.getText()), Toast.LENGTH_LONG).show();
             pushFragment(new ChecklistFragment(newList));
@@ -213,9 +197,9 @@ public class MainActivity extends AppCompatActivity {
         }
         Log.d(TAG, mLists.size() + " lists loaded from cache");
         //removeDuplicates();
-        mLists.notifyListChanged();
+        mLists.notifyListeners();
 
-        final Uri uri = getSettings().getUri("backingStore");
+        final Uri uri = Settings.getUri("backingStore");
         if (uri == null)
             return;
         mLoadThread = new Thread(() -> {
@@ -236,9 +220,9 @@ public class MainActivity extends AppCompatActivity {
                 Log.d(TAG, backing.size() + " lists loaded from backing store");
                 mLists.clear(); // kill the cache
                 if (mLists.merge(backing))
-                    saveLists();
+                    saveRequired();
                 //removeDuplicates();
-                new Handler(Looper.getMainLooper()).post(() -> { mLists.notifyListChanged(); });
+                new Handler(Looper.getMainLooper()).post(() -> mLists.notifyListeners());
             } catch (final SecurityException se) {
                 // openInputStream denied, reroute through picker to re-establish permissions
                 Log.d(TAG, "Security Exception loading backing store " + se);
@@ -274,9 +258,9 @@ public class MainActivity extends AppCompatActivity {
         if (newURI == null)
             return;
 
-        Uri oldURI = getSettings().getUri(Settings.backingStore);
+        Uri oldURI = Settings.getUri(Settings.backingStore);
         if (!newURI.equals(oldURI)) {
-            getSettings().setUri(Settings.backingStore, newURI);
+            Settings.setUri(Settings.backingStore, newURI);
 
             // Persist granted access across reboots
             int takeFlags = resultData.getFlags() & (Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
@@ -298,6 +282,92 @@ public class MainActivity extends AppCompatActivity {
         ftx.add(R.id.fragment, fragment, fragment.getClass().getName());
         ftx.addToBackStack(null);
         ftx.commit();
+    }
+
+    // Timer for saves
+    private Timer mSaveTimer = null;
+    // Time of last save, absolute time in ms
+    private long mLastSave = 0;
+
+    @Override // AppCompatActivity
+    public void onBackPressed() {
+        super.onBackPressed();
+        // see https://medium.com/@Wingnut/onbackpressed-for-fragments-357b2bf1ce8e for info
+        // on passing onBackPressed to fragments
+        if (mSaveTimer != null)
+            saveToBackingStore();
+        Fragment frag = getSupportFragmentManager().findFragmentById(R.id.fragment);
+        if (frag instanceof EntryListFragment)
+            ((EntryListFragment)frag).onActivated();
+    }
+
+    /**
+     * Notify the activity that something minor has changed, and a save is advised. The cache is
+     * always written, but the backing store will only be written after a few minutes
+     * so a series of small changes is batched.
+     */
+    public void saveAdvised() {
+        invalidateOptionsMenu(); // update menu items
+        String jsonString;
+        try {
+            jsonString = mLists.toJSON().toString(1);
+        } catch (JSONException je) {
+            throw new Error("JSON exception " + je.getMessage());
+        }
+
+        // Always save to the cache.
+        Log.d(TAG, "Saving to cache");
+        try {
+            FileOutputStream stream = openFileOutput(Settings.cacheFile, Context.MODE_PRIVATE);
+            stream.write(jsonString.getBytes());
+            stream.close();
+        } catch (Exception e) {
+            Toast.makeText(this, "Warning: Exception saving to cache: " + e, Toast.LENGTH_LONG).show();
+        }
+
+        // Don't want to save after every change.
+        // If the last change was less than X minutes ago, then don't save.
+        if (mLastSave + Settings.getLong(Settings.saveDelay) * 60000 > System.currentTimeMillis()) {
+            // Start the save timer, if it's not already running
+            if (mSaveTimer == null) {
+                Log.d(TAG, "Start save timer");
+                mSaveTimer = new Timer();
+                long delay = Settings.getLong(Settings.saveDelay) * 60000;
+                mSaveTimer.schedule(new TimerTask() {
+                    public void run() {
+                        Log.d(TAG, "Save timer decayed");
+                        saveToBackingStore();
+                    }
+                }, delay);
+            }
+        } else
+            saveToBackingStore();
+    }
+
+    /**
+     * Force a save
+     */
+    public void saveRequired() {
+        mLastSave = 0;
+        saveAdvised();
+    }
+
+    private void saveToBackingStore() {
+        if (mSaveTimer != null) {
+            Log.d(TAG, "Save timer cancelled");
+            mSaveTimer.cancel();
+            mSaveTimer = null;
+        }
+        final Uri uri = Settings.getUri("backingStore");
+        if (uri == null)
+            return;
+        String jsonString;
+        try {
+            jsonString = mLists.toJSON().toString(1);
+        } catch (JSONException je) {
+            throw new Error("JSON exception " + je.getMessage());
+        }
+        saveToUri(uri, jsonString);
     }
 
     /**
@@ -327,6 +397,7 @@ public class MainActivity extends AppCompatActivity {
                 stream.write(data);
                 stream.close();
                 Log.d(TAG, "Saved to " + uri);
+                mLastSave = System.currentTimeMillis();
             } catch (IOException ioe) {
                 final String mess = ioe.getMessage();
                 runOnUiThread(() -> Toast.makeText(this, "Exception while saving to Uri " + mess, Toast.LENGTH_LONG).show());

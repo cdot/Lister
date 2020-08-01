@@ -1,5 +1,20 @@
 /*
- * Copyright C-Dot Consultants 2020 - MIT license
+ * Copyright © 2020 C-Dot Consultants
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software
+ * and associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
+ * BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.cdot.lists.model;
 
@@ -18,9 +33,7 @@ import java.util.ArrayList;
  * A checklist of checkable items. Can also be an item in a Checklists
  */
 public class Checklist extends EntryList {
-    private static final String TAG = "Checklist";
-
-    private long mTimestamp = 0;
+    //private static final String TAG = "Checklist";
 
     /**
      * Construct and load from cache
@@ -93,7 +106,6 @@ public class Checklist extends EntryList {
         return i;
     }
 
-    // Called on the cache to merge the backing list
     @Override // implement EntryListItem
     public boolean merge(EntryListItem backing) {
         boolean changed = false;
@@ -137,6 +149,7 @@ public class Checklist extends EntryList {
     }
 
     /**
+     * Delete all the checked items in the list
      * @return number of items deleted
      */
     public int deleteAllChecked() {
@@ -159,7 +172,6 @@ public class Checklist extends EntryList {
         super.fromJSON(job);
         getData().clear();
         setText(job.getString("name"));
-        mTimestamp = job.getLong("time");
         JSONArray items = job.getJSONArray("items");
         for (int i = 0; i < items.length(); i++) {
             ChecklistItem ci = new ChecklistItem(this, null, false);
@@ -187,7 +199,6 @@ public class Checklist extends EntryList {
     public JSONObject toJSON() throws JSONException {
         JSONObject job = super.toJSON();
         job.put("name", getText());
-        job.put("time", mTimestamp);
         JSONArray items = new JSONArray();
         for (EntryListItem item : getData()) {
             items.put(item.toJSON());

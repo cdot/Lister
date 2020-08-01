@@ -1,5 +1,20 @@
 /*
- * Copyright C-Dot Consultants 2020 - MIT license
+ * Copyright © 2020 C-Dot Consultants
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software
+ * and associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
+ * BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.cdot.lists.fragment;
 
@@ -17,7 +32,6 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 
 import com.cdot.lists.R;
@@ -29,53 +43,25 @@ import com.cdot.lists.view.ChecklistsItemView;
 import com.cdot.lists.view.EntryListItemView;
 
 /**
- * Activity that displays a list of checklists. The checklists are stored in a paired Checklists
- * object.
+ * Fragment that displays a list of checklists. The checklists are stored in the MainActivity.
  */
 public class ChecklistsFragment extends EntryListFragment {
     private static final String TAG = "ChecklistsFragment";
 
+    /**
+     * Construct a fragment to manage interaction with the given checklists.
+     * @param lists the Checklists being managed
+     */
     public ChecklistsFragment(Checklists lists) {
         mList = lists;
         setHasOptionsMenu(true);
-    }
-
-    @Override
-    public void onAttach(@NonNull Context context) {
-        super.onAttach(context);
-        Log.d(TAG, "onAttach");
-    }
-
-    @Override
-    public void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        Log.d(TAG, "onCreate");
     }
 
     @Override // EntryListFragment
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         ChecklistsFragmentBinding binding = ChecklistsFragmentBinding.inflate(inflater, container, false);
         setView(binding.itemListView, binding.checklistsFragment);
-        notifyDataSetChanged();
         return binding.getRoot();
-    }
-
-    @Override
-    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
-        Log.d(TAG, "onActivityCreated");
-    }
-
-    @Override
-    public void onStart() {
-        super.onStart();
-        Log.d(TAG, "onStart");
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        Log.d(TAG, "onResume");
     }
 
     @Override // Fragment
@@ -121,8 +107,8 @@ public class ChecklistsFragment extends EntryListFragment {
                     String listname = editText.getText().toString();
                     Checklist newList = new Checklist(mList, listname);
                     mList.add(newList);
-                    mList.notifyListChanged();
-                    getMainActivity().saveLists();
+                    mList.notifyListeners();
+                    getMainActivity().saveRequired();
                     Log.d(TAG, "created list: " + newList.getText());
                     getMainActivity().pushFragment(new ChecklistFragment(newList));
                 });

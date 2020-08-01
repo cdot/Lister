@@ -1,8 +1,24 @@
 /*
- * Copyright C-Dot Consultants 2020 - MIT license
+ * Copyright © 2020 C-Dot Consultants
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software
+ * and associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
+ * BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.cdot.lists.fragment;
 
+import android.content.Context;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -82,28 +98,46 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
         mListLayout = listlayout;
         mArrayAdapter = new EntryListAdapter(getMainActivity());
         mListView.setAdapter(mArrayAdapter);
+        mList.addChangeListener(this);
     }
 
     /**
      * List contents have changed; notify the adapter
      */
-    protected void notifyDataSetChanged() {
+    protected void notifyAdapter() {
         if (mArrayAdapter != null)
             mArrayAdapter.notifyDataSetChanged();
     }
 
-    @Override // Implement EntryListItem.ChangeListener
-    public void onListChanged(EntryListItem item) {
-        notifyDataSetChanged();
+    @Override
+    public void onAttach(@NonNull Context context) {
+        super.onAttach(context);
+        onActivated();
     }
 
-    // Get the controlling activity
+    public void onActivated() {
+        String t = mList.getText();
+        if (t == null)
+            t = getMainActivity().getString(R.string.app_name);
+        getMainActivity().getSupportActionBar().setTitle(t);
+    }
+
+    @Override // implement EntryListItem.ChangeListener
+    public void onListChanged(EntryListItem item) {
+        notifyAdapter();
+    }
+
+    /**
+     * Get the controlling activity
+     * @return the main activity, parent of all fragments
+     * */
     public MainActivity getMainActivity() {
         return (MainActivity)getActivity();
     }
 
     /**
      * Get the list items in display order
+     * @return the list. May be modified, but entries point to data source
      */
     protected List<EntryListItem> getDisplayOrder() {
         List<EntryListItem> mDisplayed = mList.cloneItemList();
@@ -121,23 +155,10 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
     protected abstract EntryListItemView makeMovingView(EntryListItem movingItem);
 
     /**
-     * Get the name of an HTML help asset
+     * Get the name of an HTML help asset appropriate for this fragment
      * @return basename (without path) of an HTML help asset
      */
     protected abstract String getHelpAsset();
-
-    /**
-     * Move the item to a new position in the list. Does not affect the display order.
-     *
-     * @param item item to move
-     * @param i    position to move it to, position in the unsorted list!
-     */
-    private void moveItemToPosition(EntryListItem item, int i) {
-        mList.remove(item, false);
-        mList.put(i, item);
-        mList.notifyListChanged();
-        getMainActivity().saveLists();
-    }
 
     /**
      * Moving items in the list
@@ -147,7 +168,7 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
     public boolean dispatchTouchEvent(MotionEvent motionEvent) {
         EntryListItem movingItem = mMovingItem;
         // Check the item can be moved
-        if (movingItem == null || !movingItem.isMoveable() || getMainActivity().getSettings().getBool(Settings.showCheckedAtEnd))
+        if (movingItem == null || !movingItem.isMoveable() || Settings.getBool(Settings.showCheckedAtEnd))
             return false;
 
         // get screen position of the ListView and the Activity
@@ -182,10 +203,17 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
             nextTop = mListView.getChildAt(viewIndex + 1).getTop();
 
         int halfItemHeight = mListView.getChildAt(viewIndex).getHeight() / 2;
-        if (y < prevBottom && itemIndex > 0) {
-            moveItemToPosition(movingItem, itemIndex - 1);
-        } else if (y > nextTop && itemIndex < mList.size() - 1) {
-            moveItemToPosition(movingItem, itemIndex + 1);
+        int moveTo = itemIndex;
+        if (y < prevBottom)
+            moveTo--;
+        else if (y > nextTop)
+            moveTo--;
+
+        if (moveTo != itemIndex && moveTo >= 0 && moveTo < mList.size()) {
+            mList.remove(movingItem, false);
+            mList.put(moveTo, movingItem);
+            mList.notifyListeners();
+            getMainActivity().saveRequired();
         }
 
         if (motionEvent.getAction() == MotionEvent.ACTION_MOVE) {
@@ -211,21 +239,19 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
         if (motionEvent.getAction() == MotionEvent.ACTION_UP || motionEvent.getAction() == MotionEvent.ACTION_CANCEL) {
             mListLayout.removeView(mMovingView);
             mMovingItem = null;
-            notifyDataSetChanged();
+            notifyAdapter();
             mMovingView = null;
         }
         return true;
     }
 
-    // Action menu
-    @Override // AppCompatActivity
+    @Override // Fragment
     public boolean onOptionsItemSelected(MenuItem menuItem) {
         switch (menuItem.getItemId()) {
             case R.id.action_alpha_sort:
                 mList.toggleShownSorted();
-                mList.notifyListChanged();
-                getMainActivity().invalidateOptionsMenu();
-                getMainActivity().saveLists();
+                mList.notifyListeners();
+                getMainActivity().saveAdvised();
                 return true;
             case R.id.action_help:
                 getMainActivity().pushFragment(new HelpFragment(getHelpAsset()));
@@ -236,6 +262,7 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
 
     @Override // Fragment
     public void onPrepareOptionsMenu(@NonNull Menu menu) {
+        //super.onPrepareOptionsMenu(menu);
         MenuItem menuItem = menu.findItem(R.id.action_alpha_sort);
         if (mList != null && mList.isShownSorted()) {
             menuItem.setIcon(R.drawable.ic_action_alpha_sort_off);
@@ -244,7 +271,5 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
             menuItem.setIcon(R.drawable.ic_action_alpha_sort_on);
             menuItem.setTitle(R.string.action_alpha_sort_on);
         }
-
-        super.onPrepareOptionsMenu(menu);
     }
 }

@@ -1,5 +1,20 @@
 /*
- * Copyright C-Dot Consultants 2020 - MIT license
+ * Copyright © 2020 C-Dot Consultants
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software
+ * and associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
+ * BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.cdot.lists;
 
@@ -25,7 +40,6 @@ public class Settings {
     public static final String leftHandOperation = "checkBoxOnLeftSide";
     public static final String entireRowTogglesItem = "entireRowTogglesItem";
     public static final String alwaysShow = "showListInFrontOfLockScreen";
-    public static final String openLatest = "openLatestListAtStartup";
     public static final String warnAboutDuplicates = "warnAboutDuplicates";
     public static final String textSizeIndex = "textSizeIndex";
     public static final String currentList = "currentList";
@@ -33,6 +47,7 @@ public class Settings {
     public static final String showCheckedAtEnd = "moveCheckedItemsToBottom";
     public static final String forceAlphaSort = "forceAlphaSort";
     public static final String autoDeleteChecked = "autoDeleteCheckedItems";
+    public static final String saveDelay = "saveDelay";
 
     public static final String cacheFile = "checklists.json";
 
@@ -45,9 +60,9 @@ public class Settings {
     public static final long INVALID_UID = 0;
     private static long sLastUID = INVALID_UID;
 
-    private SharedPreferences mPrefs;
+    private static SharedPreferences sPrefs;
 
-    private Map<String, Boolean> mBoolPrefs = new HashMap<String, Boolean>() {{
+    private static Map<String, Boolean> sBoolPrefs = new HashMap<String, Boolean>() {{
         put(autoDeleteChecked, false);
         put(greyChecked, true);
         put(forceAlphaSort, false);
@@ -56,21 +71,21 @@ public class Settings {
         put(entireRowTogglesItem, true);
 
         put(alwaysShow, false);
-        put(openLatest, true);
         put(warnAboutDuplicates, true);
 
         put(leftHandOperation, false);
     }};
 
-    private Map<String, Integer> mIntPrefs = new HashMap<String, Integer>() {{
+    private static Map<String, Integer> sIntPrefs = new HashMap<String, Integer>() {{
         put(textSizeIndex, TEXT_SIZE_DEFAULT);
     }};
 
-    private Map<String, Long> mUIDPrefs = new HashMap<String, Long>() {{
+    private static Map<String, Long> sLongPrefs = new HashMap<String, Long>() {{
         put(currentList, INVALID_UID);
+        put(saveDelay, 5L);
     }};
 
-    private Map<String, Uri> mUriPrefs = new HashMap<String, Uri>() {{
+    private static Map<String, Uri> sUriPrefs = new HashMap<String, Uri>() {{
         put(backingStore, null);
     }};
 
@@ -79,68 +94,68 @@ public class Settings {
      *
      * @param cxt the application context, used for all preferences
      */
-    Settings(Context cxt) {
+    public static void setContext(Context cxt) {
         sLastUID = System.currentTimeMillis();
-        mPrefs = cxt.getSharedPreferences(UI_PREFERENCES, Context.MODE_PRIVATE);
-        for (Map.Entry<String, Boolean> entry : mBoolPrefs.entrySet()) {
-            entry.setValue(mPrefs.getBoolean(entry.getKey(), entry.getValue()));
+        sPrefs = cxt.getSharedPreferences(UI_PREFERENCES, Context.MODE_PRIVATE);
+        for (Map.Entry<String, Boolean> entry : sBoolPrefs.entrySet()) {
+            entry.setValue(sPrefs.getBoolean(entry.getKey(), entry.getValue()));
         }
-        for (Map.Entry<String, Integer> entry : mIntPrefs.entrySet()) {
-            entry.setValue(mPrefs.getInt(entry.getKey(), entry.getValue()));
+        for (Map.Entry<String, Integer> entry : sIntPrefs.entrySet()) {
+            entry.setValue(sPrefs.getInt(entry.getKey(), entry.getValue()));
         }
-        for (Map.Entry<String, Long> entry : mUIDPrefs.entrySet()) {
+        for (Map.Entry<String, Long> entry : sLongPrefs.entrySet()) {
             try {
-                entry.setValue(mPrefs.getLong(entry.getKey(), entry.getValue()));
+                entry.setValue(sPrefs.getLong(entry.getKey(), entry.getValue()));
             } catch (ClassCastException ignore) {
             }
         }
-        for (Map.Entry<String, Uri> entry : mUriPrefs.entrySet()) {
+        for (Map.Entry<String, Uri> entry : sUriPrefs.entrySet()) {
             Uri ev = entry.getValue();
-            String pref = mPrefs.getString(entry.getKey(), ev == null ? null : ev.toString());
+            String pref = sPrefs.getString(entry.getKey(), ev == null ? null : ev.toString());
             entry.setValue(pref != null ? Uri.parse(pref) : null);
         }
     }
 
-    public int getInt(String name) {
-        return mIntPrefs.get(name);
+    public static int getInt(String name) {
+        return sIntPrefs.get(name);
     }
 
-    public void setInt(String name, int value) {
-        SharedPreferences.Editor e = mPrefs.edit();
-        mIntPrefs.put(name, value);
+    public static void setInt(String name, int value) {
+        SharedPreferences.Editor e = sPrefs.edit();
+        sIntPrefs.put(name, value);
         e.putInt(name, value);
         e.apply();
     }
 
-    public boolean getBool(String name) {
-        return mBoolPrefs.get(name);
+    public static boolean getBool(String name) {
+        return sBoolPrefs.get(name);
     }
 
-    public void setBool(String name, boolean value) {
-        SharedPreferences.Editor e = mPrefs.edit();
-        mBoolPrefs.put(name, value);
+    public static void setBool(String name, boolean value) {
+        SharedPreferences.Editor e = sPrefs.edit();
+        sBoolPrefs.put(name, value);
         e.putBoolean(name, value);
         e.apply();
     }
 
-    public long getUID(String name) {
-        return mUIDPrefs.get(name);
+    public static long getLong(String name) {
+        return sLongPrefs.get(name);
     }
 
-    public void setUID(String name, long value) {
-        SharedPreferences.Editor e = mPrefs.edit();
-        mUIDPrefs.put(name, value);
+    public static void setLong(String name, long value) {
+        SharedPreferences.Editor e = sPrefs.edit();
+        sLongPrefs.put(name, value);
         e.putLong(name, value);
         e.apply();
     }
 
-    public Uri getUri(String name) {
-        return mUriPrefs.get(name);
+    public static Uri getUri(String name) {
+        return sUriPrefs.get(name);
     }
 
-    public void setUri(String name, Uri value) {
-        SharedPreferences.Editor e = mPrefs.edit();
-        mUriPrefs.put(name, value);
+    public static void setUri(String name, Uri value) {
+        SharedPreferences.Editor e = sPrefs.edit();
+        sUriPrefs.put(name, value);
         e.putString(name, value.toString());
         e.apply();
     }
@@ -151,7 +166,7 @@ public class Settings {
      *
      * @return a unique ID
      */
-    public static long getUID() {
+    public static long makeUID() {
         if (sLastUID == INVALID_UID)
             sLastUID = System.currentTimeMillis();
         return sLastUID++;

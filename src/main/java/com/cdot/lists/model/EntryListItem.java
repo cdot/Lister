@@ -1,5 +1,20 @@
 /*
- * Copyright C-Dot Consultants 2020 - MIT license
+ * Copyright © 2020 C-Dot Consultants
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software
+ * and associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
+ * BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.cdot.lists.model;
 
@@ -18,22 +33,38 @@ import java.util.List;
  */
 public abstract class EntryListItem {
 
+    // Label, or list name
     private String mText;
+    // The list that contains this list.
+    private EntryList mParent;
 
-    EntryListItem() {
+    EntryListItem(EntryList parent) {
+        mParent = parent;
         mText = null;
     }
 
-    EntryListItem(EntryListItem copy) {
+    /**
+     * Copy constructor. Only the item text is copied.
+     * @param copy the item to copy from
+     */
+    EntryListItem(EntryList parent, EntryListItem copy) {
+        this(parent);
         setText(copy.getText());
     }
 
+    /**
+     * To be implemented by listeners for changes
+     */
     public interface ChangeListener {
         void onListChanged(EntryListItem item);
     }
 
-    List<ChangeListener> mListeners = new ArrayList<>();
+    private List<ChangeListener> mListeners = new ArrayList<>();
 
+    /**
+     * Add a change listener. Change listeners will be notified whenever a change is made
+     * @param l the listener
+     */
     public void addChangeListener(ChangeListener l) {
         mListeners.add(l);
     }
@@ -41,12 +72,13 @@ public abstract class EntryListItem {
     /**
      * Notify any views of this list that the list contents have changed and redisplay is required.
      */
-    public void notifyListChanged() {
+    public void notifyListeners() {
         for (ChangeListener cl : mListeners)
             cl.onListChanged(this);
     }
 
-    protected long mUID = Settings.getUID();
+    // Unique ID for this item
+    protected long mUID = Settings.makeUID();
 
     /**
      * Get a unique integer that identifies this item. We use getTimeMillis to generate this UID,
@@ -60,7 +92,9 @@ public abstract class EntryListItem {
      * Get the list that contains this item
      * @return the containing list, or null for the root
      */
-    public abstract EntryList getContainer();
+    public EntryList getContainer() {
+        return mParent;
+    }
 
     /**
      * Set the item's text
@@ -121,33 +155,19 @@ public abstract class EntryListItem {
     abstract String toPlainString(String tab);
 
     /**
-     * Approach 1:
-     * Assume that the backing store is private to one user.
-     * So if the local cache is more recent than the backing store, use it.
-     * Otherwise use the backing store.
-     * Approach 2:
-     * As approach 1, but prompt if the backing store is more recent than the cache
-     * Approach 3:
-     * Merge. Cases to consider:
-     * List exists in cache but not in backing store
-     *      If the list uid is more recent than the backing store root timestamp, keep it
-     *      Otherwise discard it
-     * List exists in backing store but not in cache
-     * List exists in both backing store and cache
-     *      Cache version is more recent than backing store version
-     *      Backing store version is more recent than cache
-     * Where a list exists in both the cache and the backing store,
-     * it is merged at an item level. Where it only exists in the cache, then the time is considered;
-     * if the time on the list is more recent than the backing store timestamp, it is retained.
+     * Merge when changes on the remote server are more recent than local changes
+     * in the cache.
      *
      * @param other the other item
      */
     abstract boolean merge(EntryListItem other);
 
     /**
-     * Deep equality test. This is a comparison of text only; UIDs are ignored
+     * Deep equality test. This should be is a comparison of text only; UIDs should be ignored
      *
      * @param other the other item
      */
-    abstract boolean equals(EntryListItem other);
+    boolean equals(EntryListItem other) {
+         return other != null && mText.equals(other.getText());
+    }
 }

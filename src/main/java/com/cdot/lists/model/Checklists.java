@@ -1,5 +1,20 @@
 /*
-  Copyright C-Dot Consultants 2020 - MIT license
+ * Copyright © 2020 C-Dot Consultants
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software
+ * and associated documentation files (the "Software"), to deal in the Software without restriction,
+ * including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ * sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
+ * BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 package com.cdot.lists.model;
 
@@ -41,9 +56,7 @@ public class Checklists extends EntryList {
     }
 
     @Override // implement EntryListItem
-    public String getText() {
-        throw new Error("Unexpected getText in " + TAG);
-    }
+    public String getText() { return null; }
 
     @Override // implement EntryListItem
     public boolean isMoveable() {
@@ -72,11 +85,16 @@ public class Checklists extends EntryList {
 
     @Override // EntryList
     public void fromJSON(JSONObject job) throws JSONException {
-        super.fromJSON(job);
-        JSONArray lists = job.getJSONArray("items");
-        for (int i = 0; i < lists.length(); i++)
-            add(new Checklist(this, lists.getJSONObject(i)));
-        Log.d(TAG, "Extracted " + lists.length() + " lists from JSON");
+        try {
+            super.fromJSON(job);
+            JSONArray lists = job.getJSONArray("items");
+            for (int i = 0; i < lists.length(); i++)
+                add(new Checklist(this, lists.getJSONObject(i)));
+            Log.d(TAG, "Extracted " + lists.length() + " lists from JSON");
+        } catch (JSONException je) {
+            // Old format?
+            add(new Checklist(this, job));
+        }
     }
 
     @Override // EntryListItem
@@ -104,7 +122,7 @@ public class Checklists extends EntryList {
         String newname = checklist.getText() + " (copy)";
         checklist.setText(newname);
         add(checklist);
-        notifyListChanged();
+        notifyListeners();
     }
 
     // DEBUG ONLY
