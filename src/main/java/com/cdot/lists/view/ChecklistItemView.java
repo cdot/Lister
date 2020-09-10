@@ -16,7 +16,6 @@ import androidx.appcompat.app.AlertDialog;
 
 import com.cdot.lists.R;
 import com.cdot.lists.Settings;
-import com.cdot.lists.fragment.ChecklistFragment;
 import com.cdot.lists.fragment.EntryListFragment;
 import com.cdot.lists.model.ChecklistItem;
 import com.cdot.lists.model.EntryList;
@@ -27,7 +26,7 @@ import com.cdot.lists.model.EntryListItem;
  */
 @SuppressLint("ViewConstructor")
 public class ChecklistItemView extends EntryListItemView {
-    private static final String TAG = "ChecklistItemView";
+    //private static final String TAG = "ChecklistItemView";
 
     private static final float TRANSPARENCY_OPAQUE = 1;
     private static final float TRANSPARENCY_GREYED = 0.5f;
@@ -49,7 +48,7 @@ public class ChecklistItemView extends EntryListItemView {
 
     @Override // View.OnClickListener()
     public void onClick(View view) {
-        if (!mIsMoving && Settings.getBool(Settings.entireRowTogglesItem)) {
+        if (!mIsMoving && Settings.getBool(Settings.entireRowToggles)) {
             CheckBox cb = findViewById(R.id.checklist_checkbox);
             if (setChecked(!cb.isChecked()))
                 getMainActivity().saveAdvised();
@@ -73,7 +72,7 @@ public class ChecklistItemView extends EntryListItemView {
         // Transparency
         float f = TRANSPARENCY_OPAQUE; // Completely opague
 
-        if (((ChecklistItem) mItem).isDone() && Settings.getBool(Settings.greyChecked))
+        if (((ChecklistItem) mItem).isDone() && Settings.getBool(Settings.dimChecked))
             // Greyed out
             f = TRANSPARENCY_GREYED;
         else if (!mIsMoving && mItem == getFragment().mMovingItem)
@@ -86,7 +85,7 @@ public class ChecklistItemView extends EntryListItemView {
         findViewById(R.id.left_layout).setAlpha(f);
 
         // Strike through
-        if (!((ChecklistItem) mItem).isDone() || !Settings.getBool(Settings.strikeThroughChecked))
+        if (!((ChecklistItem) mItem).isDone() || !Settings.getBool(Settings.strikeChecked))
             it.setPaintFlags(it.getPaintFlags() & ~Paint.STRIKE_THRU_TEXT_FLAG);
         else
             it.setPaintFlags(it.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
@@ -116,7 +115,6 @@ public class ChecklistItemView extends EntryListItemView {
             left.addView(moveButton);
             mCheckboxOnRight = true;
         }
-        moveButton.setVisibility(((ChecklistFragment) getFragment()).mInEditMode ? View.VISIBLE : View.GONE);
         checkBox.setChecked(((ChecklistItem) mItem).isDone());
     }
 

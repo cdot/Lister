@@ -14,66 +14,66 @@
         android:orientation="vertical">
 
         <CheckBox
-            android:id="@+id/grey_out_checked"
+            android:id="@+id/option_dim_checked"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/dim_checked_items" />
+            android:text="@string/option_dim_checked" />
 
         <CheckBox
-            android:id="@+id/strike_checked"
+            android:id="@+id/option_strike_checked"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/strike_through_checked_items" />
+            android:text="@string/option_strike_checked" />
 
         <CheckBox
-            android:id="@+id/show_checked_at_end"
+            android:id="@+id/option_show_checked_at_end"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/show_checked_at_end" />
+            android:text="@string/option_show_checked_at_end" />
 
         <CheckBox
-            android:id="@+id/auto_delete_checked"
+            android:id="@+id/option_auto_delete_checked"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/auto_delete_checked_items" />
+            android:text="@string/option_auto_delete_checked" />
 
         <CheckBox
-            android:id="@+id/entire_row_toggles"
+            android:id="@+id/option_entire_row_toggles"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/entire_row_toggles_check_box" />
+            android:text="@string/option_entire_row_toggles" />
 
         <CheckBox
-            android:id="@+id/left_hand_operation"
+            android:id="@+id/option_left_hand_operation"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/left_hand_operation" />
+            android:text="@string/option_left_hand_operation" />
 
         <CheckBox
-            android:id="@+id/always_show"
+            android:id="@+id/option_show_list_in_front_of_lock_screen"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/show_list_in_front_of_lock_screen" />
+            android:text="@string/option_show_list_in_front_of_lock_screen" />
 
         <CheckBox
-            android:id="@+id/warn_about_duplicates"
+            android:id="@+id/option_warn_about_duplicates"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/warn_about_duplicates" />
+            android:text="@string/option_warn_about_duplicates" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
             android:textStyle="bold"
-            android:text="@string/text_size" />
+            android:text="@string/option_text_size" />
 
         <Spinner
             android:id="@+id/text_size_spinner"
             android:layout_width="200dp"
             android:layout_height="wrap_content"
             android:entries="@array/text_size_list"
-            android:prompt="@string/text_size" />
+            android:prompt="@string/option_text_size" />
 
     <LinearLayout
         android:id="@+id/general_settings"
@@ -89,19 +89,19 @@
             android:textStyle="bold" />
 
         <CheckBox
-            android:id="@+id/force_alpha_sort"
+            android:id="@+id/option_default_alpha_sort"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/default_alpha_sort" />
+            android:text="@string/option_default_alpha_sort" />
 
         <CheckBox
-            android:id="@+id/open_latest"
+            android:id="@+id/option_open_latest"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/open_latest_list_at_startup" />
+            android:text="@string/option_open_latest" />
 
         <TextView
-            android:id="@+id/backing_store_uri"
+            android:id="@+id/option_uri"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 
@@ -111,20 +111,20 @@
             android:orientation="horizontal">
 
             <ImageButton
-                android:id="@+id/change_store"
+                android:id="@+id/action_change_uri"
                 android:layout_width="@android:dimen/app_icon_size"
                 android:layout_height="@android:dimen/app_icon_size"
                 android:layout_alignParentStart="true"
                 android:background="@drawable/ic_action_store_open"
-                android:contentDescription="@string/action_change_store" />
+                android:contentDescription="@string/action_change_uri" />
 
             <ImageButton
-                android:id="@+id/create_store"
+                android:id="@+id/action_create_uri"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
                 android:layout_alignParentEnd="true"
                 android:background="@drawable/ic_action_store_new"
-                android:contentDescription="@string/action_create_store" />
+                android:contentDescription="@string/action_create_uri" />
         </RelativeLayout>
     </LinearLayout>
 </LinearLayout>

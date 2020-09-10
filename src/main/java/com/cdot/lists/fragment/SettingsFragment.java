@@ -59,34 +59,34 @@ public class SettingsFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         mBinding = SettingsFragmentBinding.inflate(getLayoutInflater());
 
-        mBinding.greyOutChecked.setChecked(Settings.getBool(Settings.greyChecked));
-        mBinding.strikeChecked.setChecked(Settings.getBool(Settings.strikeThroughChecked));
-        mBinding.forceAlphaSort.setChecked(Settings.getBool(Settings.forceAlphaSort));
-        mBinding.showCheckedAtEnd.setChecked(Settings.getBool(Settings.showCheckedAtEnd));
-        mBinding.leftHandOperation.setChecked(Settings.getBool(Settings.leftHandOperation));
-        mBinding.autoDeleteChecked.setChecked(Settings.getBool(Settings.autoDeleteChecked));
-        mBinding.entireRowToggles.setChecked(Settings.getBool(Settings.entireRowTogglesItem));
+        mBinding.optionDimChecked.setChecked(Settings.getBool(Settings.dimChecked));
+        mBinding.optionStrikeChecked.setChecked(Settings.getBool(Settings.strikeChecked));
+        mBinding.optionDefaultAlphaSort.setChecked(Settings.getBool(Settings.defaultAlphaSort));
+        mBinding.optionShowCheckedAtEnd.setChecked(Settings.getBool(Settings.showCheckedAtEnd));
+        mBinding.optionLeftHandOperation.setChecked(Settings.getBool(Settings.leftHandOperation));
+        mBinding.optionAutoDeleteChecked.setChecked(Settings.getBool(Settings.autoDeleteChecked));
+        mBinding.optionEntireRowToggles.setChecked(Settings.getBool(Settings.entireRowToggles));
 
-        mBinding.alwaysShow.setChecked(Settings.getBool(Settings.alwaysShow));
-        mBinding.warnAboutDuplicates.setChecked(Settings.getBool(Settings.warnAboutDuplicates));
+        mBinding.optionShowListInFrontOfLockScreen.setChecked(Settings.getBool(Settings.alwaysShow));
+        mBinding.optionWarnAboutDuplicates.setChecked(Settings.getBool(Settings.warnAboutDuplicates));
         mBinding.textSizeSpinner.setSelection(Settings.getInt(Settings.textSizeIndex));
 
-        Uri uri = Settings.getUri(Settings.backingStore);
-        mBinding.backingStoreUri.setText(uri != null ? uri.toString() : getString(R.string.not_set));
+        Uri uri = Settings.getUri(Settings.uri);
+        mBinding.optionUri.setText(uri != null ? uri.toString() : getString(R.string.not_set));
         mBinding.generalSettings.setVisibility(mGeneral ? View.VISIBLE : View.GONE);
 
-        mBinding.changeStore.setOnClickListener(this::changeStoreClicked);
-        mBinding.createStore.setOnClickListener(this::createStoreClicked);
+        mBinding.actionChangeUri.setOnClickListener(this::changeStoreClicked);
+        mBinding.actionChangeUri.setOnClickListener(this::createStoreClicked);
 
-        mBinding.forceAlphaSort.setOnClickListener(v -> Settings.setBool(Settings.forceAlphaSort, mBinding.forceAlphaSort.isChecked()));
-        mBinding.alwaysShow.setOnClickListener(v -> Settings.setBool(Settings.alwaysShow, mBinding.alwaysShow.isChecked()));
-        mBinding.warnAboutDuplicates.setOnClickListener(v -> Settings.setBool(Settings.warnAboutDuplicates, mBinding.warnAboutDuplicates.isChecked()));
-        mBinding.leftHandOperation.setOnClickListener(v -> Settings.setBool(Settings.leftHandOperation, mBinding.leftHandOperation.isChecked()));
-        mBinding.entireRowToggles.setOnClickListener(v -> Settings.setBool(Settings.entireRowTogglesItem, mBinding.entireRowToggles.isChecked()));
-        mBinding.autoDeleteChecked.setOnClickListener(v -> Settings.setBool(Settings.autoDeleteChecked, mBinding.autoDeleteChecked.isChecked()));
-        mBinding.showCheckedAtEnd.setOnClickListener(v -> Settings.setBool(Settings.showCheckedAtEnd, mBinding.showCheckedAtEnd.isChecked()));
-        mBinding.strikeChecked.setOnClickListener(v -> Settings.setBool(Settings.strikeThroughChecked, mBinding.strikeChecked.isChecked()));
-        mBinding.greyOutChecked.setOnClickListener(v -> Settings.setBool(Settings.greyChecked, mBinding.greyOutChecked.isChecked()));
+        mBinding.optionDefaultAlphaSort.setOnClickListener(v -> Settings.setBool(Settings.defaultAlphaSort, mBinding.optionDefaultAlphaSort.isChecked()));
+        mBinding.optionShowListInFrontOfLockScreen.setOnClickListener(v -> Settings.setBool(Settings.alwaysShow, mBinding.optionShowListInFrontOfLockScreen.isChecked()));
+        mBinding.optionWarnAboutDuplicates.setOnClickListener(v -> Settings.setBool(Settings.warnAboutDuplicates, mBinding.optionWarnAboutDuplicates.isChecked()));
+        mBinding.optionLeftHandOperation.setOnClickListener(v -> Settings.setBool(Settings.leftHandOperation, mBinding.optionLeftHandOperation.isChecked()));
+        mBinding.optionEntireRowToggles.setOnClickListener(v -> Settings.setBool(Settings.entireRowToggles, mBinding.optionEntireRowToggles.isChecked()));
+        mBinding.optionAutoDeleteChecked.setOnClickListener(v -> Settings.setBool(Settings.autoDeleteChecked, mBinding.optionAutoDeleteChecked.isChecked()));
+        mBinding.optionShowCheckedAtEnd.setOnClickListener(v -> Settings.setBool(Settings.showCheckedAtEnd, mBinding.optionShowCheckedAtEnd.isChecked()));
+        mBinding.optionStrikeChecked.setOnClickListener(v -> Settings.setBool(Settings.strikeChecked, mBinding.optionStrikeChecked.isChecked()));
+        mBinding.optionDimChecked.setOnClickListener(v -> Settings.setBool(Settings.dimChecked, mBinding.optionDimChecked.isChecked()));
 
         mBinding.textSizeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override // AdapterView.OnItemSelectedListener
@@ -106,14 +106,14 @@ public class SettingsFragment extends Fragment {
     @Override // Fragment
     public void onActivityResult(int requestCode, int resultCode, Intent resultData) {
         if ((requestCode == MainActivity.REQUEST_CHANGE_STORE || requestCode == MainActivity.REQUEST_CREATE_STORE) && resultCode == AppCompatActivity.RESULT_OK) {
-            mBinding.backingStoreUri.setText(Settings.getUri(Settings.backingStore).toString());
+            mBinding.optionUri.setText(Settings.getUri(Settings.uri).toString());
             getMainActivity().onActivityResult(requestCode, resultCode, resultData);
         }
     }
 
     // Invoked from resource
     public void changeStoreClicked(View view) {
-        Uri bs = Settings.getUri(Settings.backingStore);
+        Uri bs = Settings.getUri(Settings.uri);
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
@@ -125,7 +125,7 @@ public class SettingsFragment extends Fragment {
 
     // Invoked from resource
     public void createStoreClicked(View view) {
-        Uri bs = Settings.getUri(Settings.backingStore);
+        Uri bs = Settings.getUri(Settings.uri);
         Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
         intent.setFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
         if (bs != null && Build.VERSION.SDK_INT >= 26)

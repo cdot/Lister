@@ -105,10 +105,15 @@ public class EntryListItemView extends RelativeLayout implements View.OnClickLis
         // implement in subclasses
     }
 
+    /**
+     * Called to update the row view when settings have changed
+     */
     public void updateView() {
         // Update the item text
         TextView it = findViewById(R.id.item_text);
-        it.setText(mItem.getText());
+        String t = mItem.getText();
+        //t += mItem.getUID(); // DEBUG
+        it.setText(t);
         setTextFormatting();
         ImageButton mb = findViewById(R.id.move_button);
         mb.setVisibility(mItem.getContainer().isShownSorted() ? View.GONE : View.VISIBLE);

@@ -43,7 +43,7 @@ import java.util.Stack;
  * Base class for lists of items
  */
 public abstract class EntryList extends EntryListItem {
-    private final String TAG = "EntryList";
+    private static final String TAG = "EntryList";
 
     // The basic list
     private ArrayList<EntryListItem> mData = new ArrayList<>();
@@ -296,7 +296,7 @@ public abstract class EntryList extends EntryListItem {
         try {
             mShownSorted = job.getBoolean("sort");
         } catch (JSONException je) {
-            mShownSorted = Settings.getBool(Settings.forceAlphaSort);
+            mShownSorted = Settings.getBool(Settings.defaultAlphaSort);
         }
     }
 

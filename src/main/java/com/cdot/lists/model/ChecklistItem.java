@@ -29,7 +29,7 @@ import org.json.JSONObject;
  * An item in a Checklist
  */
 public class ChecklistItem extends EntryListItem {
-    private static final String TAG = "ChecklistItem";
+    //private static final String TAG = "ChecklistItem";
 
     private long mUID;
     private boolean mDone; // has it been checked?
@@ -68,21 +68,6 @@ public class ChecklistItem extends EntryListItem {
     @Override // implement EntryListItem
     public boolean equals(EntryListItem ot) {
         return super.equals(ot) && mDone == ((ChecklistItem) ot).mDone;
-    }
-
-    // Called on the cache to merge the backing list
-    @Override // implement EntryListItem
-    public boolean merge(EntryListItem backIt) {
-        boolean changed = false;
-        if (!getText().equals(backIt.getText())) {
-            setText(backIt.getText());
-            changed = true;
-        }
-        ChecklistItem backLit = (ChecklistItem) backIt;
-        if (mDone == backLit.mDone) // no changes
-            return changed;
-        mDone = backLit.mDone;
-        return true;
     }
 
     /**

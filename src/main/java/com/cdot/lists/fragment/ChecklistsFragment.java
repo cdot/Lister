@@ -48,6 +48,8 @@ import com.cdot.lists.view.EntryListItemView;
 public class ChecklistsFragment extends EntryListFragment {
     private static final String TAG = "ChecklistsFragment";
 
+    private ChecklistsFragmentBinding mBinding;
+
     /**
      * Construct a fragment to manage interaction with the given checklists.
      * @param lists the Checklists being managed
@@ -59,9 +61,9 @@ public class ChecklistsFragment extends EntryListFragment {
 
     @Override // EntryListFragment
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        ChecklistsFragmentBinding binding = ChecklistsFragmentBinding.inflate(inflater, container, false);
-        setView(binding.itemListView, binding.checklistsFragment);
-        return binding.getRoot();
+        mBinding = ChecklistsFragmentBinding.inflate(inflater, container, false);
+        setView(mBinding.itemListView, mBinding.checklistsFragment);
+        return mBinding.getRoot();
     }
 
     @Override // Fragment
@@ -80,6 +82,12 @@ public class ChecklistsFragment extends EntryListFragment {
     @Override // EntryListFragment
     protected String getHelpAsset() {
         return "Checklists";
+    }
+
+    @Override // EntryListFragment
+    public void onListChanged(EntryListItem item) {
+        mBinding.listsMessage.setVisibility(mList.size() == 0 ? View.VISIBLE : View.GONE);
+        mBinding.itemListView.setVisibility(mList.size() == 0 ? View.GONE : View.VISIBLE);
     }
 
     @Override // Fragment

@@ -155,14 +155,6 @@ public abstract class EntryListItem {
     abstract String toPlainString(String tab);
 
     /**
-     * Merge when changes on the remote server are more recent than local changes
-     * in the cache.
-     *
-     * @param other the other item
-     */
-    abstract boolean merge(EntryListItem other);
-
-    /**
      * Deep equality test. This should be is a comparison of text only; UIDs should be ignored
      *
      * @param other the other item

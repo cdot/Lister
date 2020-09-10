@@ -30,22 +30,22 @@ import java.util.Map;
  * defaults.
  */
 public class Settings {
-    static final String TAG = "Settings";
+    //private static final String TAG = "Settings";
 
     static final String UI_PREFERENCES = "UIPreferences";
 
     // General
-    public static final String greyChecked = "greyCheckedItems";
-    public static final String strikeThroughChecked = "strikeThroughCheckedItems";
+    public static final String dimChecked = "greyCheckedItems";
+    public static final String strikeChecked = "strikeThroughCheckedItems";
     public static final String leftHandOperation = "checkBoxOnLeftSide";
-    public static final String entireRowTogglesItem = "entireRowTogglesItem";
+    public static final String entireRowToggles = "entireRowTogglesItem";
     public static final String alwaysShow = "showListInFrontOfLockScreen";
     public static final String warnAboutDuplicates = "warnAboutDuplicates";
     public static final String textSizeIndex = "textSizeIndex";
-    public static final String currentList = "currentList";
-    public static final String backingStore = "backingStore";
+    public static final String currentListUID = "currentList";
+    public static final String uri = "backingStore";
     public static final String showCheckedAtEnd = "moveCheckedItemsToBottom";
-    public static final String forceAlphaSort = "forceAlphaSort";
+    public static final String defaultAlphaSort = "forceAlphaSort";
     public static final String autoDeleteChecked = "autoDeleteCheckedItems";
     public static final String saveDelay = "saveDelay";
 
@@ -64,11 +64,11 @@ public class Settings {
 
     private static Map<String, Boolean> sBoolPrefs = new HashMap<String, Boolean>() {{
         put(autoDeleteChecked, false);
-        put(greyChecked, true);
-        put(forceAlphaSort, false);
+        put(dimChecked, true);
+        put(defaultAlphaSort, false);
         put(showCheckedAtEnd, false);
-        put(strikeThroughChecked, true);
-        put(entireRowTogglesItem, true);
+        put(strikeChecked, true);
+        put(entireRowToggles, true);
 
         put(alwaysShow, false);
         put(warnAboutDuplicates, true);
@@ -81,12 +81,12 @@ public class Settings {
     }};
 
     private static Map<String, Long> sLongPrefs = new HashMap<String, Long>() {{
-        put(currentList, INVALID_UID);
+        put(currentListUID, INVALID_UID);
         put(saveDelay, 5L);
     }};
 
     private static Map<String, Uri> sUriPrefs = new HashMap<String, Uri>() {{
-        put(backingStore, null);
+        put(uri, null);
     }};
 
     /**

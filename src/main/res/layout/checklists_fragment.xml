@@ -6,8 +6,14 @@
     android:orientation="vertical"
     android:paddingStart="5dp">
 
+    <TextView
+        android:id="@+id/lists_message"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:text="@string/message_no_lists_yet"/>
     <ListView
         android:id="@+id/item_list_view"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent"
+        android:visibility="gone"/>
 </LinearLayout>

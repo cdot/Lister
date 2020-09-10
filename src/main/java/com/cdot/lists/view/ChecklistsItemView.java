@@ -22,7 +22,7 @@ import com.cdot.lists.model.EntryListItem;
  */
 @SuppressLint("ViewConstructor")
 public class ChecklistsItemView extends EntryListItemView {
-    private static final String TAG = "ChecklistsItemView";
+    //private static final String TAG = "ChecklistsItemView";
 
     @SuppressLint("ClickableViewAccessibility")
     public ChecklistsItemView(EntryListItem item, boolean isMoving, EntryListFragment cxt) {

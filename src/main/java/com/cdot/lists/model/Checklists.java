@@ -31,12 +31,13 @@ import org.json.JSONObject;
 
 /**
  * A list of Checklist.
- * Constructed by reading a JSON file from a private storage area
- * On startup, try to read the list from the backing store. Should we wait for the load, or load from
- * the cache and then update? Need to time out backing store reads.
+ * Constructed by reading a JSON file.
  */
 public class Checklists extends EntryList {
     private static final String TAG = "Checklists";
+
+    public long mTimestamp; // time it was last saved
+    private String mURI; // URI it was loaded from (or is a cache for)
 
     /**
      * Constructor
@@ -63,31 +64,20 @@ public class Checklists extends EntryList {
         return false;
     }
 
-    // Called on the cache to merge the backing list
-    @Override // EntryListItem
-    public boolean merge(EntryListItem backing) {
-        Checklists backLists = (Checklists) backing;
-        boolean changed = false; // will the list require a save?
-        for (EntryListItem backIt : backLists.getData()) {
-            Checklist backList = (Checklist) backIt;
-            Checklist cacheList = (Checklist) findByUID(backList.getUID());
-            if (cacheList != null) {
-                if (cacheList.merge(backList))
-                    changed = true;
-            } else {
-                Checklist newList = new Checklist(this, backList);
-                add(newList);
-                changed = true;
-            }
-        }
-        return changed;
+    @Override // EntryList
+    public JSONObject toJSON() throws JSONException {
+        JSONObject job = super.toJSON();
+        job.put("timestamp", System.currentTimeMillis());
+        job.put("uri", mURI);
+        return job;
     }
 
     @Override // EntryList
     public void fromJSON(JSONObject job) throws JSONException {
         try {
             super.fromJSON(job);
-            // List of lists?
+            mTimestamp = job.has("timestamp") ? job.getLong("timestamp") :  0; // 0=unknown
+            mURI = job.has("uri") ? job.getString("uri") : "";
             JSONArray lists = job.getJSONArray("items");
             for (int i = 0; i < lists.length(); i++)
                 add(new Checklist(this, lists.getJSONObject(i)));
@@ -114,6 +104,25 @@ public class Checklists extends EntryList {
         return sb.toString();
     }
 
+    // Record the URI this was loaded from
+    public void setURI(String uri) {
+        mURI = uri;
+    }
+
+    // Record the URI this was loaded from
+    public String getURI() {
+        return mURI;
+    }
+
+    /**
+     * Determine if this is more recent than another set of checklists
+     * @return false if the two lists don't come from the same URI, or if the other list's
+     * time stamp is more recent than this list.
+     */
+    public boolean isMoreRecentThan(Checklists other) {
+        return other.mURI.equals(mURI) && mTimestamp > other.mTimestamp;
+    }
+
     /**
      * Make a copy of the list at the given index
      *
@@ -128,6 +137,7 @@ public class Checklists extends EntryList {
     }
 
     // DEBUG ONLY
+    /*
     private void removeDuplicates() {
         for (int i = 0; i < size(); i++) {
             EntryListItem ei = get(i);
@@ -139,5 +149,5 @@ public class Checklists extends EntryList {
                     j++;
             }
         }
-    }
+    }*/
 }

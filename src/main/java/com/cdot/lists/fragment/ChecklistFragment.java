@@ -83,7 +83,7 @@ public class ChecklistFragment extends EntryListFragment {
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         if (mList == null)
             return null;
-        Settings.setLong(Settings.currentList, mList.getUID());
+        Settings.setLong(Settings.currentListUID, mList.getUID());
 
         mBinding = ChecklistFragmentBinding.inflate(inflater, container, false);
         View rootView = mBinding.getRoot();
@@ -139,7 +139,7 @@ public class ChecklistFragment extends EntryListFragment {
                 if (deleted > 0) {
                     mChecklist.notifyListeners();
                     getMainActivity().saveRequired();
-                    Toast.makeText(getMainActivity(), getString(R.string.x_items_deleted, deleted), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getMainActivity(), getString(R.string.toast_items_deleted, deleted), Toast.LENGTH_SHORT).show();
                     if (mList.size() == 0) {
                         enableEditMode(true);
                         mChecklist.notifyListeners();
@@ -149,7 +149,7 @@ public class ChecklistFragment extends EntryListFragment {
                 return true;
 
             case R.id.action_edit:
-                mInEditMode = !mInEditMode;
+                enableEditMode(!mInEditMode);
                 return true;
 
             case R.id.action_rename_list:
@@ -162,7 +162,7 @@ public class ChecklistFragment extends EntryListFragment {
                 builder.setView(editText);
                 builder.setPositiveButton(R.string.ok, (dialogInterface, i) -> {
                     mList.setText(editText.getText().toString());
-                    getMainActivity().mLists.notifyListeners();
+                    getMainActivity().notifyListsListeners();
                     getMainActivity().saveRequired();
                     //Objects.requireNonNull(getSupportActionBar()).setTitle(mChecklist.getText());
                 });
@@ -182,9 +182,9 @@ public class ChecklistFragment extends EntryListFragment {
                 mChecklist.notifyListeners();
                 getMainActivity().saveRequired();
                 if (undone == 0)
-                    Toast.makeText(getMainActivity(), R.string.no_deleted_items, Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getMainActivity(), R.string.toast_no_deleted_items, Toast.LENGTH_SHORT).show();
                 else
-                    Toast.makeText(getMainActivity(), getString(R.string.x_items_restored, undone), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getMainActivity(), getString(R.string.toast_items_restored, undone), Toast.LENGTH_SHORT).show();
                 return true;
 
             case R.id.action_save_list_as:
@@ -316,7 +316,7 @@ public class ChecklistFragment extends EntryListFragment {
 
     private void exportChecklist() {
         AlertDialog.Builder builder = new AlertDialog.Builder(getMainActivity());
-        builder.setTitle(R.string.select_share_format);
+        builder.setTitle(R.string.export_format);
         final Spinner picker = new Spinner(getMainActivity());
         ArrayAdapter<String> adapter = new ArrayAdapter<>(getMainActivity(),
                 android.R.layout.simple_spinner_item, getResources().getStringArray(R.array.share_format_description));
@@ -385,8 +385,9 @@ public class ChecklistFragment extends EntryListFragment {
                 startActivity(Intent.createChooser(intent, fileName));
 
             } catch (Exception e) {
-                Log.d(TAG, "Share failed " + e.getMessage());
-                Toast.makeText(getMainActivity(), getString(R.string.share_failed, e.getMessage()), Toast.LENGTH_SHORT).show();
+                String mess = getString(R.string.failed_export, e.getMessage());
+                Log.d(TAG, mess);
+                Toast.makeText(getMainActivity(), mess, Toast.LENGTH_SHORT).show();
             }
         });
         builder.setNegativeButton(R.string.cancel, null);

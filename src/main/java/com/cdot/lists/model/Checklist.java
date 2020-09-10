@@ -106,31 +106,6 @@ public class Checklist extends EntryList {
         return i;
     }
 
-    @Override // implement EntryListItem
-    public boolean merge(EntryListItem backing) {
-        boolean changed = false;
-        if (!getText().equals(backing.getText())) {
-            setText(backing.getText());
-            changed = true;
-        }
-        EntryList backList = (EntryList)backing;
-        for (EntryListItem cacheIt : getData()) {
-            EntryListItem backIt = backList.findByUID(cacheIt.getUID());
-            if (backIt != null) {
-                if (cacheIt.merge(backIt))
-                    changed = true;
-            } // item not in backing list, only in cache
-        }
-        for (EntryListItem backIt : backList.getData()) {
-            EntryListItem cacheIt = findByUID(backIt.getUID());
-            if (cacheIt == null) {
-                getData().add(backIt);
-                changed = true;
-            }
-        }
-        return changed;
-    }
-
     /**
      * Make a global change to the "checked" status of all items in the list
      *
