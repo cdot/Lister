@@ -65,9 +65,61 @@ public abstract class EntryList extends EntryListItem {
     // Undo stack
     Stack<ArrayList<Remove>> mRemoves;
 
+    @Override // implements EntryListItem
+    public void fromJSON(JSONObject job) throws JSONException {
+        mUID = job.getLong("uid");
+        try {
+            mShownSorted = job.getBoolean("sort");
+        } catch (JSONException je) {
+            mShownSorted = Settings.getBool(Settings.defaultAlphaSort);
+        }
+    }
+
+    @Override // implements EntryListItem
+    public JSONObject toJSON() throws JSONException {
+        JSONObject job = new JSONObject();
+        JSONArray its = new JSONArray();
+        for (EntryListItem cl : mData)
+            its.put(cl.toJSON());
+        job.put("uid", getUID());
+        job.put("items", its);
+        job.put("sort", mShownSorted);
+        return job;
+    }
+
+    @Override // implement EntryListItem
+    public void toCSV(CSVWriter w) {
+        w.writeNext(new String[]{"Item", "Checked"});
+        for (EntryListItem it : mData) {
+            it.toCSV(w);
+        }
+    }
+
+    @Override // implement EntryListItem
+    public String toPlainString(String tab) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(tab).append(getText()).append(":\n");
+        for (EntryListItem next : mData) {
+            sb.append(next.toPlainString(tab + "\t")).append("\n");
+        }
+        return sb.toString();
+    }
+
+    @Override // implement EntryListItem
+    public boolean equals(EntryListItem other) {
+        EntryList oth = (EntryList) other;
+        if (!super.equals(oth) || oth.size() != size())
+            return false;
+
+        for (EntryListItem oit : oth.mData) {
+            EntryListItem i = findByText(oit.getText(), true);
+            if (i == null || !oit.equals(i))
+                return false;
+        }
+        return true;
+    }
+
     /**
-     * Constructor
-     *
      * @param parent the list that contains this list (or null for the root)
      */
     EntryList(EntryList parent) {
@@ -200,7 +252,7 @@ public abstract class EntryList extends EntryListItem {
             return 0;
         for (Remove it : items)
             mData.add(it.index, it.item);
-        notifyListeners();
+        notifyChangeListeners();
         return items.size();
     }
 
@@ -250,20 +302,6 @@ public abstract class EntryList extends EntryListItem {
         return mData.indexOf(ci);
     }
 
-    @Override // implement EntryListItem
-    public boolean equals(EntryListItem other) {
-        EntryList oth = (EntryList) other;
-        if (!super.equals(oth) || oth.size() != size())
-            return false;
-
-        for (EntryListItem oit : oth.mData) {
-            EntryListItem i = findByText(oit.getText(), true);
-            if (i == null || !oit.equals(i))
-                return false;
-        }
-        return true;
-    }
-
     /**
      * Load the object from JSON or CSV read from the stream
      *
@@ -288,45 +326,5 @@ public abstract class EntryList extends EntryListItem {
                 throw new Exception("Format error, could not read JSON or CSV");
             }
         }
-    }
-
-    @Override // implements EntryListItem
-    public void fromJSON(JSONObject job) throws JSONException {
-        mUID = job.getLong("uid");
-        try {
-            mShownSorted = job.getBoolean("sort");
-        } catch (JSONException je) {
-            mShownSorted = Settings.getBool(Settings.defaultAlphaSort);
-        }
-    }
-
-    @Override // implements EntryListItem
-    public JSONObject toJSON() throws JSONException {
-        JSONObject job = new JSONObject();
-        JSONArray its = new JSONArray();
-        for (EntryListItem cl : mData)
-            its.put(cl.toJSON());
-        job.put("uid", getUID());
-        job.put("items", its);
-        job.put("sort", mShownSorted);
-        return job;
-    }
-
-    @Override // implement EntryListItem
-    public void toCSV(CSVWriter w) {
-        w.writeNext(new String[]{"Item", "Checked"});
-        for (EntryListItem it : mData) {
-            it.toCSV(w);
-        }
-    }
-
-    @Override // implement EntryListItem
-    public String toPlainString(String tab) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(tab).append(getText()).append(":\n");
-        for (EntryListItem next : mData) {
-            sb.append(next.toPlainString(tab + "\t")).append("\n");
-        }
-        return sb.toString();
     }
 }

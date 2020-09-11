@@ -26,7 +26,7 @@ import com.cdot.lists.model.EntryListItem;
  */
 @SuppressLint("ViewConstructor")
 public class ChecklistItemView extends EntryListItemView {
-    //private static final String TAG = "ChecklistItemView";
+    private static final String TAG = "ChecklistItemView";
 
     private static final float TRANSPARENCY_OPAQUE = 1;
     private static final float TRANSPARENCY_GREYED = 0.5f;
@@ -35,23 +35,13 @@ public class ChecklistItemView extends EntryListItemView {
     // True if the checkbox is on the right (which is where the basic layout has it)
     private boolean mCheckboxOnRight;
 
-    /**
-     * @param item     the item being viewed
-     * @param isMoving true if this is to be used as a view for dragging an item to a new position, false for an item in a fixed list
-     * @param cxt      fragment
-     */
-    public ChecklistItemView(EntryListItem item, boolean isMoving, EntryListFragment cxt) {
-        super(item, isMoving, cxt, R.layout.checklist_item_view, R.menu.checklist_item_popup);
-        mCheckboxOnRight = true;
-        updateView();
-    }
-
     @Override // View.OnClickListener()
     public void onClick(View view) {
         if (!mIsMoving && Settings.getBool(Settings.entireRowToggles)) {
             CheckBox cb = findViewById(R.id.checklist_checkbox);
-            if (setChecked(!cb.isChecked()))
-                getMainActivity().saveAdvised();
+            if (setChecked(!cb.isChecked())) {
+                getMainActivity().saveAdvised(TAG, "Item toggled");
+            }
         }
     }
 
@@ -60,8 +50,9 @@ public class ChecklistItemView extends EntryListItemView {
         super.addListeners();
         final CheckBox cb = findViewById(R.id.checklist_checkbox);
         cb.setOnClickListener(view -> {
-            if (setChecked(cb.isChecked()))
-                getMainActivity().saveAdvised();
+            if (setChecked(cb.isChecked())) {
+                getMainActivity().saveAdvised(TAG,"item checked");
+            }
         });
     }
 
@@ -118,27 +109,6 @@ public class ChecklistItemView extends EntryListItemView {
         checkBox.setChecked(((ChecklistItem) mItem).isDone());
     }
 
-    /**
-     * Handle checking / unchecking a single item
-     * @param isChecked the check status
-     */
-    private boolean setChecked(boolean isChecked) {
-        if (Settings.getBool(Settings.autoDeleteChecked) && isChecked) {
-            EntryList el = mItem.getContainer();
-            el.newUndoSet();
-            el.remove(mItem, true);
-            el.notifyListeners();
-            return true;
-        }
-        CheckBox cb = findViewById(R.id.checklist_checkbox);
-        cb.setChecked(isChecked);
-        if (((ChecklistItem) mItem).setDone(isChecked)) {
-            mItem.notifyListeners();
-            return true;
-        }
-        return false;
-    }
-
     @Override // EntryListItemView
     protected boolean onAction(int act) {
         switch (act) {
@@ -146,8 +116,8 @@ public class ChecklistItemView extends EntryListItemView {
                 EntryList list = mItem.getContainer();
                 list.newUndoSet();
                 list.remove(mItem, true);
-                list.notifyListeners();
-                getMainActivity().saveRequired();
+                list.notifyChangeListeners();
+                getMainActivity().saveAdvised(TAG, "item deleted");
                 return true;
 
             case R.id.action_rename:
@@ -159,8 +129,8 @@ public class ChecklistItemView extends EntryListItemView {
                 builder.setView(editText);
                 builder.setPositiveButton(R.string.ok, (dialogInterface, i) -> {
                     mItem.setText(editText.getText().toString());
-                    mItem.notifyListeners();
-                    getMainActivity().saveRequired();
+                    mItem.notifyChangeListeners();
+                    getMainActivity().saveAdvised(TAG, "item renamed");
                 });
                 builder.setNegativeButton(R.string.cancel, null);
                 builder.show();
@@ -169,5 +139,37 @@ public class ChecklistItemView extends EntryListItemView {
             default:
                 return false;
         }
+    }
+
+    /**
+     * @param item     the item being viewed
+     * @param isMoving true if this is to be used as a view for dragging an item to a new position, false for an item in a fixed list
+     * @param cxt      fragment
+     */
+    public ChecklistItemView(EntryListItem item, boolean isMoving, EntryListFragment cxt) {
+        super(item, isMoving, cxt, R.layout.checklist_item_view, R.menu.checklist_item_popup);
+        mCheckboxOnRight = true;
+        updateView();
+    }
+
+    /**
+     * Handle checking / unchecking a single item. Notifies change listeners.
+     * @param isChecked the check status
+     */
+    private boolean setChecked(boolean isChecked) {
+        if (Settings.getBool(Settings.autoDeleteChecked) && isChecked) {
+            EntryList el = mItem.getContainer();
+            el.newUndoSet();
+            el.remove(mItem, true);
+            el.notifyChangeListeners();
+            return true;
+        }
+        CheckBox cb = findViewById(R.id.checklist_checkbox);
+        cb.setChecked(isChecked);
+        if (((ChecklistItem) mItem).setDone(isChecked)) {
+            mItem.notifyChangeListeners();
+            return true;
+        }
+        return false;
     }
 }

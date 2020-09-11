@@ -212,8 +212,8 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
         if (moveTo != itemIndex && moveTo >= 0 && moveTo < mList.size()) {
             mList.remove(movingItem, false);
             mList.put(moveTo, movingItem);
-            mList.notifyListeners();
-            getMainActivity().saveRequired();
+            mList.notifyChangeListeners();
+            getMainActivity().saveAdvised(TAG, "order changed");
         }
 
         if (motionEvent.getAction() == MotionEvent.ACTION_MOVE) {
@@ -250,8 +250,8 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
         switch (menuItem.getItemId()) {
             case R.id.action_alpha_sort:
                 mList.toggleShownSorted();
-                mList.notifyListeners();
-                getMainActivity().saveAdvised();
+                mList.notifyChangeListeners();
+                getMainActivity().saveAdvised(TAG, "alpha sort option selected");
                 return true;
             case R.id.action_help:
                 getMainActivity().pushFragment(new HelpFragment(getHelpAsset()));

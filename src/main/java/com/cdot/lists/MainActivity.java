@@ -25,8 +25,6 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.provider.DocumentsContract;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -140,7 +138,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void notifyListsListeners() {
-        mLists.notifyListeners();
+        mLists.notifyChangeListeners();
     }
     /**
      * Load the list of checklists.
@@ -163,9 +161,9 @@ public class MainActivity extends AppCompatActivity {
             newList.fromStream(stream);
 
             mLists.add(newList);
-            mLists.notifyListeners();
-            saveRequired();
             Log.d(TAG, "imported list: " + newList.getText());
+            mLists.notifyChangeListeners();
+            saveAdvised(TAG, "list imported");
             Toast.makeText(this, getString(R.string.import_report, newList.getText()), Toast.LENGTH_LONG).show();
             pushFragment(new ChecklistFragment(newList));
         } catch (Exception e) {
@@ -229,18 +227,18 @@ public class MainActivity extends AppCompatActivity {
                     Log.d(TAG, mLists.size() + " lists loaded from " + uri);
                     Checklists cl = loadCache(new Checklists());
                     Log.d(TAG, "Cache comes from " + cl.getURI());
-                    if (cl.isMoreRecentThan(mLists)) {
+                    if (cl.isMoreRecentVersionOf(mLists)) {
                         Log.d(TAG, "Cache is more recent");
                         runOnUiThread(() -> Toast.makeText(this, R.string.cache_is_newer, Toast.LENGTH_LONG).show());
                         loadCache(mLists);
                     }
-                    new Handler(Looper.getMainLooper()).post(() -> mLists.notifyListeners());
+                    runOnUiThread(() -> mLists.notifyChangeListeners());
                 }
             } catch (final SecurityException se) {
                 // openInputStream denied, reroute through picker to re-establish permissions
                 Log.d(TAG, "Security Exception loading " + uri + ": " + se);
                 // In a thread, have to use the UI thread to request access
-                new Handler(Looper.getMainLooper()).post(() -> {
+                runOnUiThread(() -> {
                     AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
                     builder.setTitle(R.string.uri_access_denied);
                     builder.setMessage(R.string.failed_uri_access);
@@ -266,7 +264,7 @@ public class MainActivity extends AppCompatActivity {
                 Log.d(TAG, "Cache comes from " + mLists.getURI());
                 if (!mLists.getURI().equals(uri.toString()))
                     mLists.clear();
-                new Handler(Looper.getMainLooper()).post(() -> mLists.notifyListeners());
+                runOnUiThread(() -> mLists.notifyChangeListeners());
             }
         });
         mLoadThread.start();
@@ -321,11 +319,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Notify the activity that something minor has changed, and a save is advised. The cache is
+     * Notify the activity that something has changed, and a save is advised. The cache is
      * always written, but the backing store will only be written after a few minutes
      * so a series of small changes is batched.
      */
-    public void saveAdvised() {
+    public void saveAdvised(String tag, String why) {
+        Log.d(tag, "Save advised due to " + why);
         invalidateOptionsMenu(); // update menu items
         String jsonString;
         try {
@@ -362,14 +361,6 @@ public class MainActivity extends AppCompatActivity {
             }
         } else
             saveToURI();
-    }
-
-    /**
-     * Force a save
-     */
-    public void saveRequired() {
-        mLastSave = 0;
-        saveAdvised();
     }
 
     private void saveToURI() {

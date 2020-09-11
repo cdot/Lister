@@ -22,17 +22,7 @@ import com.cdot.lists.model.EntryListItem;
  */
 @SuppressLint("ViewConstructor")
 public class ChecklistsItemView extends EntryListItemView {
-    //private static final String TAG = "ChecklistsItemView";
-
-    @SuppressLint("ClickableViewAccessibility")
-    public ChecklistsItemView(EntryListItem item, boolean isMoving, EntryListFragment cxt) {
-        super(item, isMoving, cxt, R.layout.checklists_item_view, R.menu.checklists_popup);
-
-        if (!isMoving)
-            addListeners();
-
-        updateView();
-    }
+    private static final String TAG = "ChecklistsItemView";
 
     @Override // View
     public void onClick(View view) {
@@ -52,8 +42,8 @@ public class ChecklistsItemView extends EntryListItemView {
                 builder.setPositiveButton(R.string.ok, (dialogInterface, which_button) -> {
                     EntryList el = mItem.getContainer();
                     el.remove(mItem, true);
-                    el.notifyListeners();
-                    getMainActivity().saveRequired();
+                    el.notifyChangeListeners();
+                    getMainActivity().saveAdvised(TAG, "list deleted");
                 });
                 builder.setNegativeButton(R.string.cancel, null);
                 builder.show();
@@ -69,8 +59,8 @@ public class ChecklistsItemView extends EntryListItemView {
                 builder.setView(editText);
                 builder.setPositiveButton(R.string.ok, (dialogInterface, i) -> {
                     mItem.setText(editText.getText().toString());
-                    mItem.getContainer().notifyListeners();
-                    getMainActivity().saveRequired();
+                    mItem.getContainer().notifyChangeListeners();
+                    getMainActivity().saveAdvised(TAG, "list renamed");
                 });
                 builder.setNegativeButton(R.string.cancel, null);
                 builder.show();
@@ -78,11 +68,21 @@ public class ChecklistsItemView extends EntryListItemView {
 
             case R.id.action_copy:
                 checklists.copyList(mItem);
-                getMainActivity().saveRequired();
+                getMainActivity().saveAdvised(TAG, "list copied");
                 return true;
                 
             default:
                 return false;
         }
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    public ChecklistsItemView(EntryListItem item, boolean isMoving, EntryListFragment cxt) {
+        super(item, isMoving, cxt, R.layout.checklists_item_view, R.menu.checklists_popup);
+
+        if (!isMoving)
+            addListeners();
+
+        updateView();
     }
 }

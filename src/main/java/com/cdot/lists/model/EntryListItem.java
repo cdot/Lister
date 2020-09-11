@@ -72,7 +72,7 @@ public abstract class EntryListItem {
     /**
      * Notify any views of this list that the list contents have changed and redisplay is required.
      */
-    public void notifyListeners() {
+    public void notifyChangeListeners() {
         for (ChangeListener cl : mListeners)
             cl.onListChanged(this);
     }

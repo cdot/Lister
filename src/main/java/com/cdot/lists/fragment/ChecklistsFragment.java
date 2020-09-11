@@ -86,6 +86,7 @@ public class ChecklistsFragment extends EntryListFragment {
 
     @Override // EntryListFragment
     public void onListChanged(EntryListItem item) {
+        super.onListChanged(item);
         mBinding.listsMessage.setVisibility(mList.size() == 0 ? View.VISIBLE : View.GONE);
         mBinding.itemListView.setVisibility(mList.size() == 0 ? View.GONE : View.VISIBLE);
     }
@@ -115,8 +116,8 @@ public class ChecklistsFragment extends EntryListFragment {
                     String listname = editText.getText().toString();
                     Checklist newList = new Checklist(mList, listname);
                     mList.add(newList);
-                    mList.notifyListeners();
-                    getMainActivity().saveRequired();
+                    mList.notifyChangeListeners();
+                    getMainActivity().saveAdvised(TAG, "new list created");
                     Log.d(TAG, "created list: " + newList.getText());
                     getMainActivity().pushFragment(new ChecklistFragment(newList));
                 });

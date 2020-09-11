@@ -34,30 +34,15 @@ public class ChecklistItem extends EntryListItem {
     private long mUID;
     private boolean mDone; // has it been checked?
 
-    public ChecklistItem(Checklist checklist, String str, boolean done) {
-        super(checklist);
-        mUID = Settings.makeUID();
-        setText(str);
-        mDone = done;
-    }
-
-    ChecklistItem(Checklist checklist, ChecklistItem clone) {
-        this(checklist, clone.getText(), clone.mDone);
-    }
-
     @Override // implement EntryListItem
     public long getUID() {
         return mUID;
     }
 
     @Override // implement EntryListItem
-    public void notifyListeners() {
+    public void notifyChangeListeners() {
         // Listeners are attached to the root item, so pass the signal up
-        getContainer().notifyListeners();
-    }
-
-    public boolean isDone() {
-        return mDone;
+        getContainer().notifyChangeListeners();
     }
 
     @Override // implement EntryListItem
@@ -68,20 +53,6 @@ public class ChecklistItem extends EntryListItem {
     @Override // implement EntryListItem
     public boolean equals(EntryListItem ot) {
         return super.equals(ot) && mDone == ((ChecklistItem) ot).mDone;
-    }
-
-    /**
-     * Set the items done status
-     *
-     * @param done new done status
-     * @return true if the status changed
-     */
-    public boolean setDone(boolean done) {
-        if (mDone != done) {
-            mDone = done;
-            return true;
-        }
-        return false;
     }
 
     @Override // implement EntryListItem
@@ -131,5 +102,43 @@ public class ChecklistItem extends EntryListItem {
         if (mDone)
             sb.append(" *");
         return sb.toString();
+    }
+
+    public ChecklistItem(Checklist checklist, String str, boolean done) {
+        super(checklist);
+        mUID = Settings.makeUID();
+        setText(str);
+        mDone = done;
+    }
+
+    /**
+     * Construct by copying the given item into the given checklist
+     * @param checklist container for the copied item
+     * @param copy item to copy
+     */
+    ChecklistItem(Checklist checklist, ChecklistItem copy) {
+        this(checklist, copy.getText(), copy.mDone);
+    }
+
+    /**
+     * Get the items done status
+     * @return true if the item is marked as done
+     */
+    public boolean isDone() {
+        return mDone;
+    }
+
+    /**
+     * Set the items done status
+     *
+     * @param done new done status
+     * @return true if the status changed
+     */
+    public boolean setDone(boolean done) {
+        if (mDone != done) {
+            mDone = done;
+            return true;
+        }
+        return false;
     }
 }

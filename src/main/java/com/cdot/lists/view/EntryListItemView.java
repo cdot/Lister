@@ -23,7 +23,6 @@ import com.cdot.lists.model.EntryListItem;
  */
 @SuppressLint("ViewConstructor")
 public class EntryListItemView extends RelativeLayout implements View.OnClickListener {
-
     private final String TAG = "EntryListItemView";
 
     // True if this view is of an item being moved
@@ -32,8 +31,13 @@ public class EntryListItemView extends RelativeLayout implements View.OnClickLis
     protected EntryListItem mItem;
     // The menu resource for this list item
     protected int mMenuResource;
-
+    // Fragment this view belongs to
     protected EntryListFragment mFragment;
+
+    @Override // implement View.OnLongClickListener
+    public void onClick(View view) {
+        // override in subclasses
+    }
 
     /**
      * Constructor
@@ -98,11 +102,6 @@ public class EntryListItemView extends RelativeLayout implements View.OnClickLis
             return true;
         });
         setOnClickListener(this);
-    }
-
-    @Override // View.OnLongClickListener
-    public void onClick(View view) {
-        // implement in subclasses
     }
 
     /**

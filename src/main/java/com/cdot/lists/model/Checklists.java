@@ -36,15 +36,8 @@ import org.json.JSONObject;
 public class Checklists extends EntryList {
     private static final String TAG = "Checklists";
 
-    public long mTimestamp; // time it was last saved
+    private long mTimestamp; // time it was last changed
     private String mURI; // URI it was loaded from (or is a cache for)
-
-    /**
-     * Constructor
-     */
-    public Checklists() {
-        super(null);
-    }
 
     @Override // EntryList
     public EntryListItemView makeItemView(EntryListItem item, EntryListFragment frag) {
@@ -65,9 +58,15 @@ public class Checklists extends EntryList {
     }
 
     @Override // EntryList
+    public void notifyChangeListeners() {
+        mTimestamp = System.currentTimeMillis();
+        super.notifyChangeListeners();
+    }
+
+    @Override // EntryList
     public JSONObject toJSON() throws JSONException {
         JSONObject job = super.toJSON();
-        job.put("timestamp", System.currentTimeMillis());
+        job.put("timestamp", mTimestamp);
         job.put("uri", mURI);
         return job;
     }
@@ -104,22 +103,29 @@ public class Checklists extends EntryList {
         return sb.toString();
     }
 
-    // Record the URI this was loaded from
+    public Checklists() {
+        super(null);
+    }
+
+    /**
+     * Record the URI this was loaded from
+     */
     public void setURI(String uri) {
         mURI = uri;
     }
 
-    // Record the URI this was loaded from
+    /** Get the URI this was loaded from (may be null) */
     public String getURI() {
         return mURI;
     }
 
     /**
-     * Determine if this is more recent than another set of checklists
+     * Determine if this is a more recent version of another set of checklists, as determined by the
+     * timestamp that is set whenever anything in the lists changes.
      * @return false if the two lists don't come from the same URI, or if the other list's
      * time stamp is more recent than this list.
      */
-    public boolean isMoreRecentThan(Checklists other) {
+    public boolean isMoreRecentVersionOf(Checklists other) {
         return other.mURI.equals(mURI) && mTimestamp > other.mTimestamp;
     }
 
@@ -133,21 +139,6 @@ public class Checklists extends EntryList {
         String newname = checklist.getText() + " (copy)";
         checklist.setText(newname);
         add(checklist);
-        notifyListeners();
+        notifyChangeListeners();
     }
-
-    // DEBUG ONLY
-    /*
-    private void removeDuplicates() {
-        for (int i = 0; i < size(); i++) {
-            EntryListItem ei = get(i);
-            for (int j = i + 1; j < size(); ) {
-                if (get(j).equals(ei)) {
-                    Log.d(TAG, "REMOVE DUPLICATE " + get(j).getText());
-                    remove(get(j), false);
-                } else
-                    j++;
-            }
-        }
-    }*/
 }

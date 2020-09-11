@@ -68,14 +68,6 @@ public class ChecklistFragment extends EntryListFragment {
     // helper to avoid frequent casts
     private Checklist mChecklist;
     
-    /**
-     * Construct a fragment to manage the given checklist
-     * @param list the list to manage
-     */
-    public ChecklistFragment(Checklist list) {
-        mList = mChecklist = list;
-    }
-
     // When in edit mode, sorting and moving checked items is disabled
     public boolean mInEditMode = false;
 
@@ -129,21 +121,21 @@ public class ChecklistFragment extends EntryListFragment {
 
             case R.id.action_check_all:
                 if (mChecklist.checkAll(true)) {
-                    mList.notifyListeners();
-                    getMainActivity().saveAdvised();
+                    mList.notifyChangeListeners();
+                    getMainActivity().saveAdvised(TAG, "check all");
                 }
                 return true;
 
             case R.id.action_delete_checked:
                 int deleted = mChecklist.deleteAllChecked();
                 if (deleted > 0) {
-                    mChecklist.notifyListeners();
-                    getMainActivity().saveRequired();
+                    mChecklist.notifyChangeListeners();
+                    getMainActivity().saveAdvised(TAG, "checked deleted");
                     Toast.makeText(getMainActivity(), getString(R.string.toast_items_deleted, deleted), Toast.LENGTH_SHORT).show();
                     if (mList.size() == 0) {
                         enableEditMode(true);
-                        mChecklist.notifyListeners();
-                        getMainActivity().saveRequired();
+                        mChecklist.notifyChangeListeners();
+                        getMainActivity().saveAdvised(TAG,"delete checked");
                     }
                 }
                 return true;
@@ -163,7 +155,7 @@ public class ChecklistFragment extends EntryListFragment {
                 builder.setPositiveButton(R.string.ok, (dialogInterface, i) -> {
                     mList.setText(editText.getText().toString());
                     getMainActivity().notifyListsListeners();
-                    getMainActivity().saveRequired();
+                    getMainActivity().saveAdvised(TAG, "list renamed");
                     //Objects.requireNonNull(getSupportActionBar()).setTitle(mChecklist.getText());
                 });
                 builder.setNegativeButton(R.string.cancel, null);
@@ -172,15 +164,15 @@ public class ChecklistFragment extends EntryListFragment {
 
             case R.id.action_uncheck_all:
                 if (mChecklist.checkAll(false)) {
-                    mList.notifyListeners();
-                    getMainActivity().saveAdvised();
+                    mList.notifyChangeListeners();
+                    getMainActivity().saveAdvised(TAG, "uncheck all");
                 }
                 return true;
 
             case R.id.action_undo_delete:
                 int undone = mChecklist.undoRemove();
-                mChecklist.notifyListeners();
-                getMainActivity().saveRequired();
+                mChecklist.notifyChangeListeners();
+                getMainActivity().saveAdvised(TAG, "delete undone");
                 if (undone == 0)
                     Toast.makeText(getMainActivity(), R.string.toast_no_deleted_items, Toast.LENGTH_SHORT).show();
                 else
@@ -215,6 +207,35 @@ public class ChecklistFragment extends EntryListFragment {
         menu.findItem(R.id.action_delete_checked).setEnabled(((Checklist) mList).getCheckedCount() > 0);
 
         super.onPrepareOptionsMenu(menu);
+    }
+
+    @Override // EntryListFragment
+    protected List<EntryListItem> getDisplayOrder() {
+        if (mInEditMode)
+            return mList.getData();
+
+        List<EntryListItem> list = super.getDisplayOrder(); // get sorted list
+        if (Settings.getBool(Settings.showCheckedAtEnd)) {
+            int top = list.size();
+            int i = 0;
+            while (i < top) {
+                ChecklistItem item = (ChecklistItem) list.get(i);
+                if (item.isDone()) {
+                    list.add(list.remove(i));
+                    top--;
+                } else
+                    i++;
+            }
+        }
+        return list;
+    }
+
+    /**
+     * Construct a fragment to manage the given checklist
+     * @param list the list to manage
+     */
+    public ChecklistFragment(Checklist list) {
+        mList = mChecklist = list;
     }
 
     /**
@@ -268,32 +289,12 @@ public class ChecklistFragment extends EntryListFragment {
     private void addItem(String str) {
         ChecklistItem item = new ChecklistItem(mChecklist, str, false);
         mList.add(item);
-        mList.notifyListeners();
+        mList.notifyChangeListeners();
         mBinding.addItemText.setText("");
         mBinding.itemListView.smoothScrollToPosition(getDisplayOrder().indexOf(item));
-        getMainActivity().saveRequired();
+        getMainActivity().saveAdvised(TAG, "item added");
     }
 
-    @Override // EntryListFragment
-    protected List<EntryListItem> getDisplayOrder() {
-        if (mInEditMode)
-            return mList.getData();
-
-        List<EntryListItem> list = super.getDisplayOrder(); // get sorted list
-        if (Settings.getBool(Settings.showCheckedAtEnd)) {
-            int top = list.size();
-            int i = 0;
-            while (i < top) {
-                ChecklistItem item = (ChecklistItem) list.get(i);
-                if (item.isDone()) {
-                    list.add(list.remove(i));
-                    top--;
-                } else
-                    i++;
-            }
-        }
-        return list;
-    }
     /**
      * Prompt for similar item already in the list
      *
@@ -312,19 +313,20 @@ public class ChecklistFragment extends EntryListFragment {
     /**
      * Export the checklist in a user-selected format
      */
-    private int mPlace;
-
     private void exportChecklist() {
         AlertDialog.Builder builder = new AlertDialog.Builder(getMainActivity());
         builder.setTitle(R.string.export_format);
         final Spinner picker = new Spinner(getMainActivity());
+        // Helper for indexing the array of share formats, must be final for inner class access
+        final int[] mPlace = new int[1];
         ArrayAdapter<String> adapter = new ArrayAdapter<>(getMainActivity(),
                 android.R.layout.simple_spinner_item, getResources().getStringArray(R.array.share_format_description));
+        mPlace[0] = 0;
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         picker.setAdapter(adapter);
         picker.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             public void onItemSelected(AdapterView<?> parent, View v, int position, long id) {
-                mPlace = position;
+                mPlace[0] = position;
             }
 
             public void onNothingSelected(AdapterView<?> parent) {
@@ -339,10 +341,10 @@ public class ChecklistFragment extends EntryListFragment {
 
             intent.putExtra(Intent.EXTRA_TITLE, listName); // Dialog title
 
-            String mimeType = getResources().getStringArray(R.array.share_format_mimetype)[mPlace];
+            String mimeType = getResources().getStringArray(R.array.share_format_mimetype)[mPlace[0]];
             intent.setType(mimeType);
 
-            String ext = getResources().getStringArray(R.array.share_format_mimeext)[mPlace];
+            String ext = getResources().getStringArray(R.array.share_format_mimeext)[mPlace[0]];
             String fileName = listName.replaceAll("[/\u0000]", "_") + ext;
             // WTF! The EXTRA_SUBJECT is used as the document title for Drive saves!
             intent.putExtra(Intent.EXTRA_SUBJECT, fileName);

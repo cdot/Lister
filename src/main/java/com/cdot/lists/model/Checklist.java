@@ -35,6 +35,68 @@ import java.util.ArrayList;
 public class Checklist extends EntryList {
     //private static final String TAG = "Checklist";
 
+    @Override
+    public // implement EntryList
+    EntryListItemView makeItemView(EntryListItem item, EntryListFragment cxt) {
+        return new ChecklistItemView(item, false, cxt);
+    }
+
+    @Override // implement EntryListItem
+    public boolean isMoveable() {
+        return true;
+    }
+
+    /**
+     * Get the index of the item in the base (unsorted) list
+     *
+     * @param ci item
+     * @return index of the item
+     */
+    @Override // implement EntryList
+    public int indexOf(EntryListItem ci) {
+        return getData().indexOf(ci);
+    }
+
+    @Override // EntryListItem
+    public void fromJSON(JSONObject job) throws JSONException {
+        super.fromJSON(job);
+        getData().clear();
+        setText(job.getString("name"));
+        JSONArray items = job.getJSONArray("items");
+        for (int i = 0; i < items.length(); i++) {
+            ChecklistItem ci = new ChecklistItem(this, null, false);
+            ci.fromJSON(items.getJSONObject(i));
+            getData().add(ci);
+        }
+    }
+
+    @Override // EntryListItem
+    public boolean fromCSV(CSVReader r) throws Exception {
+        setText("CSV");
+        String[] row = r.readNext();
+        if (row == null || !row[0].equals("Item"))
+            return false;
+        while (true) {
+            ChecklistItem ci = new ChecklistItem(this, null, false);
+            if (!ci.fromCSV(r))
+                break;
+            getData().add(ci);
+        }
+        return true;
+    }
+
+    @Override // EntryListItem
+    public JSONObject toJSON() throws JSONException {
+        JSONObject job = super.toJSON();
+        job.put("name", getText());
+        JSONArray items = new JSONArray();
+        for (EntryListItem item : getData()) {
+            items.put(item.toJSON());
+        }
+        job.put("items", items);
+        return job;
+    }
+
     /**
      * Construct and load from cache
      *
@@ -68,28 +130,6 @@ public class Checklist extends EntryList {
         super(parent, copy);
         for (EntryListItem item : copy.getData())
             add(new ChecklistItem(this, (ChecklistItem) item));
-    }
-
-    @Override
-    public // implement EntryList
-    EntryListItemView makeItemView(EntryListItem item, EntryListFragment cxt) {
-        return new ChecklistItemView(item, false, cxt);
-    }
-
-    @Override // implement EntryListItem
-    public boolean isMoveable() {
-        return true;
-    }
-
-    /**
-     * Get the index of the item in the base (unsorted) list
-     *
-     * @param ci item
-     * @return index of the item
-     */
-    @Override // implement EntryList
-    public int indexOf(EntryListItem ci) {
-        return getData().indexOf(ci);
     }
 
     /**
@@ -140,45 +180,5 @@ public class Checklist extends EntryList {
             remove(dead, true);
         }
         return kill.size();
-    }
-
-    @Override // EntryListItem
-    public void fromJSON(JSONObject job) throws JSONException {
-        super.fromJSON(job);
-        getData().clear();
-        setText(job.getString("name"));
-        JSONArray items = job.getJSONArray("items");
-        for (int i = 0; i < items.length(); i++) {
-            ChecklistItem ci = new ChecklistItem(this, null, false);
-            ci.fromJSON(items.getJSONObject(i));
-            getData().add(ci);
-        }
-    }
-
-    @Override // EntryListItem
-    public boolean fromCSV(CSVReader r) throws Exception {
-        setText("CSV");
-        String[] row = r.readNext();
-        if (row == null || !row[0].equals("Item"))
-            return false;
-        while (true) {
-            ChecklistItem ci = new ChecklistItem(this, null, false);
-            if (!ci.fromCSV(r))
-                break;
-            getData().add(ci);
-        }
-        return true;
-    }
-
-    @Override // EntryListItem
-    public JSONObject toJSON() throws JSONException {
-        JSONObject job = super.toJSON();
-        job.put("name", getText());
-        JSONArray items = new JSONArray();
-        for (EntryListItem item : getData()) {
-            items.put(item.toJSON());
-        }
-        job.put("items", items);
-        return job;
     }
 }
