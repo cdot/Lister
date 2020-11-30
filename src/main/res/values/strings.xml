@@ -44,11 +44,12 @@
     <string name="new_item_hint">New list item</string>
     <string name="ok">OK</string>
     <string name="option_auto_delete_checked">Auto-delete checked items</string>
+    <string name="option_debug">Debug</string>
     <string name="option_dim_checked">Grey out checked items</string>
-    <string name="option_open_latest">Open latest list on startup</string>
     <string name="option_default_alpha_sort">Default Alphabetic Sort</string>
     <string name="option_entire_row_toggles">Entire row toggles check box</string>
     <string name="option_left_hand_operation">Left hand operation</string>
+    <string name="option_open_latest">Open latest list on startup</string>
     <string name="option_show_checked_at_end">Move checked items to bottom</string>
     <string name="option_show_list_in_front_of_lock_screen">Show list in front of lock screen</string>
     <string name="option_strike_checked">Strike through checked items</string>
@@ -62,4 +63,31 @@
     <string name="toast_no_deleted_items">No deleted items</string>
     <string name="uri_access_denied">Access Denied</string>
     <string name="cache_is_newer">Cache is newer than lists in URI</string>
+    <string-array name="text_size_options">
+        <item>Default</item>
+        <item>Small</item>
+        <item>Medium</item>
+        <item>Large</item>
+    </string-array>
+    <string-array name="text_size_values">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+    </string-array>
+    <string-array name="share_format_description">
+        <item>Plain text</item>
+        <item>JSON data (.json)</item>
+        <item>Comma-separated Values (.csv)</item>
+    </string-array>
+    <string-array name="share_format_mimetype">
+        <item>text/plain</item>
+        <item>application/json</item>
+        <item>text/csv</item>
+    </string-array>
+    <string-array name="share_format_mimeext">
+        <item>.txt</item>
+        <item>.json</item>
+        <item>.csv</item>
+    </string-array>
 </resources>

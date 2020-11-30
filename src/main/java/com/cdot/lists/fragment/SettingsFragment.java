@@ -23,27 +23,24 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.DocumentsContract;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.AdapterView;
+import android.util.Log;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.fragment.app.Fragment;
+import androidx.preference.CheckBoxPreference;
+import androidx.preference.Preference;
+import androidx.preference.PreferenceCategory;
+import androidx.preference.PreferenceFragmentCompat;
 
 import com.cdot.lists.MainActivity;
 import com.cdot.lists.R;
 import com.cdot.lists.Settings;
-import com.cdot.lists.databinding.SettingsFragmentBinding;
 
 /**
  * This activity is invoked using startActivityForResult, and it will return a RESULT_OK if and only
  * if a new list store has been attached. Otherwise it will return RESULT_CANCELED
  */
-public class SettingsFragment extends Fragment {
-
-    SettingsFragmentBinding mBinding;
+public class SettingsFragment extends PreferenceFragmentCompat {
+    private static final String TAG = SettingsFragment.class.getSimpleName();
 
     private boolean mGeneral;
 
@@ -55,64 +52,71 @@ public class SettingsFragment extends Fragment {
         return (MainActivity) getActivity();
     }
 
-    @Override // Fragment
-    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        mBinding = SettingsFragmentBinding.inflate(getLayoutInflater());
-
-        mBinding.optionDimChecked.setChecked(Settings.getBool(Settings.dimChecked));
-        mBinding.optionStrikeChecked.setChecked(Settings.getBool(Settings.strikeChecked));
-        mBinding.optionDefaultAlphaSort.setChecked(Settings.getBool(Settings.defaultAlphaSort));
-        mBinding.optionShowCheckedAtEnd.setChecked(Settings.getBool(Settings.showCheckedAtEnd));
-        mBinding.optionLeftHandOperation.setChecked(Settings.getBool(Settings.leftHandOperation));
-        mBinding.optionAutoDeleteChecked.setChecked(Settings.getBool(Settings.autoDeleteChecked));
-        mBinding.optionEntireRowToggles.setChecked(Settings.getBool(Settings.entireRowToggles));
-
-        mBinding.optionShowListInFrontOfLockScreen.setChecked(Settings.getBool(Settings.alwaysShow));
-        mBinding.optionWarnAboutDuplicates.setChecked(Settings.getBool(Settings.warnAboutDuplicates));
-        mBinding.textSizeSpinner.setSelection(Settings.getInt(Settings.textSizeIndex));
-
-        Uri uri = Settings.getUri(Settings.uri);
-        mBinding.optionUri.setText(uri != null ? uri.toString() : getString(R.string.not_set));
-        mBinding.generalSettings.setVisibility(mGeneral ? View.VISIBLE : View.GONE);
-
-        mBinding.actionChangeUri.setOnClickListener(this::changeStoreClicked);
-        mBinding.actionChangeUri.setOnClickListener(this::createStoreClicked);
-
-        mBinding.optionDefaultAlphaSort.setOnClickListener(v -> Settings.setBool(Settings.defaultAlphaSort, mBinding.optionDefaultAlphaSort.isChecked()));
-        mBinding.optionShowListInFrontOfLockScreen.setOnClickListener(v -> Settings.setBool(Settings.alwaysShow, mBinding.optionShowListInFrontOfLockScreen.isChecked()));
-        mBinding.optionWarnAboutDuplicates.setOnClickListener(v -> Settings.setBool(Settings.warnAboutDuplicates, mBinding.optionWarnAboutDuplicates.isChecked()));
-        mBinding.optionLeftHandOperation.setOnClickListener(v -> Settings.setBool(Settings.leftHandOperation, mBinding.optionLeftHandOperation.isChecked()));
-        mBinding.optionEntireRowToggles.setOnClickListener(v -> Settings.setBool(Settings.entireRowToggles, mBinding.optionEntireRowToggles.isChecked()));
-        mBinding.optionAutoDeleteChecked.setOnClickListener(v -> Settings.setBool(Settings.autoDeleteChecked, mBinding.optionAutoDeleteChecked.isChecked()));
-        mBinding.optionShowCheckedAtEnd.setOnClickListener(v -> Settings.setBool(Settings.showCheckedAtEnd, mBinding.optionShowCheckedAtEnd.isChecked()));
-        mBinding.optionStrikeChecked.setOnClickListener(v -> Settings.setBool(Settings.strikeChecked, mBinding.optionStrikeChecked.isChecked()));
-        mBinding.optionDimChecked.setOnClickListener(v -> Settings.setBool(Settings.dimChecked, mBinding.optionDimChecked.isChecked()));
-
-        mBinding.textSizeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override // AdapterView.OnItemSelectedListener
-            public void onNothingSelected(AdapterView<?> adapterView) {
-            }
-
-            @Override // AdapterView.OnItemSelectedListener
-            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long j) {
-                if (adapterView == mBinding.textSizeSpinner)
-                    Settings.setInt(Settings.textSizeIndex, i);
-            }
+    private void initBoolPref(String name) {
+        CheckBoxPreference cbPref = findPreference(name);
+        cbPref.setChecked(Settings.getBool(name));
+        cbPref.setOnPreferenceChangeListener((preference, newValue) -> {
+            Log.d(TAG, "setting " + name + " to " + newValue);
+            Settings.setBool(name, (boolean)newValue);
+            return true;
         });
 
-        return mBinding.getRoot();
+    }
+    @Override // PreferenceFragmentCompat
+    public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
+        setPreferencesFromResource(R.xml.settings_fragment, rootKey);
+
+        initBoolPref(Settings.debug);
+        initBoolPref(Settings.dimChecked);
+        initBoolPref(Settings.strikeChecked);
+        initBoolPref(Settings.defaultAlphaSort);
+        initBoolPref(Settings.showCheckedAtEnd);
+        initBoolPref(Settings.leftHandOperation);
+        initBoolPref(Settings.autoDeleteChecked);
+        initBoolPref(Settings.entireRowToggles);
+        initBoolPref(Settings.alwaysShow);
+        initBoolPref(Settings.warnAboutDuplicates);
+
+        IntListPreference ilPref = findPreference(Settings.textSizeIndex);
+        int val = Settings.getInt(Settings.textSizeIndex);
+        ilPref.setValue(Integer.toString(val));
+        ilPref.setSummary(getResources().getStringArray(R.array.text_size_options)[val]);
+        ilPref.setOnPreferenceChangeListener((preference, value) -> {
+            int ival = Integer.parseInt(value.toString());
+            Log.d(TAG, "setting text size to " + ival);
+            preference.setSummary(getResources().getStringArray(R.array.text_size_options)[ival]);
+            Settings.setInt(Settings.textSizeIndex, ival);
+            return true;
+        });
+
+        PreferenceCategory general = findPreference("general_settings");
+        general.setShouldDisableView(true);
+        general.setEnabled(mGeneral);
+
+        Preference pref = findPreference("action_change_uri");
+        pref.setOnPreferenceClickListener(this::changeStoreClicked);
+
+        pref = findPreference("action_create_uri");
+        pref.setOnPreferenceClickListener(this::createStoreClicked);
     }
 
     @Override // Fragment
     public void onActivityResult(int requestCode, int resultCode, Intent resultData) {
-        if ((requestCode == MainActivity.REQUEST_CHANGE_STORE || requestCode == MainActivity.REQUEST_CREATE_STORE) && resultCode == AppCompatActivity.RESULT_OK) {
-            mBinding.optionUri.setText(Settings.getUri(Settings.uri).toString());
-            getMainActivity().onActivityResult(requestCode, resultCode, resultData);
+        if ((requestCode == MainActivity.REQUEST_CHANGE_STORE
+                || requestCode == MainActivity.REQUEST_CREATE_STORE)
+                && resultCode == AppCompatActivity.RESULT_OK && resultData != null) {
+            Uri cur = Settings.getUri(Settings.uri);
+            Uri neu = resultData.getData();
+            if (neu != null && !neu.equals(cur) || neu == null && cur != null) {
+                Settings.setUri(Settings.uri, neu);
+                // Pass the request on to MainActivity for it to handle the store change
+                getMainActivity().onActivityResult(requestCode, resultCode, resultData);
+            }
         }
     }
 
     // Invoked from resource
-    public void changeStoreClicked(View view) {
+    public boolean changeStoreClicked(Preference view) {
         Uri bs = Settings.getUri(Settings.uri);
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
@@ -121,10 +125,11 @@ public class SettingsFragment extends Fragment {
             intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, bs);
         intent.setType("application/json");
         startActivityForResult(intent, MainActivity.REQUEST_CHANGE_STORE);
+        return true;
     }
 
     // Invoked from resource
-    public void createStoreClicked(View view) {
+    public boolean createStoreClicked(Preference view) {
         Uri bs = Settings.getUri(Settings.uri);
         Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
         intent.setFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
@@ -132,5 +137,6 @@ public class SettingsFragment extends Fragment {
             intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, bs);
         intent.setType("application/json");
         startActivityForResult(intent, MainActivity.REQUEST_CREATE_STORE);
+        return true;
     }
 }

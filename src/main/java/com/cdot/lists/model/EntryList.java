@@ -67,6 +67,7 @@ public abstract class EntryList extends EntryListItem {
 
     @Override // implements EntryListItem
     public void fromJSON(JSONObject job) throws JSONException {
+        clear();
         mUID = job.getLong("uid");
         try {
             mShownSorted = job.getBoolean("sort");

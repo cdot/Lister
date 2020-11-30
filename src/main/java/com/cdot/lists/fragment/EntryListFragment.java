@@ -147,6 +147,14 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
     }
 
     /**
+     * Used in ItemView to determine if list manual sort controls should be shown
+     * @return true if the list can be manually sorted
+     */
+    public boolean canManualSort() {
+        return !mList.isShownSorted() && !Settings.getBool(Settings.showCheckedAtEnd);
+    }
+
+    /**
      * Make a view that can be used for dragging an item in the list. This will be the same type
      * as a normal entry in the list but will have no event handlers and may have display differences.
      * @param movingItem the item being moved
@@ -184,7 +192,9 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
 
         // Get the index of the item being moved in the items list
         int itemIndex = mList.indexOf(movingItem);
-        // Get the index of the moving view in the list of views (should be last?)
+
+        // Get the index of the moving view in the list of views. It will stay there until
+        // the drag is released.
         int viewIndex = mListView.getChildCount() - 1;
         while (viewIndex >= 0) {
             if (((EntryListItemView) mListView.getChildAt(viewIndex)).getItem() == movingItem)
@@ -193,7 +203,7 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
         }
         if (viewIndex < 0)
             throw new RuntimeException("Can't find view for item: " + movingItem);
-
+        Log.d(TAG, "Moving item at " + itemIndex + " viewIndex " + viewIndex);
         int prevBottom = Integer.MIN_VALUE;
         if (viewIndex > 0) // Not first view
             prevBottom = mListView.getChildAt(viewIndex - 1).getBottom();
@@ -207,9 +217,11 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
         if (y < prevBottom)
             moveTo--;
         else if (y > nextTop)
-            moveTo--;
+            moveTo++;
 
+        Log.d(TAG, "Compare " + y + " with " + prevBottom + " and " + nextTop + " moveTo " + moveTo);
         if (moveTo != itemIndex && moveTo >= 0 && moveTo < mList.size()) {
+            Log.d(TAG, "Move from " + itemIndex + " to " + moveTo);
             mList.remove(movingItem, false);
             mList.put(moveTo, movingItem);
             mList.notifyChangeListeners();

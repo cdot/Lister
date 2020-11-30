@@ -71,7 +71,7 @@ public class ChecklistFragment extends EntryListFragment {
     // When in edit mode, sorting and moving checked items is disabled
     public boolean mInEditMode = false;
 
-    @Override // AppCompatActivity
+    @Override // Fragment
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         if (mList == null)
             return null;

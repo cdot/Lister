@@ -59,7 +59,7 @@ public class ChecklistsFragment extends EntryListFragment {
         setHasOptionsMenu(true);
     }
 
-    @Override // EntryListFragment
+    @Override // Fragment
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         mBinding = ChecklistsFragmentBinding.inflate(inflater, container, false);
         setView(mBinding.itemListView, mBinding.checklistsFragment);

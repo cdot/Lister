@@ -53,8 +53,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Objects;
-import java.util.Timer;
-import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity {
     // AppCompatActivity is a subclass of androidx.fragment.app.FragmentActivity
@@ -75,13 +73,12 @@ public class MainActivity extends AppCompatActivity {
      *
      * @return a fragment
      */
-    public EntryListFragment getFragment() {
+    public EntryListFragment getEntryListFragment() {
         FragmentManager fm = getSupportFragmentManager();
-        if (fm.getBackStackEntryCount() > 0) {
-            int fid = fm.getBackStackEntryAt(fm.getBackStackEntryCount() - 1).getId();
-            return (EntryListFragment) fm.findFragmentById(fid);
-        } else
-            return (EntryListFragment) fm.findFragmentByTag(TAG);
+        Fragment f = fm.findFragmentById(R.id.fragment);
+        if (f instanceof EntryListFragment)
+            return (EntryListFragment)f;
+        return null;
     }
 
     @Override // FragmentActivity
@@ -118,7 +115,7 @@ public class MainActivity extends AppCompatActivity {
     @Override // FragmentActivity
     public boolean dispatchTouchEvent(MotionEvent motionEvent) {
         // dispatch to current fragment
-        EntryListFragment elf = getFragment();
+        EntryListFragment elf = getEntryListFragment();
         if (elf != null && elf.dispatchTouchEvent(motionEvent))
             return true;
         return super.dispatchTouchEvent(motionEvent);
@@ -301,18 +298,12 @@ public class MainActivity extends AppCompatActivity {
         ftx.commit();
     }
 
-    // Timer for saves
-    private Timer mSaveTimer = null;
-    // Time of last save, absolute time in ms
-    private long mLastSave = 0;
-
     @Override // AppCompatActivity
     public void onBackPressed() {
         super.onBackPressed();
         // see https://medium.com/@Wingnut/onbackpressed-for-fragments-357b2bf1ce8e for info
         // on passing onBackPressed to fragments
-        if (mSaveTimer != null)
-            saveToURI();
+        saveToURI();
         Fragment frag = getSupportFragmentManager().findFragmentById(R.id.fragment);
         if (frag instanceof EntryListFragment)
             ((EntryListFragment)frag).onActivated();
@@ -344,31 +335,10 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, R.string.failed_save_to_cache, Toast.LENGTH_LONG).show();
         }
 
-        // Don't want to save after every change.
-        // If the last change was less than X minutes ago, then don't save.
-        if (mLastSave + Settings.getLong(Settings.saveDelay) * 60000 > System.currentTimeMillis()) {
-            // Start the save timer, if it's not already running
-            if (mSaveTimer == null) {
-                Log.d(TAG, "Start save timer");
-                mSaveTimer = new Timer();
-                long delay = Settings.getLong(Settings.saveDelay) * 60000;
-                mSaveTimer.schedule(new TimerTask() {
-                    public void run() {
-                        Log.d(TAG, "Save timer decayed");
-                        saveToURI();
-                    }
-                }, delay);
-            }
-        } else
-            saveToURI();
+        saveToURI();
     }
 
     private void saveToURI() {
-        if (mSaveTimer != null) {
-            Log.d(TAG, "Save timer cancelled");
-            mSaveTimer.cancel();
-            mSaveTimer = null;
-        }
         final Uri uri = Settings.getUri(Settings.uri);
         if (uri == null)
             return;
@@ -399,7 +369,6 @@ public class MainActivity extends AppCompatActivity {
                 stream.write(data);
                 stream.close();
                 Log.d(TAG, "Saved to " + uri);
-                mLastSave = System.currentTimeMillis();
             } catch (IOException ioe) {
                 Log.e(TAG, "Exception while saving to Uri " + ioe.getMessage());
                 runOnUiThread(() -> Toast.makeText(this, R.string.failed_save_to_uri, Toast.LENGTH_LONG).show());

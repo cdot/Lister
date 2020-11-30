@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <CheckBoxPreference
+        android:key="greyCheckedItems"
+        android:title="@string/option_dim_checked" />
+
+    <CheckBoxPreference
+        android:key="strikeThroughCheckedItems"
+        android:title="@string/option_strike_checked" />
+
+    <CheckBoxPreference
+        android:key="moveCheckedItemsToBottom"
+        android:title="@string/option_show_checked_at_end" />
+
+    <CheckBoxPreference
+        android:key="autoDeleteCheckedItems"
+        android:title="@string/option_auto_delete_checked" />
+
+    <CheckBoxPreference
+        android:key="entireRowTogglesItem"
+        android:title="@string/option_entire_row_toggles" />
+
+    <CheckBoxPreference
+        android:key="checkBoxOnLeftSide"
+        android:title="@string/option_left_hand_operation" />
+
+    <CheckBoxPreference
+        android:key="showListInFrontOfLockScreen"
+        android:title="@string/option_show_list_in_front_of_lock_screen" />
+
+    <CheckBoxPreference
+        android:key="warnAboutDuplicates"
+        android:title="@string/option_warn_about_duplicates" />
+
+    <com.cdot.lists.fragment.IntListPreference
+        android:key="textSizeIndex"
+        android:entries="@array/text_size_options"
+        android:entryValues="@array/text_size_values"
+        android:textStyle="bold"
+        android:title="@string/option_text_size" />
+
+    <PreferenceCategory
+        android:id="@+id/general_settings"
+        android:key="general_settings"
+        android:title="@string/general_settings">
+
+        <CheckBoxPreference
+            android:key="forceAlphaSort"
+            android:title="@string/option_default_alpha_sort" />
+
+        <Preference
+            android:key="action_change_uri"
+            android:title="@string/action_change_uri" />
+
+        <Preference
+            android:key="action_create_uri"
+            android:title="@string/action_create_uri" />
+
+        <CheckBoxPreference
+            android:key="debug"
+            android:title="@string/option_debug" />
+    </PreferenceCategory>
+</PreferenceScreen>

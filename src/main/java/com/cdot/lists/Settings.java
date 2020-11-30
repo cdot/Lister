@@ -48,6 +48,7 @@ public class Settings {
     public static final String defaultAlphaSort = "forceAlphaSort";
     public static final String autoDeleteChecked = "autoDeleteCheckedItems";
     public static final String saveDelay = "saveDelay";
+    public static final String debug = "debug";
 
     public static final String cacheFile = "checklists.json";
 
@@ -63,6 +64,8 @@ public class Settings {
     private static SharedPreferences sPrefs;
 
     private static Map<String, Boolean> sBoolPrefs = new HashMap<String, Boolean>() {{
+        put(debug, false);
+
         put(autoDeleteChecked, false);
         put(dimChecked, true);
         put(defaultAlphaSort, false);

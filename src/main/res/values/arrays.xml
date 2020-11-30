@@ -1,24 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <array name="text_size_list">
-        <item>Default</item>
-        <item>Small</item>
-        <item>Medium</item>
-        <item>Large</item>
-    </array>
-    <array name="share_format_description">
-        <item>Plain text</item>
-        <item>JSON data (.json)</item>
-        <item>Comma-separated Values (.csv)</item>
-    </array>
-    <array name="share_format_mimetype">
-        <item>text/plain</item>
-        <item>application/json</item>
-        <item>text/csv</item>
-    </array>
-    <array name="share_format_mimeext">
-    <item>.txt</item>
-    <item>.json</item>
-    <item>.csv</item>
-</array>
+
 </resources>
