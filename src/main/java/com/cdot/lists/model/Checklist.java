@@ -35,6 +35,11 @@ import java.util.ArrayList;
 public class Checklist extends EntryList {
     //private static final String TAG = "Checklist";
 
+    // Settings for this list
+    public boolean warnAboutDuplicates = true;
+    public boolean showCheckedAtEnd = false;
+    public boolean autoDeleteChecked = false;
+
     @Override
     public // implement EntryList
     EntryListItemView makeItemView(EntryListItem item, EntryListFragment cxt) {
@@ -62,6 +67,21 @@ public class Checklist extends EntryList {
         super.fromJSON(job);
         getData().clear();
         setText(job.getString("name"));
+        try {
+            warnAboutDuplicates = job.getBoolean("warn_duplicates");
+        } catch (JSONException je) {
+            warnAboutDuplicates = false;
+        }
+        try {
+            showCheckedAtEnd = job.getBoolean("checked_at_end");
+        } catch (JSONException je) {
+            showCheckedAtEnd = false;
+        }
+        try {
+            autoDeleteChecked = job.getBoolean("delete_checked");
+        } catch (JSONException je) {
+            autoDeleteChecked = false;
+        }
         JSONArray items = job.getJSONArray("items");
         for (int i = 0; i < items.length(); i++) {
             ChecklistItem ci = new ChecklistItem(this, null, false);
@@ -89,6 +109,12 @@ public class Checklist extends EntryList {
     public JSONObject toJSON() throws JSONException {
         JSONObject job = super.toJSON();
         job.put("name", getText());
+        if (warnAboutDuplicates)
+            job.put("warn_duplicates", true);
+        if (showCheckedAtEnd)
+            job.put("checked_at_end", true);
+        if (autoDeleteChecked)
+            job.put("delete_checked", true);
         JSONArray items = new JSONArray();
         for (EntryListItem item : getData()) {
             items.put(item.toJSON());

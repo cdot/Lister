@@ -132,7 +132,7 @@ public class ChecklistsFragment extends EntryListFragment {
                 return true;
 
             case R.id.action_settings:
-                getMainActivity().pushFragment(new SettingsFragment(true));
+                getMainActivity().pushFragment(new SharedPreferencesFragment());
                 return true;
         }
     }

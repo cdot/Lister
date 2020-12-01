@@ -18,6 +18,7 @@ import androidx.appcompat.app.AlertDialog;
 import com.cdot.lists.R;
 import com.cdot.lists.Settings;
 import com.cdot.lists.fragment.EntryListFragment;
+import com.cdot.lists.model.Checklist;
 import com.cdot.lists.model.ChecklistItem;
 import com.cdot.lists.model.EntryList;
 import com.cdot.lists.model.EntryListItem;
@@ -162,7 +163,8 @@ public class ChecklistItemView extends EntryListItemView {
      * @param isChecked the check status
      */
     private boolean setChecked(boolean isChecked) {
-        if (Settings.getBool(Settings.autoDeleteChecked) && isChecked) {
+        Checklist list = (Checklist)mItem.getContainer();
+        if (list.autoDeleteChecked && isChecked) {
             EntryList el = mItem.getContainer();
             el.newUndoSet();
             el.remove(mItem, true);

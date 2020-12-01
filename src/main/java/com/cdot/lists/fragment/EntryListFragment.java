@@ -119,6 +119,8 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
         String t = mList.getText();
         if (t == null)
             t = getMainActivity().getString(R.string.app_name);
+        if (mListView != null)
+            notifyAdapter(); // when coming back from settings, re-sort the list
         getMainActivity().getSupportActionBar().setTitle(t);
     }
 
@@ -143,7 +145,7 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
      */
     protected List<EntryListItem> getDisplayOrder() {
         List<EntryListItem> mDisplayed = mList.cloneItemList();
-        if (mList.isShownSorted())
+        if (mList.sort)
             Collections.sort(mDisplayed, (item, item2) -> item.getText().compareToIgnoreCase(item2.getText()));
         return mDisplayed;
     }
@@ -154,7 +156,7 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
      * @return true if the list can be manually sorted
      */
     public boolean canManualSort() {
-        return !mList.isShownSorted() && !Settings.getBool(Settings.showCheckedAtEnd);
+        return !mList.sort;
     }
 
     /**
@@ -182,7 +184,7 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
     public boolean dispatchTouchEvent(MotionEvent motionEvent) {
         EntryListItem movingItem = mMovingItem;
         // Check the item can be moved
-        if (movingItem == null || !movingItem.isMoveable() || Settings.getBool(Settings.showCheckedAtEnd))
+        if (movingItem == null || !movingItem.isMoveable())
             return false;
 
         // get screen position of the ListView and the Activity
@@ -268,7 +270,7 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
         switch (menuItem.getItemId()) {
             case R.id.action_alpha_sort:
                 Log.d(TAG, "alpha sort option selected");
-                mList.toggleShownSorted();
+                mList.sort = !mList.sort;
                 mList.notifyChangeListeners();
                 getMainActivity().save();
                 return true;
@@ -283,7 +285,7 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
     public void onPrepareOptionsMenu(@NonNull Menu menu) {
         //super.onPrepareOptionsMenu(menu);
         MenuItem menuItem = menu.findItem(R.id.action_alpha_sort);
-        if (mList != null && mList.isShownSorted()) {
+        if (mList != null && mList.sort) {
             menuItem.setIcon(R.drawable.ic_action_alpha_sort_off);
             menuItem.setTitle(R.string.action_alpha_sort_off);
         } else {

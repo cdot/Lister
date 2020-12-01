@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <CheckBoxPreference
+        android:key="greyCheckedItems"
+        android:title="@string/option_dim_checked" />
+
+    <CheckBoxPreference
+        android:key="strikeThroughCheckedItems"
+        android:title="@string/option_strike_checked" />
+
+    <CheckBoxPreference
+        android:key="entireRowTogglesItem"
+        android:title="@string/option_entire_row_toggles" />
+
+    <CheckBoxPreference
+        android:key="checkBoxOnLeftSide"
+        android:title="@string/option_left_hand_operation" />
+
+    <CheckBoxPreference
+        android:key="showListInFrontOfLockScreen"
+        android:title="@string/option_show_list_in_front_of_lock_screen" />
+
+    <com.cdot.lists.fragment.IntListPreference
+        android:key="textSizeIndex"
+        android:entries="@array/text_size_options"
+        android:entryValues="@array/text_size_values"
+        android:textStyle="bold"
+        android:title="@string/option_text_size" />
+
+
+    <Preference
+        android:key="action_change_uri"
+        android:title="@string/action_change_uri" />
+
+    <Preference
+        android:key="action_create_uri"
+        android:title="@string/action_create_uri" />
+
+    <CheckBoxPreference
+        android:key="debug"
+        android:title="@string/option_debug" />
+
+</PreferenceScreen>

@@ -59,7 +59,7 @@
     <string name="option_auto_delete_checked">Auto-delete checked items</string>
     <string name="option_debug">Debug</string>
     <string name="option_dim_checked">Grey out checked items</string>
-    <string name="option_default_alpha_sort">Default Alphabetic Sort</string>
+    <string name="option_alpha_sort">Default Alphabetic Sort</string>
     <string name="option_entire_row_toggles">Entire row toggles check box</string>
     <string name="option_left_hand_operation">Left hand operation</string>
     <string name="option_open_latest">Open latest list on startup</string>

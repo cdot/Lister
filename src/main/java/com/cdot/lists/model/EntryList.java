@@ -20,7 +20,6 @@ package com.cdot.lists.model;
 
 import android.util.Log;
 
-import com.cdot.lists.Settings;
 import com.cdot.lists.fragment.EntryListFragment;
 import com.cdot.lists.view.EntryListItemView;
 import com.opencsv.CSVReader;
@@ -49,7 +48,7 @@ public abstract class EntryList extends EntryListItem {
     private ArrayList<EntryListItem> mData = new ArrayList<>();
 
     // Is this list being displayed sorted?
-    private boolean mShownSorted = false;
+    public boolean sort = false;
 
     // An item that has been removed, and the index it was removed from, for undos
     private static class Remove {
@@ -69,9 +68,9 @@ public abstract class EntryList extends EntryListItem {
     public void fromJSON(JSONObject job) throws JSONException {
         clear();
         try {
-            mShownSorted = job.getBoolean("sort");
+            sort = job.getBoolean("sort");
         } catch (JSONException je) {
-            mShownSorted = Settings.getBool(Settings.defaultAlphaSort);
+            sort = false;
         }
     }
 
@@ -82,7 +81,7 @@ public abstract class EntryList extends EntryListItem {
         for (EntryListItem cl : mData)
             its.put(cl.toJSON());
         job.put("items", its);
-        job.put("sort", mShownSorted);
+        job.put("sort", sort);
         return job;
     }
 
@@ -135,7 +134,7 @@ public abstract class EntryList extends EntryListItem {
    EntryList(EntryList parent, EntryList copy) {
         super(parent, copy);
         mRemoves = new Stack<>();
-        mShownSorted = copy.isShownSorted();
+        sort = copy.sort;
     }
 
     public List<EntryListItem> getData() {
@@ -205,14 +204,6 @@ public abstract class EntryList extends EntryListItem {
 
     public int getRemoveCount() {
         return mRemoves.size();
-    }
-
-    public boolean isShownSorted() {
-        return mShownSorted;
-    }
-
-    public void toggleShownSorted() {
-        mShownSorted = !mShownSorted;
     }
 
     /**

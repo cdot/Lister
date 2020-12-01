@@ -34,21 +34,16 @@ public class Settings {
 
     static final String UI_PREFERENCES = "UIPreferences";
 
-    // Options
+    // Shared Preferences
     public static final String alwaysShow = "showListInFrontOfLockScreen";
-    public static final String autoDeleteChecked = "autoDeleteCheckedItems";
-    public static final String currentListUID = "currentList";
     public static final String debug = "debug";
-    public static final String defaultAlphaSort = "forceAlphaSort";
     public static final String dimChecked = "greyCheckedItems";
     public static final String entireRowToggles = "entireRowTogglesItem";
     public static final String lastStoreSaveFailed = "lastStoreSaveFailed";
     public static final String leftHandOperation = "checkBoxOnLeftSide";
-    public static final String showCheckedAtEnd = "moveCheckedItemsToBottom";
     public static final String strikeChecked = "strikeThroughCheckedItems";
     public static final String textSizeIndex = "textSizeIndex";
     public static final String uri = "backingStore";
-    public static final String warnAboutDuplicates = "warnAboutDuplicates";
 
     public static final String cacheFile = "checklists.json";
 
@@ -58,31 +53,20 @@ public class Settings {
     public static final int TEXT_SIZE_MEDIUM = 2;
     public static final int TEXT_SIZE_LARGE = 3;
 
-    public static final long INVALID_UID = 0;
-    private static long sLastUID = INVALID_UID;
-
     private static SharedPreferences sPrefs;
 
     private static Map<String, Boolean> sBoolPrefs = new HashMap<String, Boolean>() {{
         put(alwaysShow, false);
-        put(autoDeleteChecked, false);
         put(debug, false);
         put(dimChecked, true);
-        put(defaultAlphaSort, false);
         put(entireRowToggles, true);
         put(lastStoreSaveFailed, false);
         put(leftHandOperation, false);
-        put(showCheckedAtEnd, false);
         put(strikeChecked, true);
-        put(warnAboutDuplicates, true);
     }};
 
     private static Map<String, Integer> sIntPrefs = new HashMap<String, Integer>() {{
         put(textSizeIndex, TEXT_SIZE_DEFAULT);
-    }};
-
-    private static Map<String, Long> sLongPrefs = new HashMap<String, Long>() {{
-        put(currentListUID, INVALID_UID);
     }};
 
     private static Map<String, Uri> sUriPrefs = new HashMap<String, Uri>() {{
@@ -95,19 +79,12 @@ public class Settings {
      * @param cxt the application context, used for all preferences
      */
     public static void setContext(Context cxt) {
-        sLastUID = System.currentTimeMillis();
         sPrefs = cxt.getSharedPreferences(UI_PREFERENCES, Context.MODE_PRIVATE);
         for (Map.Entry<String, Boolean> entry : sBoolPrefs.entrySet()) {
             entry.setValue(sPrefs.getBoolean(entry.getKey(), entry.getValue()));
         }
         for (Map.Entry<String, Integer> entry : sIntPrefs.entrySet()) {
             entry.setValue(sPrefs.getInt(entry.getKey(), entry.getValue()));
-        }
-        for (Map.Entry<String, Long> entry : sLongPrefs.entrySet()) {
-            try {
-                entry.setValue(sPrefs.getLong(entry.getKey(), entry.getValue()));
-            } catch (ClassCastException ignore) {
-            }
         }
         for (Map.Entry<String, Uri> entry : sUriPrefs.entrySet()) {
             Uri ev = entry.getValue();
@@ -135,17 +112,6 @@ public class Settings {
         SharedPreferences.Editor e = sPrefs.edit();
         sBoolPrefs.put(name, value);
         e.putBoolean(name, value);
-        e.apply();
-    }
-
-    public static long getLong(String name) {
-        return sLongPrefs.get(name);
-    }
-
-    public static void setLong(String name, long value) {
-        SharedPreferences.Editor e = sPrefs.edit();
-        sLongPrefs.put(name, value);
-        e.putLong(name, value);
         e.apply();
     }
 

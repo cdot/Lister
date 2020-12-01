@@ -22,6 +22,7 @@ import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -56,7 +57,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Objects;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements SharedPreferences.OnSharedPreferenceChangeListener {
     // AppCompatActivity is a subclass of androidx.fragment.app.FragmentActivity
     // It adds support for fragment options menus (and probably a lot more)
     private static final String TAG = "MainActivity";
@@ -100,19 +101,25 @@ public class MainActivity extends AppCompatActivity {
         tx.replace(R.id.fragment, f, TAG).commit();
     }
 
+    private void setShowOverLockScreen() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            Log.d(TAG, "Settings always show " + Settings.getBool(Settings.alwaysShow));
+            setShowWhenLocked(Settings.getBool(Settings.alwaysShow));
+        } else
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED);
+    }
+
     @Override // FragmentActivity
     public void onAttachedToWindow() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1)
-            setShowWhenLocked(Settings.getBool(Settings.alwaysShow));
-        else
-            getWindow().addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED);
+        setShowOverLockScreen();
     }
 
     @Override // FragmentActivity
     public void onResume() {
         super.onResume();
-        Log.d(TAG, "onResume - loading lists");
+        Log.d(TAG, "onResume");
         loadLists();
+        setShowOverLockScreen();
     }
 
     @Override // FragmentActivity
@@ -290,15 +297,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Hide the current fragment, pushing it onto the stack, then open a new fragment. A neat
-     * alternative to dialogs.
+     * Hide the current fragment, pushing it onto the stack, then open a new fragment.
      *
      * @param fragment the fragment to switch to
      */
     public void pushFragment(Fragment fragment) {
         FragmentManager fm = getSupportFragmentManager();
         FragmentTransaction ftx = fm.beginTransaction();
-        // Hide, but don't close, the open fragment (which will always be the tree view)
+        // Hide, but don't close, the open fragment (which will always be the lists view)
         ftx.hide(fm.findFragmentById(R.id.fragment));
         ftx.add(R.id.fragment, fragment, fragment.getClass().getName());
         ftx.addToBackStack(null);
@@ -382,5 +388,11 @@ public class MainActivity extends AppCompatActivity {
                 });
             }
         }).start();
+    }
+
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+        if (key.equals(Settings.alwaysShow))
+            setShowOverLockScreen();
     }
 }

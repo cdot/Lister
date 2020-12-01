@@ -28,7 +28,6 @@ import android.util.Log;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.preference.CheckBoxPreference;
 import androidx.preference.Preference;
-import androidx.preference.PreferenceCategory;
 import androidx.preference.PreferenceFragmentCompat;
 
 import com.cdot.lists.MainActivity;
@@ -36,17 +35,10 @@ import com.cdot.lists.R;
 import com.cdot.lists.Settings;
 
 /**
- * This activity is invoked using startActivityForResult, and it will return a RESULT_OK if and only
- * if a new list store has been attached. Otherwise it will return RESULT_CANCELED
+ * Handle shared preferences
  */
-public class SettingsFragment extends PreferenceFragmentCompat {
-    private static final String TAG = SettingsFragment.class.getSimpleName();
-
-    private boolean mGeneral;
-
-    SettingsFragment(boolean withGeneralSettings) {
-        mGeneral = withGeneralSettings;
-    }
+public class SharedPreferencesFragment extends PreferenceFragmentCompat {
+    private static final String TAG = SharedPreferencesFragment.class.getSimpleName();
 
     protected MainActivity getMainActivity() {
         return (MainActivity) getActivity();
@@ -64,15 +56,8 @@ public class SettingsFragment extends PreferenceFragmentCompat {
     }
     @Override // PreferenceFragmentCompat
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
-        setPreferencesFromResource(R.xml.settings_fragment, rootKey);
+        setPreferencesFromResource(R.xml.shared_preferences, rootKey);
 
-        // TODO: make these specific to the list
-        initBoolPref(Settings.autoDeleteChecked);
-        initBoolPref(Settings.defaultAlphaSort);
-        initBoolPref(Settings.showCheckedAtEnd);
-        initBoolPref(Settings.warnAboutDuplicates);
-
-        // These are general
         initBoolPref(Settings.debug);
         initBoolPref(Settings.dimChecked);
         initBoolPref(Settings.strikeChecked);
@@ -91,10 +76,6 @@ public class SettingsFragment extends PreferenceFragmentCompat {
             Settings.setInt(Settings.textSizeIndex, ival);
             return true;
         });
-
-        PreferenceCategory general = findPreference("general_settings");
-        general.setShouldDisableView(true);
-        general.setEnabled(mGeneral);
 
         Preference pref = findPreference("action_change_uri");
         pref.setOnPreferenceClickListener(this::changeStoreClicked);

@@ -28,6 +28,7 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
@@ -43,7 +44,6 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.FileProvider;
 
 import com.cdot.lists.R;
-import com.cdot.lists.Settings;
 import com.cdot.lists.databinding.ChecklistFragmentBinding;
 import com.cdot.lists.model.Checklist;
 import com.cdot.lists.model.ChecklistItem;
@@ -188,9 +188,22 @@ public class ChecklistFragment extends EntryListFragment {
                 return true;
 
             case R.id.action_settings:
-                getMainActivity().pushFragment(new SettingsFragment(false));
+                getMainActivity().pushFragment(new ChecklistPreferencesFragment(mChecklist));
                 return true;
         }
+    }
+
+    @Override // EntryListFragment
+    public boolean canManualSort() {
+        return !mChecklist.showCheckedAtEnd && super.canManualSort();
+    }
+
+    @Override // EntryListFragment
+    public boolean dispatchTouchEvent(MotionEvent motionEvent) {
+        // Check the item can be moved
+        if (mChecklist.showCheckedAtEnd)
+            return false;
+        return super.dispatchTouchEvent(motionEvent);
     }
 
     @Override // EntryListFragment
@@ -219,7 +232,7 @@ public class ChecklistFragment extends EntryListFragment {
             return mList.getData();
 
         List<EntryListItem> list = super.getDisplayOrder(); // get sorted list
-        if (Settings.getBool(Settings.showCheckedAtEnd)) {
+        if (mChecklist.showCheckedAtEnd) {
             int top = list.size();
             int i = 0;
             while (i < top) {
@@ -279,7 +292,7 @@ public class ChecklistFragment extends EntryListFragment {
         if (text.trim().length() == 0)
             return;
         EntryListItem find = mList.findByText(text, false);
-        if (find == null || !Settings.getBool(Settings.warnAboutDuplicates))
+        if (find == null || !mChecklist.warnAboutDuplicates)
             addItem(text);
         else
             promptSimilarItem(text, find.getText());
@@ -326,7 +339,6 @@ public class ChecklistFragment extends EntryListFragment {
         final int[] mPlace = new int[1];
         ArrayAdapter<String> adapter = new ArrayAdapter<>(getMainActivity(),
                 android.R.layout.simple_spinner_item, getResources().getStringArray(R.array.share_format_description));
-        mPlace[0] = 0;
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         picker.setAdapter(adapter);
         picker.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
