@@ -1,13 +1,14 @@
 <html>
 <head>
     <title>Checklist</title>
-    <link rel="stylesheet" href="styles.css" type="text/css" />
+    <link rel="stylesheet" href="styles.css" type="text/css"/>
 </head>
 <body>
 Items are checked by touching the check box (or optionally by a touch anywhere on the row).
 The check box can be placed on either side of the display.
 <p>A long touch on an item lets you rename it or delete it.</p>
-Unless alphabetic sorting is forced, a handle on each item <img src="../img/ic_action_move.svg"> lets you move the item to another position in the list.
+Unless alphabetic sorting is forced, a handle on each item <img src="../img/ic_action_move.svg">
+lets you move the item to another position in the list.
 Touch and hold to drag the item.
 <h2>Action Bar</h2>
 <table>
@@ -15,14 +16,17 @@ Touch and hold to drag the item.
         <td><img src="../img/ic_action_alpha_sort_on.svg"></td>
         <td>Sort on/off</td>
         <td>Toggle alphabetic sorting. This only shows the list as sorted, it doesn't affect the
-        underlying ordering.</td><td>
-    </td>
+            underlying ordering. When this is enabled, you can't manually sort the items.
+        </td>
+        <td>
+        </td>
     </tr>
     <tr>
         <td><img src="../img/ic_action_item_add_on.svg"></td>
-        <td>Add on/off</td><td>When adding is enabled you can add a new item by entering
-        some text
-    </td>
+        <td>Add on/off</td>
+        <td>When adding is enabled you can add a new item by entering
+            some text
+        </td>
     <tr>
         <td><img src="../img/ic_action_check_all.svg"></td>
         <td>Check All Items</td>
@@ -42,7 +46,8 @@ Touch and hold to drag the item.
         <td><img src="../img/ic_action_undo.svg"></td>
         <td>Undo Delete</td>
         <td>Undos the last delete as long as the list is open.
-        When you exit the list view, the undo history is lost</td>
+            When you exit the list view, the undo history is lost
+        </td>
     <tr>
         <td><img src="../img/ic_action_rename.svg"></td>
         <td>Rename List</td>
@@ -53,8 +58,29 @@ Touch and hold to drag the item.
         <td>Export List</td>
         <td>Export list to any content provider that your phone supports
             e.g. the SD card, or email, or Google Drive if the Drive app is installed,
-            in a number of different formats</td>
+            in a number of different formats
+        </td>
+    </tr>
+    <tr>
+        <td colspan="2">Settings</td>
+        <td>Change settings for this list</td>
     </tr>
 </table>
+<h2>List Settings</h2>
+List settings control how the user interface works for the specific list.
+<dl class="settings">
+    <dt>Move checked items to bottom</dt>
+    <dd>Show checked items after the unchecked items. This only effects the view, and
+        moving items may not work as expected
+    </dd>
+    <dt>Auto-delete checked items</dt>
+    <dd>Delete items automatically when they are checked. You can undo the delete if
+        necessary
+    </dd>
+    <dt>Warning before adding duplicate item to list</dt>
+    <dd>When a newly entered item is similar to an item already in the list, show a popup
+        asking for confirmation before the new item is added
+    </dd>
+</dl>
 </body>
 </html>
