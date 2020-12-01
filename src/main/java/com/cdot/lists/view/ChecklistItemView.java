@@ -5,6 +5,7 @@ package com.cdot.lists.view;
 
 import android.annotation.SuppressLint;
 import android.graphics.Paint;
+import android.util.Log;
 import android.view.View;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -40,7 +41,8 @@ public class ChecklistItemView extends EntryListItemView {
         if (!mIsMoving && Settings.getBool(Settings.entireRowToggles)) {
             CheckBox cb = findViewById(R.id.checklist_checkbox);
             if (setChecked(!cb.isChecked())) {
-                getMainActivity().saveAdvised(TAG, "Item toggled");
+                Log.d(TAG, "Item toggled");
+                getMainActivity().save();
             }
         }
     }
@@ -51,7 +53,8 @@ public class ChecklistItemView extends EntryListItemView {
         final CheckBox cb = findViewById(R.id.checklist_checkbox);
         cb.setOnClickListener(view -> {
             if (setChecked(cb.isChecked())) {
-                getMainActivity().saveAdvised(TAG,"item checked");
+                Log.d(TAG,"item checked");
+                getMainActivity().save();
             }
         });
     }
@@ -116,8 +119,9 @@ public class ChecklistItemView extends EntryListItemView {
                 EntryList list = mItem.getContainer();
                 list.newUndoSet();
                 list.remove(mItem, true);
+                Log.d(TAG, "item deleted");
                 list.notifyChangeListeners();
-                getMainActivity().saveAdvised(TAG, "item deleted");
+                getMainActivity().save();
                 return true;
 
             case R.id.action_rename:
@@ -129,8 +133,9 @@ public class ChecklistItemView extends EntryListItemView {
                 builder.setView(editText);
                 builder.setPositiveButton(R.string.ok, (dialogInterface, i) -> {
                     mItem.setText(editText.getText().toString());
+                    Log.d(TAG, "item renamed");
                     mItem.notifyChangeListeners();
-                    getMainActivity().saveAdvised(TAG, "item renamed");
+                    getMainActivity().save();
                 });
                 builder.setNegativeButton(R.string.cancel, null);
                 builder.show();

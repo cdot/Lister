@@ -129,14 +129,16 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
 
     /**
      * Get the controlling activity
+     *
      * @return the main activity, parent of all fragments
-     * */
+     */
     public MainActivity getMainActivity() {
-        return (MainActivity)getActivity();
+        return (MainActivity) getActivity();
     }
 
     /**
      * Get the list items in display order
+     *
      * @return the list. May be modified, but entries point to data source
      */
     protected List<EntryListItem> getDisplayOrder() {
@@ -148,6 +150,7 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
 
     /**
      * Used in ItemView to determine if list manual sort controls should be shown
+     *
      * @return true if the list can be manually sorted
      */
     public boolean canManualSort() {
@@ -157,6 +160,7 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
     /**
      * Make a view that can be used for dragging an item in the list. This will be the same type
      * as a normal entry in the list but will have no event handlers and may have display differences.
+     *
      * @param movingItem the item being moved
      * @return a View that is used to display the dragged item
      */
@@ -164,12 +168,14 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
 
     /**
      * Get the name of an HTML help asset appropriate for this fragment
+     *
      * @return basename (without path) of an HTML help asset
      */
     protected abstract String getHelpAsset();
 
     /**
      * Moving items in the list
+     *
      * @param motionEvent the event
      * @return true if the event is handled
      */
@@ -203,7 +209,7 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
         }
         if (viewIndex < 0)
             throw new RuntimeException("Can't find view for item: " + movingItem);
-        Log.d(TAG, "Moving item at " + itemIndex + " viewIndex " + viewIndex);
+        //Log.d(TAG, "Moving item at " + itemIndex + " viewIndex " + viewIndex);
         int prevBottom = Integer.MIN_VALUE;
         if (viewIndex > 0) // Not first view
             prevBottom = mListView.getChildAt(viewIndex - 1).getBottom();
@@ -219,19 +225,19 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
         else if (y > nextTop)
             moveTo++;
 
-        Log.d(TAG, "Compare " + y + " with " + prevBottom + " and " + nextTop + " moveTo " + moveTo);
+        //Log.d(TAG, "Compare " + y + " with " + prevBottom + " and " + nextTop + " moveTo " + moveTo);
         if (moveTo != itemIndex && moveTo >= 0 && moveTo < mList.size()) {
-            Log.d(TAG, "Move from " + itemIndex + " to " + moveTo);
+            Log.d(TAG, "Moved from " + itemIndex + " to " + moveTo);
             mList.remove(movingItem, false);
             mList.put(moveTo, movingItem);
             mList.notifyChangeListeners();
-            getMainActivity().saveAdvised(TAG, "order changed");
+            getMainActivity().save();
         }
 
         if (motionEvent.getAction() == MotionEvent.ACTION_MOVE) {
             if (mMovingView == null) {
                 // Drag is starting
-                Log.d(TAG, "dispatchTouchEvent add moving view ");
+                //Log.d(TAG, "dispatchTouchEvent adding moving view ");
                 mMovingView = makeMovingView(movingItem);
                 // addView is not supported in AdapterView, so can't add the movingView there.
                 // Instead have to add to the activity and adjust margins accordingly
@@ -261,9 +267,10 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
     public boolean onOptionsItemSelected(MenuItem menuItem) {
         switch (menuItem.getItemId()) {
             case R.id.action_alpha_sort:
+                Log.d(TAG, "alpha sort option selected");
                 mList.toggleShownSorted();
                 mList.notifyChangeListeners();
-                getMainActivity().saveAdvised(TAG, "alpha sort option selected");
+                getMainActivity().save();
                 return true;
             case R.id.action_help:
                 getMainActivity().pushFragment(new HelpFragment(getHelpAsset()));
@@ -283,5 +290,7 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
             menuItem.setIcon(R.drawable.ic_action_alpha_sort_on);
             menuItem.setTitle(R.string.action_alpha_sort_on);
         }
+        menuItem = menu.findItem(R.id.action_save);
+        menuItem.setVisible(Settings.getBool(Settings.lastStoreSaveFailed));
     }
 }

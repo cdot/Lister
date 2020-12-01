@@ -116,9 +116,9 @@ public class ChecklistsFragment extends EntryListFragment {
                     String listname = editText.getText().toString();
                     Checklist newList = new Checklist(mList, listname);
                     mList.add(newList);
-                    mList.notifyChangeListeners();
-                    getMainActivity().saveAdvised(TAG, "new list created");
                     Log.d(TAG, "created list: " + newList.getText());
+                    mList.notifyChangeListeners();
+                    getMainActivity().save();
                     getMainActivity().pushFragment(new ChecklistFragment(newList));
                 });
                 builder.setNegativeButton(R.string.cancel, null);

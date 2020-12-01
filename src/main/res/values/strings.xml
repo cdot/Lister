@@ -20,28 +20,41 @@
     <string name="action_uncheck_all">Uncheck all Items</string>
     <string name="action_undo_delete">Undo Last Delete</string>
     <string name="app_name">Mr Lister</string>
+
+    <string name="cache_is_newer">Local cache is newer than saved lists</string>
     <string name="cancel">Cancel</string>
     <string name="confirm_delete">Confirm Delete</string>
     <string name="confirm_delete_list">Delete list \'%1$s\'?</string>
     <string name="create_new_list">Create New List</string>
+
     <string name="edit_list_item">Edit list item</string>
     <string name="enter_name_of_new_list">Enter name of new list:</string>
     <string name="enter_new_name_of_list">Enter new name of list:</string>
     <string name="export_format">Format to Export</string>
-    <string name="failed_cache_load">Could not load lists</string>
+
+    <string name="failed_cache_load">Could not load cache: %1$s</string>
     <string name="failed_export">Export Failed: %1$s</string>
     <string name="failed_import">Import failed</string>
     <string name="failed_save_to_cache">Save to cache failed. Recent changes may be lost!</string>
-    <string name="failed_save_to_uri">Save to URI failed. Recent changes may be lost!</string>
-    <string name="failed_uri_access">Access to URI denied. Please re-confirm URI</string>
-    <string name="failed_uri_load">Could not load from URI</string>
+    <string name="failed_save_to_uri">Save to store failed. Recent changes have been saved in the cache, but may be lost!</string>
+    <string name="failed_uri_access">Access to store denied. Please re-confirm store location</string>
+    <string name="failed_uri_load">Could not load from store</string>
+
     <string name="general_settings">General Settings</string>
+
     <string name="import_report">Imported list \'%1$s\'</string>
-    <string name="message_no_lists_yet">No lists yet…</string>
+    <string name="items_deleted">%d items deleted</string>
+    <string name="items_restored">%d items restored</string>
+
     <string name="locale_prefix">default</string>
+
+    <string name="message_no_lists_yet">No lists yet…</string>
     <string name="move_the_item">Move the item</string>
-    <string name="not_set">Not Set</string>
+
+    <string name="no_cache">No cache found on this device. One will be created the next time you make a change.</string>
+    <string name="no_deleted_items">No deleted items</string>
     <string name="new_item_hint">New list item</string>
+
     <string name="ok">OK</string>
     <string name="option_auto_delete_checked">Auto-delete checked items</string>
     <string name="option_debug">Debug</string>
@@ -55,14 +68,15 @@
     <string name="option_strike_checked">Strike through checked items</string>
     <string name="option_text_size">Text size</string>
     <string name="option_warn_about_duplicates">Warn before adding duplicate item to list</string>
+
     <string name="rename_list">Rename List</string>
+
     <string name="similar_item_already_in_list">Similar item already in list</string>
     <string name="similar_item_x_already_in_list">Similar item \'%1$s\' already in list. Add \'%2$s\' to list?</string>
-    <string name="toast_items_deleted">%d items deleted</string>
-    <string name="toast_items_restored">%d items restored</string>
-    <string name="toast_no_deleted_items">No deleted items</string>
-    <string name="uri_access_denied">Access Denied</string>
-    <string name="cache_is_newer">Cache is newer than lists in URI</string>
+
+    <string name="uri_access_denied">Store access denied</string>
+    <string name="action_save">Save</string>
+
     <string-array name="text_size_options">
         <item>Default</item>
         <item>Small</item>

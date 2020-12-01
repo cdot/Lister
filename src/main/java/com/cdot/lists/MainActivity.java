@@ -28,11 +28,12 @@ import android.os.Bundle;
 import android.provider.DocumentsContract;
 import android.util.Log;
 import android.view.MotionEvent;
+import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.view.accessibility.AccessibilityEventCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
@@ -48,6 +49,7 @@ import org.json.JSONException;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -100,9 +102,10 @@ public class MainActivity extends AppCompatActivity {
 
     @Override // FragmentActivity
     public void onAttachedToWindow() {
-        if (Settings.getBool(Settings.alwaysShow)) {
-            getWindow().addFlags(AccessibilityEventCompat.TYPE_GESTURE_DETECTION_END);
-        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1)
+            setShowWhenLocked(Settings.getBool(Settings.alwaysShow));
+        else
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED);
     }
 
     @Override // FragmentActivity
@@ -160,7 +163,8 @@ public class MainActivity extends AppCompatActivity {
             mLists.add(newList);
             Log.d(TAG, "imported list: " + newList.getText());
             mLists.notifyChangeListeners();
-            saveAdvised(TAG, "list imported");
+            Log.d(TAG, "Save imported list");
+            save();
             Toast.makeText(this, getString(R.string.import_report, newList.getText()), Toast.LENGTH_LONG).show();
             pushFragment(new ChecklistFragment(newList));
         } catch (Exception e) {
@@ -186,9 +190,12 @@ public class MainActivity extends AppCompatActivity {
                 cacheLists.fromStream(fis);
                 Log.d(TAG, cacheLists.size() + " lists loaded from cache");
             }
+        } catch (FileNotFoundException ce) {
+            Log.d(TAG, "FileNotFoundException loading cache " + Settings.cacheFile + ": " + ce);
+            runOnUiThread(() -> Toast.makeText(this, R.string.no_cache, Toast.LENGTH_LONG).show());
         } catch (Exception ce) {
-            Log.d(TAG, "Exception loading from cache " + Settings.cacheFile + ": " + ce);
-            runOnUiThread(() -> Toast.makeText(this, R.string.failed_cache_load, Toast.LENGTH_LONG).show());
+            Log.d(TAG, "Failed cache load " + Settings.cacheFile + ": " + ce);
+            runOnUiThread(() -> Toast.makeText(this, getResources().getString(R.string.failed_cache_load, ce), Toast.LENGTH_LONG).show());
         }
         return cacheLists;
     }
@@ -223,7 +230,7 @@ public class MainActivity extends AppCompatActivity {
                     mLists.setURI(uri.toString());
                     Log.d(TAG, mLists.size() + " lists loaded from " + uri);
                     Checklists cl = loadCache(new Checklists());
-                    Log.d(TAG, "Cache comes from " + cl.getURI());
+                    Log.d(TAG, "Cache remembers URI " + cl.getURI());
                     if (cl.isMoreRecentVersionOf(mLists)) {
                         Log.d(TAG, "Cache is more recent");
                         runOnUiThread(() -> Toast.makeText(this, R.string.cache_is_newer, Toast.LENGTH_LONG).show());
@@ -303,20 +310,19 @@ public class MainActivity extends AppCompatActivity {
         super.onBackPressed();
         // see https://medium.com/@Wingnut/onbackpressed-for-fragments-357b2bf1ce8e for info
         // on passing onBackPressed to fragments
-        saveToURI();
         Fragment frag = getSupportFragmentManager().findFragmentById(R.id.fragment);
         if (frag instanceof EntryListFragment)
             ((EntryListFragment)frag).onActivated();
     }
 
     /**
-     * Notify the activity that something has changed, and a save is advised. The cache is
-     * always written, but the backing store will only be written after a few minutes
-     * so a series of small changes is batched.
+     * Save changes.
+     * If there's a failure saving to the backing store, we set lastStoreSaveFailed in the preferences.
+     * If there's a failure saving to the cache, this is a major problem that may not be recoverable.
      */
-    public void saveAdvised(String tag, String why) {
-        Log.d(tag, "Save advised due to " + why);
+    public void save() {
         invalidateOptionsMenu(); // update menu items
+
         String jsonString;
         try {
             jsonString = mLists.toJSON().toString(1);
@@ -335,20 +341,15 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, R.string.failed_save_to_cache, Toast.LENGTH_LONG).show();
         }
 
-        saveToURI();
-    }
-
-    private void saveToURI() {
         final Uri uri = Settings.getUri(Settings.uri);
         if (uri == null)
             return;
-        String jsonString;
+
         try {
             jsonString = mLists.toJSON().toString(1);
         } catch (JSONException je) {
             throw new Error("JSON exception " + je.getMessage());
         }
-
         // Launch a thread to do this save, so we don't block the ui thread
         Log.d(TAG, "Saving to " + uri);
         final byte[] data = jsonString.getBytes();
@@ -369,9 +370,16 @@ public class MainActivity extends AppCompatActivity {
                 stream.write(data);
                 stream.close();
                 Log.d(TAG, "Saved to " + uri);
+                Settings.setBool(Settings.lastStoreSaveFailed, false);
             } catch (IOException ioe) {
                 Log.e(TAG, "Exception while saving to Uri " + ioe.getMessage());
-                runOnUiThread(() -> Toast.makeText(this, R.string.failed_save_to_uri, Toast.LENGTH_LONG).show());
+                runOnUiThread(() -> {
+                    Toast.makeText(this, R.string.failed_save_to_uri, Toast.LENGTH_LONG).show();
+                    Settings.setBool(Settings.lastStoreSaveFailed, true);
+                    // Must invalidate action bar. How?
+                    ViewGroup vg = findViewById (R.id.main_activity);
+                    vg.invalidate();
+                });
             }
         }).start();
     }

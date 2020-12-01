@@ -18,7 +18,6 @@
  */
 package com.cdot.lists.model;
 
-import com.cdot.lists.Settings;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVWriter;
 
@@ -31,13 +30,7 @@ import org.json.JSONObject;
 public class ChecklistItem extends EntryListItem {
     //private static final String TAG = "ChecklistItem";
 
-    private long mUID;
     private boolean mDone; // has it been checked?
-
-    @Override // implement EntryListItem
-    public long getUID() {
-        return mUID;
-    }
 
     @Override // implement EntryListItem
     public void notifyChangeListeners() {
@@ -57,7 +50,6 @@ public class ChecklistItem extends EntryListItem {
 
     @Override // implement EntryListItem
     public void fromJSON(JSONObject jo) throws JSONException {
-        mUID = jo.getLong("uid");
         setText(jo.getString("name"));
         mDone = false;
         try {
@@ -80,7 +72,6 @@ public class ChecklistItem extends EntryListItem {
     @Override // implement EntryListItem
     public JSONObject toJSON() throws JSONException {
         JSONObject iob = new JSONObject();
-        iob.put("uid", mUID);
         iob.put("name", getText());
         if (mDone)
             iob.put("done", true);
@@ -106,7 +97,6 @@ public class ChecklistItem extends EntryListItem {
 
     public ChecklistItem(Checklist checklist, String str, boolean done) {
         super(checklist);
-        mUID = Settings.makeUID();
         setText(str);
         mDone = done;
     }

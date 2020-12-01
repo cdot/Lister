@@ -68,7 +68,6 @@ public abstract class EntryList extends EntryListItem {
     @Override // implements EntryListItem
     public void fromJSON(JSONObject job) throws JSONException {
         clear();
-        mUID = job.getLong("uid");
         try {
             mShownSorted = job.getBoolean("sort");
         } catch (JSONException je) {
@@ -82,7 +81,6 @@ public abstract class EntryList extends EntryListItem {
         JSONArray its = new JSONArray();
         for (EntryListItem cl : mData)
             its.put(cl.toJSON());
-        job.put("uid", getUID());
         job.put("items", its);
         job.put("sort", mShownSorted);
         return job;
@@ -273,20 +271,6 @@ public abstract class EntryList extends EntryListItem {
             return null;
         for (EntryListItem item : mData) {
             if (item.getText().toLowerCase().contains(str.toLowerCase()))
-                return item;
-        }
-        return null;
-    }
-
-    /**
-     * Find an item in the list by UID
-     *
-     * @param uid item to find
-     * @return matched item or null if not found
-     */
-    public EntryListItem findByUID(long uid) {
-        for (EntryListItem item : mData) {
-            if (item.getUID() == uid)
                 return item;
         }
         return null;

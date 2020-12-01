@@ -66,16 +66,19 @@ public class SettingsFragment extends PreferenceFragmentCompat {
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
         setPreferencesFromResource(R.xml.settings_fragment, rootKey);
 
+        // TODO: make these specific to the list
+        initBoolPref(Settings.autoDeleteChecked);
+        initBoolPref(Settings.defaultAlphaSort);
+        initBoolPref(Settings.showCheckedAtEnd);
+        initBoolPref(Settings.warnAboutDuplicates);
+
+        // These are general
         initBoolPref(Settings.debug);
         initBoolPref(Settings.dimChecked);
         initBoolPref(Settings.strikeChecked);
-        initBoolPref(Settings.defaultAlphaSort);
-        initBoolPref(Settings.showCheckedAtEnd);
         initBoolPref(Settings.leftHandOperation);
-        initBoolPref(Settings.autoDeleteChecked);
         initBoolPref(Settings.entireRowToggles);
         initBoolPref(Settings.alwaysShow);
-        initBoolPref(Settings.warnAboutDuplicates);
 
         IntListPreference ilPref = findPreference(Settings.textSizeIndex);
         int val = Settings.getInt(Settings.textSizeIndex);

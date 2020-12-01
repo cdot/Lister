@@ -2,15 +2,21 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
+        android:id="@+id/action_save"
+        android:icon="@drawable/ic_action_save"
+        android:orderInCategory="10"
+        android:title="@string/action_save"
+        app:showAsAction="always" />
+    <item
         android:id="@+id/action_alpha_sort"
         android:icon="@drawable/ic_action_alpha_sort_on"
-        android:orderInCategory="10"
+        android:orderInCategory="20"
         android:title="@string/action_alpha_sort_on"
         app:showAsAction="ifRoom" />
     <item
         android:id="@+id/action_new_list"
         android:icon="@drawable/ic_action_item_add_on"
-        android:orderInCategory="20"
+        android:orderInCategory="30"
         android:title="@string/action_new_list"
         app:showAsAction="ifRoom" />
     <item

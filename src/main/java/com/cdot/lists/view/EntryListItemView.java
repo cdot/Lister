@@ -111,8 +111,6 @@ public class EntryListItemView extends RelativeLayout implements View.OnClickLis
         // Update the item text
         TextView it = findViewById(R.id.item_text);
         String t = mItem.getText();
-        if (Settings.getBool(Settings.debug))
-            t += " " + mItem.getUID(); // DEBUG
         it.setText(t);
         setTextFormatting();
         ImageButton mb = findViewById(R.id.move_button);

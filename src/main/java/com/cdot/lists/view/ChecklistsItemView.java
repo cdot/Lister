@@ -4,6 +4,7 @@
 package com.cdot.lists.view;
 
 import android.annotation.SuppressLint;
+import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 
@@ -42,8 +43,9 @@ public class ChecklistsItemView extends EntryListItemView {
                 builder.setPositiveButton(R.string.ok, (dialogInterface, which_button) -> {
                     EntryList el = mItem.getContainer();
                     el.remove(mItem, true);
+                    Log.d(TAG, "list deleted");
                     el.notifyChangeListeners();
-                    getMainActivity().saveAdvised(TAG, "list deleted");
+                    getMainActivity().save();
                 });
                 builder.setNegativeButton(R.string.cancel, null);
                 builder.show();
@@ -59,8 +61,9 @@ public class ChecklistsItemView extends EntryListItemView {
                 builder.setView(editText);
                 builder.setPositiveButton(R.string.ok, (dialogInterface, i) -> {
                     mItem.setText(editText.getText().toString());
+                    Log.d(TAG, "list renamed");
                     mItem.getContainer().notifyChangeListeners();
-                    getMainActivity().saveAdvised(TAG, "list renamed");
+                    getMainActivity().save();
                 });
                 builder.setNegativeButton(R.string.cancel, null);
                 builder.show();
@@ -68,7 +71,8 @@ public class ChecklistsItemView extends EntryListItemView {
 
             case R.id.action_copy:
                 checklists.copyList(mItem);
-                getMainActivity().saveAdvised(TAG, "list copied");
+                Log.d(TAG, "list copied");
+                getMainActivity().save();
                 return true;
                 
             default:

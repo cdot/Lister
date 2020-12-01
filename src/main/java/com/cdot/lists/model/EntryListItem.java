@@ -18,7 +18,6 @@
  */
 package com.cdot.lists.model;
 
-import com.cdot.lists.Settings;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVWriter;
 
@@ -75,17 +74,6 @@ public abstract class EntryListItem {
     public void notifyChangeListeners() {
         for (ChangeListener cl : mListeners)
             cl.onListChanged(this);
-    }
-
-    // Unique ID for this item
-    protected long mUID = Settings.makeUID();
-
-    /**
-     * Get a unique integer that identifies this item. We use getTimeMillis to generate this UID,
-     * as the probability of a clash is infinitesmial.
-     */
-    public long getUID() {
-        return mUID;
     }
 
     /**

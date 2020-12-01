@@ -75,7 +75,6 @@ public class ChecklistFragment extends EntryListFragment {
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         if (mList == null)
             return null;
-        Settings.setLong(Settings.currentListUID, mList.getUID());
 
         mBinding = ChecklistFragmentBinding.inflate(inflater, container, false);
         View rootView = mBinding.getRoot();
@@ -122,7 +121,8 @@ public class ChecklistFragment extends EntryListFragment {
             case R.id.action_check_all:
                 if (mChecklist.checkAll(true)) {
                     mList.notifyChangeListeners();
-                    getMainActivity().saveAdvised(TAG, "check all");
+                    Log.d(TAG, "check all");
+                    getMainActivity().save();
                 }
                 return true;
 
@@ -130,12 +130,13 @@ public class ChecklistFragment extends EntryListFragment {
                 int deleted = mChecklist.deleteAllChecked();
                 if (deleted > 0) {
                     mChecklist.notifyChangeListeners();
-                    getMainActivity().saveAdvised(TAG, "checked deleted");
-                    Toast.makeText(getMainActivity(), getString(R.string.toast_items_deleted, deleted), Toast.LENGTH_SHORT).show();
+                    Log.d(TAG, "checked deleted");
+                    getMainActivity().save();
+                    Toast.makeText(getMainActivity(), getString(R.string.items_deleted, deleted), Toast.LENGTH_SHORT).show();
                     if (mList.size() == 0) {
                         enableEditMode(true);
                         mChecklist.notifyChangeListeners();
-                        getMainActivity().saveAdvised(TAG,"delete checked");
+                        getMainActivity().save();
                     }
                 }
                 return true;
@@ -153,9 +154,10 @@ public class ChecklistFragment extends EntryListFragment {
                 editText.setText(mList.getText());
                 builder.setView(editText);
                 builder.setPositiveButton(R.string.ok, (dialogInterface, i) -> {
+                    Log.d(TAG, "list renamed");
                     mList.setText(editText.getText().toString());
                     getMainActivity().notifyListsListeners();
-                    getMainActivity().saveAdvised(TAG, "list renamed");
+                    getMainActivity().save();
                     //Objects.requireNonNull(getSupportActionBar()).setTitle(mChecklist.getText());
                 });
                 builder.setNegativeButton(R.string.cancel, null);
@@ -164,19 +166,21 @@ public class ChecklistFragment extends EntryListFragment {
 
             case R.id.action_uncheck_all:
                 if (mChecklist.checkAll(false)) {
+                    Log.d(TAG, "uncheck all");
                     mList.notifyChangeListeners();
-                    getMainActivity().saveAdvised(TAG, "uncheck all");
+                    getMainActivity().save();
                 }
                 return true;
 
             case R.id.action_undo_delete:
                 int undone = mChecklist.undoRemove();
                 mChecklist.notifyChangeListeners();
-                getMainActivity().saveAdvised(TAG, "delete undone");
+                Log.d(TAG, "delete undone");
+                getMainActivity().save();
                 if (undone == 0)
-                    Toast.makeText(getMainActivity(), R.string.toast_no_deleted_items, Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getMainActivity(), R.string.no_deleted_items, Toast.LENGTH_SHORT).show();
                 else
-                    Toast.makeText(getMainActivity(), getString(R.string.toast_items_restored, undone), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getMainActivity(), getString(R.string.items_restored, undone), Toast.LENGTH_SHORT).show();
                 return true;
 
             case R.id.action_save_list_as:
@@ -289,10 +293,11 @@ public class ChecklistFragment extends EntryListFragment {
     private void addItem(String str) {
         ChecklistItem item = new ChecklistItem(mChecklist, str, false);
         mList.add(item);
+        Log.d(TAG, "item added");
         mList.notifyChangeListeners();
         mBinding.addItemText.setText("");
         mBinding.itemListView.smoothScrollToPosition(getDisplayOrder().indexOf(item));
-        getMainActivity().saveAdvised(TAG, "item added");
+        getMainActivity().save();
     }
 
     /**

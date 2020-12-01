@@ -34,25 +34,25 @@ public class Settings {
 
     static final String UI_PREFERENCES = "UIPreferences";
 
-    // General
-    public static final String dimChecked = "greyCheckedItems";
-    public static final String strikeChecked = "strikeThroughCheckedItems";
-    public static final String leftHandOperation = "checkBoxOnLeftSide";
-    public static final String entireRowToggles = "entireRowTogglesItem";
+    // Options
     public static final String alwaysShow = "showListInFrontOfLockScreen";
-    public static final String warnAboutDuplicates = "warnAboutDuplicates";
-    public static final String textSizeIndex = "textSizeIndex";
-    public static final String currentListUID = "currentList";
-    public static final String uri = "backingStore";
-    public static final String showCheckedAtEnd = "moveCheckedItemsToBottom";
-    public static final String defaultAlphaSort = "forceAlphaSort";
     public static final String autoDeleteChecked = "autoDeleteCheckedItems";
-    public static final String saveDelay = "saveDelay";
+    public static final String currentListUID = "currentList";
     public static final String debug = "debug";
+    public static final String defaultAlphaSort = "forceAlphaSort";
+    public static final String dimChecked = "greyCheckedItems";
+    public static final String entireRowToggles = "entireRowTogglesItem";
+    public static final String lastStoreSaveFailed = "lastStoreSaveFailed";
+    public static final String leftHandOperation = "checkBoxOnLeftSide";
+    public static final String showCheckedAtEnd = "moveCheckedItemsToBottom";
+    public static final String strikeChecked = "strikeThroughCheckedItems";
+    public static final String textSizeIndex = "textSizeIndex";
+    public static final String uri = "backingStore";
+    public static final String warnAboutDuplicates = "warnAboutDuplicates";
 
     public static final String cacheFile = "checklists.json";
 
-    // Must match res/values/arrays.xml/text_size_list
+    // Must match res/values/strings.xml/text_size_list
     public static final int TEXT_SIZE_DEFAULT = 0;
     public static final int TEXT_SIZE_SMALL = 1;
     public static final int TEXT_SIZE_MEDIUM = 2;
@@ -64,19 +64,17 @@ public class Settings {
     private static SharedPreferences sPrefs;
 
     private static Map<String, Boolean> sBoolPrefs = new HashMap<String, Boolean>() {{
-        put(debug, false);
-
+        put(alwaysShow, false);
         put(autoDeleteChecked, false);
+        put(debug, false);
         put(dimChecked, true);
         put(defaultAlphaSort, false);
+        put(entireRowToggles, true);
+        put(lastStoreSaveFailed, false);
+        put(leftHandOperation, false);
         put(showCheckedAtEnd, false);
         put(strikeChecked, true);
-        put(entireRowToggles, true);
-
-        put(alwaysShow, false);
         put(warnAboutDuplicates, true);
-
-        put(leftHandOperation, false);
     }};
 
     private static Map<String, Integer> sIntPrefs = new HashMap<String, Integer>() {{
@@ -85,7 +83,6 @@ public class Settings {
 
     private static Map<String, Long> sLongPrefs = new HashMap<String, Long>() {{
         put(currentListUID, INVALID_UID);
-        put(saveDelay, 5L);
     }};
 
     private static Map<String, Uri> sUriPrefs = new HashMap<String, Uri>() {{
@@ -161,17 +158,5 @@ public class Settings {
         sUriPrefs.put(name, value);
         e.putString(name, value.toString());
         e.apply();
-    }
-
-    /**
-     * Generate the next unique ID. Being time based, we can be reasonably confident that these
-     * are unique, though a simultaneous edit on two platforms might just banjax it.
-     *
-     * @return a unique ID
-     */
-    public static long makeUID() {
-        if (sLastUID == INVALID_UID)
-            sLastUID = System.currentTimeMillis();
-        return sLastUID++;
     }
 }
