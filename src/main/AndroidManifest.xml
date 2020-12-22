@@ -29,5 +29,9 @@
                 android:resource="@xml/send_file_paths">
             </meta-data>
         </provider>
+
     </application>
+    <!--
+    uses-policies force-lock
+    -->
 </manifest>

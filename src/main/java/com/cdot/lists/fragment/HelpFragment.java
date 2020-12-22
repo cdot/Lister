@@ -30,7 +30,7 @@ import com.cdot.lists.R;
 import com.cdot.lists.databinding.HelpFragmentBinding;
 
 /**
- * Simple activity to view help information stored in an html file
+ * View help information stored in an html file
  */
 public class HelpFragment extends Fragment {
     String mPage;

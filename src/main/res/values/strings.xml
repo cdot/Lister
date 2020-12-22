@@ -16,6 +16,7 @@
     <string name="action_import_list">Import List</string>
     <string name="action_new_list">New List</string>
     <string name="action_rename_list">Rename</string>
+    <string name="action_save">Save</string>
     <string name="action_settings">Settings</string>
     <string name="action_uncheck_all">Uncheck all Items</string>
     <string name="action_undo_delete">Undo Last Delete</string>
@@ -56,18 +57,18 @@
     <string name="new_item_hint">New list item</string>
 
     <string name="ok">OK</string>
-    <string name="option_auto_delete_checked">Auto-delete checked items</string>
+    <string name="option_auto_delete_checked">Delete checked items</string>
     <string name="option_debug">Debug</string>
     <string name="option_dim_checked">Grey out checked items</string>
-    <string name="option_alpha_sort">Default Alphabetic Sort</string>
     <string name="option_entire_row_toggles">Entire row toggles check box</string>
     <string name="option_left_hand_operation">Left hand operation</string>
     <string name="option_open_latest">Open latest list on startup</string>
     <string name="option_show_checked_at_end">Move checked items to bottom</string>
     <string name="option_show_list_in_front_of_lock_screen">Show list in front of lock screen</string>
+    <string name="option_stay_awake">Stay awake while a list is showing</string>
     <string name="option_strike_checked">Strike through checked items</string>
     <string name="option_text_size">Text size</string>
-    <string name="option_warn_about_duplicates">Warn before adding duplicate item to list</string>
+    <string name="option_warn_about_duplicates">Warn before adding duplicate item</string>
 
     <string name="rename_list">Rename List</string>
 
@@ -75,33 +76,38 @@
     <string name="similar_item_x_already_in_list">Similar item \'%1$s\' already in list. Add \'%2$s\' to list?</string>
 
     <string name="uri_access_denied">Store access denied</string>
-    <string name="action_save">Save</string>
 
+    <!-- Arrays -->
     <string-array name="text_size_options">
         <item>Default</item>
         <item>Small</item>
         <item>Medium</item>
         <item>Large</item>
     </string-array>
+
     <string-array name="text_size_values">
         <item>0</item>
         <item>1</item>
         <item>2</item>
         <item>3</item>
     </string-array>
+
     <string-array name="share_format_description">
         <item>Plain text</item>
         <item>JSON data (.json)</item>
         <item>Comma-separated Values (.csv)</item>
     </string-array>
+
     <string-array name="share_format_mimetype">
         <item>text/plain</item>
         <item>application/json</item>
         <item>text/csv</item>
     </string-array>
+
     <string-array name="share_format_mimeext">
         <item>.txt</item>
         <item>.json</item>
         <item>.csv</item>
     </string-array>
+
 </resources>

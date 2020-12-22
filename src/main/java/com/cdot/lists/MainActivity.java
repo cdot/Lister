@@ -15,7 +15,7 @@
  * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ */
 package com.cdot.lists;
 
 import android.app.Activity;
@@ -58,17 +58,15 @@ import java.io.OutputStream;
 import java.util.Objects;
 
 public class MainActivity extends AppCompatActivity implements SharedPreferences.OnSharedPreferenceChangeListener {
-    // AppCompatActivity is a subclass of androidx.fragment.app.FragmentActivity
-    // It adds support for fragment options menus (and probably a lot more)
-    private static final String TAG = "MainActivity";
+    public static final String TAG = MainActivity.class.getSimpleName();
 
     public static final int REQUEST_CHANGE_STORE = 1;
     public static final int REQUEST_CREATE_STORE = 2;
     public static final int REQUEST_IMPORT_LIST = 3;
-
     // Use for debug. bitmask, 0 = normal, 1 = fail network load, 2 = fail network and cache
-    private static int FORCE_LOAD_FAIL = 0;
+    private static final int FORCE_LOAD_FAIL = 0;
 
+    private Thread mLoadThread = null;
     private Checklists mLists; // List of lists
 
     /**
@@ -80,7 +78,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         FragmentManager fm = getSupportFragmentManager();
         Fragment f = fm.findFragmentById(R.id.fragment);
         if (f instanceof EntryListFragment)
-            return (EntryListFragment)f;
+            return (EntryListFragment) f;
         return null;
     }
 
@@ -92,7 +90,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         setContentView(binding.getRoot());
 
         mLists = new Checklists();
-        Settings.setContext(this);
+        Settings.setActivity(this);
 
         // Lists will be loaded in onResume
         Fragment f = new ChecklistsFragment(mLists);
@@ -102,16 +100,43 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     }
 
     private void setShowOverLockScreen() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-            Log.d(TAG, "Settings always show " + Settings.getBool(Settings.alwaysShow));
-            setShowWhenLocked(Settings.getBool(Settings.alwaysShow));
-        } else
-            getWindow().addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED);
+        boolean show = Settings.getBool(Settings.alwaysShow);
+
+        // None of this achieves anything on my Moto G8 Plus with Android 10, but works fine on a
+        // G6 running Android 9.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1)
+            setShowWhenLocked(show);
+        else {
+            if (show)
+                getWindow().addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED);
+            else
+                getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED);
+        }
+    }
+
+    private void setStayAwake() {
+        boolean stay = Settings.getBool(Settings.stayAwake);
+        Log.d(TAG, "Settings: stay awake " + stay);
+        if (stay)
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        else
+            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
 
     @Override // FragmentActivity
     public void onAttachedToWindow() {
+        // onAttachedToWindow is called after onResume (and it happens only once per lifecycle).
+        // ActivityThread.handleResumeActivity call will add DecorView to the current WindowManger
+        // which will in turn call WindowManagerGlobal.addView() which than traverse all the views
+        // and call onAttachedToWindow on each view.
         setShowOverLockScreen();
+    }
+
+    @Override // FragmentActivity
+    public void onStop() {
+        Log.d(TAG, "onStop");
+        super.onStop();
+        // TODO: It would be sensible to lock the screen immediately if stayAwake is enabled
     }
 
     @Override // FragmentActivity
@@ -119,7 +144,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         super.onResume();
         Log.d(TAG, "onResume");
         loadLists();
-        setShowOverLockScreen();
+        setStayAwake(); // re-acquire wakelock if necessary
     }
 
     @Override // FragmentActivity
@@ -147,10 +172,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     public void notifyListsListeners() {
         mLists.notifyChangeListeners();
     }
-    /**
-     * Load the list of checklists.
-     */
-    Thread mLoadThread = null;
 
     private void handleImport(Uri uri) {
         try {
@@ -180,6 +201,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         }
     }
 
+    /**
+     * Open a dialog for importing a list
+     */
     public void importList() {
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
@@ -318,7 +342,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         // on passing onBackPressed to fragments
         Fragment frag = getSupportFragmentManager().findFragmentById(R.id.fragment);
         if (frag instanceof EntryListFragment)
-            ((EntryListFragment)frag).onActivated();
+            ((EntryListFragment) frag).onActivated();
     }
 
     /**
@@ -383,7 +407,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     Toast.makeText(this, R.string.failed_save_to_uri, Toast.LENGTH_LONG).show();
                     Settings.setBool(Settings.lastStoreSaveFailed, true);
                     // Must invalidate action bar. How?
-                    ViewGroup vg = findViewById (R.id.main_activity);
+                    ViewGroup vg = findViewById(R.id.main_activity);
                     vg.invalidate();
                 });
             }
@@ -392,7 +416,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-        if (key.equals(Settings.alwaysShow))
+        if (Settings.alwaysShow.equals(key))
             setShowOverLockScreen();
+        else if (Settings.stayAwake.equals(key))
+            setStayAwake();
     }
 }

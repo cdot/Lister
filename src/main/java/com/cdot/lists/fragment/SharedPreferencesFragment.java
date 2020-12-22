@@ -49,11 +49,11 @@ public class SharedPreferencesFragment extends PreferenceFragmentCompat {
         cbPref.setChecked(Settings.getBool(name));
         cbPref.setOnPreferenceChangeListener((preference, newValue) -> {
             Log.d(TAG, "setting " + name + " to " + newValue);
-            Settings.setBool(name, (boolean)newValue);
+            Settings.setBool(name, (boolean) newValue);
             return true;
         });
-
     }
+
     @Override // PreferenceFragmentCompat
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
         setPreferencesFromResource(R.xml.shared_preferences, rootKey);
@@ -64,6 +64,7 @@ public class SharedPreferencesFragment extends PreferenceFragmentCompat {
         initBoolPref(Settings.leftHandOperation);
         initBoolPref(Settings.entireRowToggles);
         initBoolPref(Settings.alwaysShow);
+        initBoolPref(Settings.stayAwake);
 
         IntListPreference ilPref = findPreference(Settings.textSizeIndex);
         int val = Settings.getInt(Settings.textSizeIndex);

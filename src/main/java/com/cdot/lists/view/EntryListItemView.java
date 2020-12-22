@@ -23,7 +23,7 @@ import com.cdot.lists.model.EntryListItem;
  */
 @SuppressLint("ViewConstructor")
 public class EntryListItemView extends RelativeLayout implements View.OnClickListener {
-    private final String TAG = "EntryListItemView";
+    private final String TAG = EntryListItemView.class.getSimpleName();
 
     // True if this view is of an item being moved
     protected boolean mIsMoving;
@@ -33,11 +33,6 @@ public class EntryListItemView extends RelativeLayout implements View.OnClickLis
     protected int mMenuResource;
     // Fragment this view belongs to
     protected EntryListFragment mFragment;
-
-    @Override // implement View.OnLongClickListener
-    public void onClick(View view) {
-        // override in subclasses
-    }
 
     /**
      * Constructor
@@ -59,6 +54,11 @@ public class EntryListItemView extends RelativeLayout implements View.OnClickLis
             addListeners();
     }
 
+    @Override // implement View.OnLongClickListener
+    public void onClick(View view) {
+        // override in subclasses
+    }
+
     /**
      * Get the item that this is a view of
      *
@@ -68,14 +68,6 @@ public class EntryListItemView extends RelativeLayout implements View.OnClickLis
         return mItem;
     }
 
-    public MainActivity getMainActivity() {
-        return mFragment.getMainActivity();
-    }
-
-    public EntryListFragment getFragment() {
-        return mFragment;
-    }
-
     /**
      * Set the item this is a view of
      *
@@ -83,6 +75,14 @@ public class EntryListItemView extends RelativeLayout implements View.OnClickLis
      */
     public void setItem(EntryListItem item) {
         mItem = item;
+    }
+
+    public MainActivity getMainActivity() {
+        return mFragment.getMainActivity();
+    }
+
+    public EntryListFragment getFragment() {
+        return mFragment;
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -144,6 +144,7 @@ public class EntryListItemView extends RelativeLayout implements View.OnClickLis
 
     /**
      * Handle a popup menu action. Default is a NOP.
+     *
      * @param action the action to handle
      * @return true if the action was handled
      */

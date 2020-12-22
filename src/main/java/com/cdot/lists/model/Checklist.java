@@ -33,12 +33,47 @@ import java.util.ArrayList;
  * A checklist of checkable items. Can also be an item in a Checklists
  */
 public class Checklist extends EntryList {
-    //private static final String TAG = "Checklist";
+    //private static final String TAG = Checklist.class.getSimpleName();
 
     // Settings for this list
     public boolean warnAboutDuplicates = true;
     public boolean showCheckedAtEnd = false;
     public boolean autoDeleteChecked = false;
+
+    /**
+     * Construct and load from cache
+     *
+     * @param name   private file list is stored in
+     * @param parent container
+     */
+    public Checklist(EntryList parent, String name) {
+        super(parent);
+        setText(name);
+    }
+
+    /**
+     * Process the JSON given and load from it
+     *
+     * @param job    the JSON object
+     * @param parent new container list
+     * @throws JSONException if something goes wrong
+     */
+    Checklist(EntryList parent, JSONObject job) throws JSONException {
+        super(parent);
+        fromJSON(job);
+    }
+
+    /**
+     * Construct by copying an existing list and saving it to a new list
+     *
+     * @param copy   list to clone
+     * @param parent new container list
+     */
+    Checklist(EntryList parent, Checklist copy) {
+        super(parent, copy);
+        for (EntryListItem item : copy.getData())
+            add(new ChecklistItem(this, (ChecklistItem) item));
+    }
 
     @Override
     public // implement EntryList
@@ -124,41 +159,6 @@ public class Checklist extends EntryList {
     }
 
     /**
-     * Construct and load from cache
-     *
-     * @param name   private file list is stored in
-     * @param parent container
-     */
-    public Checklist(EntryList parent, String name) {
-        super(parent);
-        setText(name);
-    }
-
-    /**
-     * Process the JSON given and load from it
-     *
-     * @param job the JSON object
-     * @param parent new container list
-     * @throws JSONException if something goes wrong
-     */
-    Checklist(EntryList parent, JSONObject job) throws JSONException {
-        super(parent);
-        fromJSON(job);
-    }
-
-    /**
-     * Construct by copying an existing list and saving it to a new list
-     *
-     * @param copy list to clone
-     * @param parent new container list
-     */
-    Checklist(EntryList parent, Checklist copy) {
-        super(parent, copy);
-        for (EntryListItem item : copy.getData())
-            add(new ChecklistItem(this, (ChecklistItem) item));
-    }
-
-    /**
      * Get the number of checked items
      *
      * @return the number of checked items
@@ -191,6 +191,7 @@ public class Checklist extends EntryList {
 
     /**
      * Delete all the checked items in the list
+     *
      * @return number of items deleted
      */
     public int deleteAllChecked() {

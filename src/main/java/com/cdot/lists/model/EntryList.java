@@ -42,27 +42,33 @@ import java.util.Stack;
  * Base class for lists of items
  */
 public abstract class EntryList extends EntryListItem {
-    private static final String TAG = "EntryList";
-
-    // The basic list
-    private ArrayList<EntryListItem> mData = new ArrayList<>();
-
+    private static final String TAG = EntryList.class.getSimpleName();
     // Is this list being displayed sorted?
     public boolean sort = false;
-
-    // An item that has been removed, and the index it was removed from, for undos
-    private static class Remove {
-        int index;
-        EntryListItem item;
-
-        Remove(int ix, EntryListItem it) {
-            index = ix;
-            item = it;
-        }
-    }
-
     // Undo stack
     Stack<ArrayList<Remove>> mRemoves;
+    // The basic list
+    private final ArrayList<EntryListItem> mData = new ArrayList<>();
+
+    /**
+     * @param parent the list that contains this list (or null for the root)
+     */
+    EntryList(EntryList parent) {
+        super(parent);
+        mRemoves = new Stack<>();
+    }
+
+    /**
+     * Copy constructor
+     *
+     * @param parent the list that contains this list (or null for the root)
+     * @param copy   the item being copied
+     */
+    EntryList(EntryList parent, EntryList copy) {
+        super(parent, copy);
+        mRemoves = new Stack<>();
+        sort = copy.sort;
+    }
 
     @Override // implements EntryListItem
     public void fromJSON(JSONObject job) throws JSONException {
@@ -115,26 +121,6 @@ public abstract class EntryList extends EntryListItem {
                 return false;
         }
         return true;
-    }
-
-    /**
-     * @param parent the list that contains this list (or null for the root)
-     */
-    EntryList(EntryList parent) {
-        super(parent);
-        mRemoves = new Stack<>();
-    }
-
-     /**
-     * Copy constructor
-     *
-     * @param parent the list that contains this list (or null for the root)
-      * @param copy the item being copied
-     */
-   EntryList(EntryList parent, EntryList copy) {
-        super(parent, copy);
-        mRemoves = new Stack<>();
-        sort = copy.sort;
     }
 
     public List<EntryListItem> getData() {
@@ -301,6 +287,17 @@ public abstract class EntryList extends EntryListItem {
             } catch (CsvException csve) {
                 throw new Exception("Format error, could not read JSON or CSV");
             }
+        }
+    }
+
+    // An item that has been removed, and the index it was removed from, for undos
+    private static class Remove {
+        int index;
+        EntryListItem item;
+
+        Remove(int ix, EntryListItem it) {
+            index = ix;
+            item = it;
         }
     }
 }

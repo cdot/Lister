@@ -34,10 +34,14 @@ import org.json.JSONObject;
  * Constructed by reading a JSON file.
  */
 public class Checklists extends EntryList {
-    private static final String TAG = "Checklists";
+    private static final String TAG = Checklists.class.getSimpleName();
 
     private long mTimestamp; // time it was last changed
     private String mURI; // URI it was loaded from (or is a cache for)
+
+    public Checklists() {
+        super(null);
+    }
 
     @Override // EntryList
     public EntryListItemView makeItemView(EntryListItem item, EntryListFragment frag) {
@@ -45,12 +49,14 @@ public class Checklists extends EntryList {
     }
 
     @Override // implement EntryListItem
-    public void setText(String s) {
-        throw new Error("Unexpected setText in " + TAG);
+    public String getText() {
+        return null;
     }
 
     @Override // implement EntryListItem
-    public String getText() { return null; }
+    public void setText(String s) {
+        throw new Error("Unexpected setText in " + TAG);
+    }
 
     @Override // implement EntryListItem
     public boolean isMoveable() {
@@ -75,7 +81,7 @@ public class Checklists extends EntryList {
     public void fromJSON(JSONObject job) throws JSONException {
         try {
             super.fromJSON(job);
-            mTimestamp = job.has("timestamp") ? job.getLong("timestamp") :  0; // 0=unknown
+            mTimestamp = job.has("timestamp") ? job.getLong("timestamp") : 0; // 0=unknown
             mURI = job.has("uri") ? job.getString("uri") : "";
             JSONArray lists = job.getJSONArray("items");
             for (int i = 0; i < lists.length(); i++)
@@ -103,8 +109,11 @@ public class Checklists extends EntryList {
         return sb.toString();
     }
 
-    public Checklists() {
-        super(null);
+    /**
+     * Get the URI this was loaded from (may be null)
+     */
+    public String getURI() {
+        return mURI;
     }
 
     /**
@@ -114,14 +123,10 @@ public class Checklists extends EntryList {
         mURI = uri;
     }
 
-    /** Get the URI this was loaded from (may be null) */
-    public String getURI() {
-        return mURI;
-    }
-
     /**
      * Determine if this is a more recent version of another set of checklists, as determined by the
      * timestamp that is set whenever anything in the lists changes.
+     *
      * @return false if the two lists don't come from the same URI, or if the other list's
      * time stamp is more recent than this list.
      */

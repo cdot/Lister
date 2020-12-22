@@ -21,13 +21,16 @@
         android:key="showListInFrontOfLockScreen"
         android:title="@string/option_show_list_in_front_of_lock_screen" />
 
+    <CheckBoxPreference
+    android:key="stayAwake"
+    android:title="@string/option_stay_awake" />
+
     <com.cdot.lists.fragment.IntListPreference
         android:key="textSizeIndex"
         android:entries="@array/text_size_options"
         android:entryValues="@array/text_size_values"
         android:textStyle="bold"
         android:title="@string/option_text_size" />
-
 
     <Preference
         android:key="action_change_uri"

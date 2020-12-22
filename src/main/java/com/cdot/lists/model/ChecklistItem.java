@@ -28,9 +28,25 @@ import org.json.JSONObject;
  * An item in a Checklist
  */
 public class ChecklistItem extends EntryListItem {
-    //private static final String TAG = "ChecklistItem";
+    //private static final String TAG = ChecklistItem.class.getSimpleName();
 
     private boolean mDone; // has it been checked?
+
+    public ChecklistItem(Checklist checklist, String str, boolean done) {
+        super(checklist);
+        setText(str);
+        mDone = done;
+    }
+
+    /**
+     * Construct by copying the given item into the given checklist
+     *
+     * @param checklist container for the copied item
+     * @param copy      item to copy
+     */
+    ChecklistItem(Checklist checklist, ChecklistItem copy) {
+        this(checklist, copy.getText(), copy.mDone);
+    }
 
     @Override // implement EntryListItem
     public void notifyChangeListeners() {
@@ -95,23 +111,9 @@ public class ChecklistItem extends EntryListItem {
         return sb.toString();
     }
 
-    public ChecklistItem(Checklist checklist, String str, boolean done) {
-        super(checklist);
-        setText(str);
-        mDone = done;
-    }
-
-    /**
-     * Construct by copying the given item into the given checklist
-     * @param checklist container for the copied item
-     * @param copy item to copy
-     */
-    ChecklistItem(Checklist checklist, ChecklistItem copy) {
-        this(checklist, copy.getText(), copy.mDone);
-    }
-
     /**
      * Get the items done status
+     *
      * @return true if the item is marked as done
      */
     public boolean isDone() {

@@ -32,10 +32,11 @@ import java.util.List;
  */
 public abstract class EntryListItem {
 
+    // The list that contains this list.
+    private final EntryList mParent;
+    private final List<ChangeListener> mListeners = new ArrayList<>();
     // Label, or list name
     private String mText;
-    // The list that contains this list.
-    private EntryList mParent;
 
     EntryListItem(EntryList parent) {
         mParent = parent;
@@ -44,6 +45,7 @@ public abstract class EntryListItem {
 
     /**
      * Copy constructor. Only the item text is copied.
+     *
      * @param copy the item to copy from
      */
     EntryListItem(EntryList parent, EntryListItem copy) {
@@ -52,16 +54,8 @@ public abstract class EntryListItem {
     }
 
     /**
-     * To be implemented by listeners for changes
-     */
-    public interface ChangeListener {
-        void onListChanged(EntryListItem item);
-    }
-
-    private List<ChangeListener> mListeners = new ArrayList<>();
-
-    /**
      * Add a change listener. Change listeners will be notified whenever a change is made
+     *
      * @param l the listener
      */
     public void addChangeListener(ChangeListener l) {
@@ -78,19 +72,11 @@ public abstract class EntryListItem {
 
     /**
      * Get the list that contains this item
+     *
      * @return the containing list, or null for the root
      */
     public EntryList getContainer() {
         return mParent;
-    }
-
-    /**
-     * Set the item's text
-     *
-     * @param str new text
-     */
-    public void setText(String str) {
-        mText = str;
     }
 
     /**
@@ -105,6 +91,15 @@ public abstract class EntryListItem {
      */
     public String getText() {
         return mText;
+    }
+
+    /**
+     * Set the item's text
+     *
+     * @param str new text
+     */
+    public void setText(String str) {
+        mText = str;
     }
 
     /**
@@ -148,6 +143,13 @@ public abstract class EntryListItem {
      * @param other the other item
      */
     boolean equals(EntryListItem other) {
-         return other != null && mText.equals(other.getText());
+        return other != null && mText.equals(other.getText());
+    }
+
+    /**
+     * To be implemented by listeners for changes
+     */
+    public interface ChangeListener {
+        void onListChanged(EntryListItem item);
     }
 }

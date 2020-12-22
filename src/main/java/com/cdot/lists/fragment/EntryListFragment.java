@@ -39,7 +39,6 @@ import com.cdot.lists.model.EntryList;
 import com.cdot.lists.model.EntryListItem;
 import com.cdot.lists.view.EntryListItemView;
 
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -51,36 +50,8 @@ import java.util.List;
  * The common code here supports moving items in the list and some base menu functionality.
  */
 public abstract class EntryListFragment extends Fragment implements EntryListItem.ChangeListener {
-    private static final String TAG = "EntryListFragment";
-
-    /**
-     * Adapter for the list. This is only created when the list is actually displayed.
-     */
-    private class EntryListAdapter extends ArrayAdapter<EntryListItem> {
-
-        EntryListAdapter(MainActivity act) {
-            super(act, 0);
-        }
-
-        @Override // ArrayAdapter
-        public @NonNull
-        View getView(int i, View convertView, @NonNull ViewGroup viewGroup) {
-            EntryListItem item = getDisplayOrder().get(i);
-            EntryListItemView itemView = (EntryListItemView) convertView;
-            if (itemView == null)
-                itemView = mList.makeItemView(item, EntryListFragment.this);
-            else
-                itemView.setItem(item);
-            itemView.updateView();
-            return itemView;
-        }
-
-        @Override
-        public int getCount() {
-            return mList.size();
-        }
-    }
-
+    private static final String TAG = EntryListFragment.class.getSimpleName();
+    public transient EntryListItem mMovingItem;
     protected EntryListAdapter mArrayAdapter = null;
 
     // Shortcut to the list we're viewing
@@ -90,7 +61,6 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
     protected ViewGroup mListLayout;
 
     private transient EntryListItemView mMovingView;
-    public transient EntryListItem mMovingItem;
 
     // Set the common bindings, obtained from the ViewBinding, and create the array adapter
     protected void setView(ListView listview, ViewGroup listlayout) {
@@ -146,7 +116,7 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
     protected List<EntryListItem> getDisplayOrder() {
         List<EntryListItem> mDisplayed = mList.cloneItemList();
         if (mList.sort)
-            Collections.sort(mDisplayed, (item, item2) -> item.getText().compareToIgnoreCase(item2.getText()));
+            mDisplayed.sort((item, item2) -> item.getText().compareToIgnoreCase(item2.getText()));
         return mDisplayed;
     }
 
@@ -267,18 +237,18 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
 
     @Override // Fragment
     public boolean onOptionsItemSelected(MenuItem menuItem) {
-        switch (menuItem.getItemId()) {
-            case R.id.action_alpha_sort:
-                Log.d(TAG, "alpha sort option selected");
-                mList.sort = !mList.sort;
-                mList.notifyChangeListeners();
-                getMainActivity().save();
-                return true;
-            case R.id.action_help:
-                getMainActivity().pushFragment(new HelpFragment(getHelpAsset()));
-                return true;
-        }
-        return false;
+        int it = menuItem.getItemId();
+        if (it == R.id.action_alpha_sort) {
+            Log.d(TAG, "alpha sort option selected");
+            mList.sort = !mList.sort;
+            mList.notifyChangeListeners();
+            getMainActivity().save();
+        } else if (it == R.id.action_help)
+            getMainActivity().pushFragment(new HelpFragment(getHelpAsset()));
+        else
+            return false;
+
+        return true;
     }
 
     @Override // Fragment
@@ -294,5 +264,33 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
         }
         menuItem = menu.findItem(R.id.action_save);
         menuItem.setVisible(Settings.getBool(Settings.lastStoreSaveFailed));
+    }
+
+    /**
+     * Adapter for the list. This is only created when the list is actually displayed.
+     */
+    private class EntryListAdapter extends ArrayAdapter<EntryListItem> {
+
+        EntryListAdapter(MainActivity act) {
+            super(act, 0);
+        }
+
+        @Override // ArrayAdapter
+        public @NonNull
+        View getView(int i, View convertView, @NonNull ViewGroup viewGroup) {
+            EntryListItem item = getDisplayOrder().get(i);
+            EntryListItemView itemView = (EntryListItemView) convertView;
+            if (itemView == null)
+                itemView = mList.makeItemView(item, EntryListFragment.this);
+            else
+                itemView.setItem(item);
+            itemView.updateView();
+            return itemView;
+        }
+
+        @Override
+        public int getCount() {
+            return mList.size();
+        }
     }
 }

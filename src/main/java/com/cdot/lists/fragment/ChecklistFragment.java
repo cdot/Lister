@@ -61,15 +61,21 @@ import java.util.List;
  * Fragment for managing interactions with a checklist of items
  */
 public class ChecklistFragment extends EntryListFragment {
-    private static final String TAG = "ChecklistFragment";
-
-    private ChecklistFragmentBinding mBinding;
-    
+    private static final String TAG = ChecklistFragment.class.getSimpleName();
     // helper to avoid frequent casts
-    private Checklist mChecklist;
-    
+    private final Checklist mChecklist;
     // When in edit mode, sorting and moving checked items is disabled
     public boolean mInEditMode = false;
+    private ChecklistFragmentBinding mBinding;
+
+    /**
+     * Construct a fragment to manage the given checklist
+     *
+     * @param list the list to manage
+     */
+    public ChecklistFragment(Checklist list) {
+        mList = mChecklist = list;
+    }
 
     @Override // Fragment
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -108,89 +114,86 @@ public class ChecklistFragment extends EntryListFragment {
     }
 
     @Override // Fragment
-    public void onCreateOptionsMenu(@NonNull Menu menu,  MenuInflater inflater) {
+    public void onCreateOptionsMenu(@NonNull Menu menu, MenuInflater inflater) {
         inflater.inflate(R.menu.checklist, menu);
     }
 
     @Override // EntryListFragment
     public boolean onOptionsItemSelected(MenuItem menuItem) {
-        switch (menuItem.getItemId()) {
-            default:
-                return super.onOptionsItemSelected(menuItem);
+        int id = menuItem.getItemId();
 
-            case R.id.action_check_all:
-                if (mChecklist.checkAll(true)) {
-                    mList.notifyChangeListeners();
-                    Log.d(TAG, "check all");
-                    getMainActivity().save();
-                }
-                return true;
-
-            case R.id.action_delete_checked:
-                int deleted = mChecklist.deleteAllChecked();
-                if (deleted > 0) {
-                    mChecklist.notifyChangeListeners();
-                    Log.d(TAG, "checked deleted");
-                    getMainActivity().save();
-                    Toast.makeText(getMainActivity(), getString(R.string.items_deleted, deleted), Toast.LENGTH_SHORT).show();
-                    if (mList.size() == 0) {
-                        enableEditMode(true);
-                        mChecklist.notifyChangeListeners();
-                        getMainActivity().save();
-                    }
-                }
-                return true;
-
-            case R.id.action_edit:
-                enableEditMode(!mInEditMode);
-                return true;
-
-            case R.id.action_rename_list:
-                AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(getMainActivity());
-                builder.setTitle(R.string.rename_list);
-                builder.setMessage(R.string.enter_new_name_of_list);
-                final EditText editText = new EditText(getMainActivity());
-                editText.setSingleLine(true);
-                editText.setText(mList.getText());
-                builder.setView(editText);
-                builder.setPositiveButton(R.string.ok, (dialogInterface, i) -> {
-                    Log.d(TAG, "list renamed");
-                    mList.setText(editText.getText().toString());
-                    getMainActivity().notifyListsListeners();
-                    getMainActivity().save();
-                    //Objects.requireNonNull(getSupportActionBar()).setTitle(mChecklist.getText());
-                });
-                builder.setNegativeButton(R.string.cancel, null);
-                builder.show();
-                return true;
-
-            case R.id.action_uncheck_all:
-                if (mChecklist.checkAll(false)) {
-                    Log.d(TAG, "uncheck all");
-                    mList.notifyChangeListeners();
-                    getMainActivity().save();
-                }
-                return true;
-
-            case R.id.action_undo_delete:
-                int undone = mChecklist.undoRemove();
-                mChecklist.notifyChangeListeners();
-                Log.d(TAG, "delete undone");
+        if (id == R.id.action_check_all) {
+            if (mChecklist.checkAll(true)) {
+                mList.notifyChangeListeners();
+                Log.d(TAG, "check all");
                 getMainActivity().save();
-                if (undone == 0)
-                    Toast.makeText(getMainActivity(), R.string.no_deleted_items, Toast.LENGTH_SHORT).show();
-                else
-                    Toast.makeText(getMainActivity(), getString(R.string.items_restored, undone), Toast.LENGTH_SHORT).show();
-                return true;
+            }
+            return true;
 
-            case R.id.action_save_list_as:
-                exportChecklist();
-                return true;
+        } else if (id == R.id.action_delete_checked) {
+            int deleted = mChecklist.deleteAllChecked();
+            if (deleted > 0) {
+                mChecklist.notifyChangeListeners();
+                Log.d(TAG, "checked deleted");
+                getMainActivity().save();
+                Toast.makeText(getMainActivity(), getString(R.string.items_deleted, deleted), Toast.LENGTH_SHORT).show();
+                if (mList.size() == 0) {
+                    enableEditMode(true);
+                    mChecklist.notifyChangeListeners();
+                    getMainActivity().save();
+                }
+            }
+            return true;
 
-            case R.id.action_settings:
-                getMainActivity().pushFragment(new ChecklistPreferencesFragment(mChecklist));
-                return true;
-        }
+        } else if (id == R.id.action_edit)
+            enableEditMode(!mInEditMode);
+
+        else if (id == R.id.action_rename_list) {
+            AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(getMainActivity());
+            builder.setTitle(R.string.rename_list);
+            builder.setMessage(R.string.enter_new_name_of_list);
+            final EditText editText = new EditText(getMainActivity());
+            editText.setSingleLine(true);
+            editText.setText(mList.getText());
+            builder.setView(editText);
+            builder.setPositiveButton(R.string.ok, (dialogInterface, i) -> {
+                Log.d(TAG, "list renamed");
+                mList.setText(editText.getText().toString());
+                getMainActivity().notifyListsListeners();
+                getMainActivity().save();
+                //Objects.requireNonNull(getSupportActionBar()).setTitle(mChecklist.getText());
+            });
+            builder.setNegativeButton(R.string.cancel, null);
+            builder.show();
+
+        } else if (id == R.id.action_uncheck_all) {
+            if (mChecklist.checkAll(false)) {
+                Log.d(TAG, "uncheck all");
+                mList.notifyChangeListeners();
+                getMainActivity().save();
+            }
+
+        } else if (id == R.id.action_undo_delete) {
+            int undone = mChecklist.undoRemove();
+            mChecklist.notifyChangeListeners();
+            Log.d(TAG, "delete undone");
+            getMainActivity().save();
+            if (undone == 0)
+                Toast.makeText(getMainActivity(), R.string.no_deleted_items, Toast.LENGTH_SHORT).show();
+            else
+                Toast.makeText(getMainActivity(), getString(R.string.items_restored, undone), Toast.LENGTH_SHORT).show();
+            return true;
+
+        } else if (id == R.id.action_save_list_as)
+            exportChecklist();
+
+        else if (id == R.id.action_settings)
+            getMainActivity().pushFragment(new ChecklistPreferencesFragment(mChecklist));
+
+        else
+            return super.onOptionsItemSelected(menuItem);
+
+        return true;
     }
 
     @Override // EntryListFragment
@@ -207,7 +210,7 @@ public class ChecklistFragment extends EntryListFragment {
     }
 
     @Override // EntryListFragment
-    public void onPrepareOptionsMenu(Menu menu) {
+    public void onPrepareOptionsMenu(@NonNull Menu menu) {
         MenuItem menuItem = menu.findItem(R.id.action_edit);
         if (mInEditMode) {
             menuItem.setIcon(R.drawable.ic_action_item_add_off);
@@ -245,14 +248,6 @@ public class ChecklistFragment extends EntryListFragment {
             }
         }
         return list;
-    }
-
-    /**
-     * Construct a fragment to manage the given checklist
-     * @param list the list to manage
-     */
-    public ChecklistFragment(Checklist list) {
-        mList = mChecklist = list;
     }
 
     /**

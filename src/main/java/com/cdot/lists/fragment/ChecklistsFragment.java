@@ -46,12 +46,13 @@ import com.cdot.lists.view.EntryListItemView;
  * Fragment that displays a list of checklists. The checklists are stored in the MainActivity.
  */
 public class ChecklistsFragment extends EntryListFragment {
-    private static final String TAG = "ChecklistsFragment";
+    private static final String TAG = ChecklistsFragment.class.getSimpleName();
 
     private ChecklistsFragmentBinding mBinding;
 
     /**
      * Construct a fragment to manage interaction with the given checklists.
+     *
      * @param lists the Checklists being managed
      */
     public ChecklistsFragment(Checklists lists) {
@@ -67,7 +68,7 @@ public class ChecklistsFragment extends EntryListFragment {
     }
 
     @Override // Fragment
-    public void onCreateOptionsMenu(@NonNull Menu menu,  MenuInflater inflater) {
+    public void onCreateOptionsMenu(@NonNull Menu menu, MenuInflater inflater) {
         // See https://stackoverflow.com/questions/15653737/oncreateoptionsmenu-inside-fragments
         // for MainActivity menu interaction
         Log.d(TAG, "onCreateOptionsMenu");
@@ -96,44 +97,42 @@ public class ChecklistsFragment extends EntryListFragment {
         if (super.onOptionsItemSelected(menuItem))
             return true;
 
-        switch (menuItem.getItemId()) {
-            default:
-                return super.onOptionsItemSelected(menuItem);
+        int it = menuItem.getItemId();
 
-            case R.id.action_import_list:
-                getMainActivity().importList();
-                return true;
+        if (it == R.id.action_import_list) {
+            getMainActivity().importList();
 
-            case R.id.action_new_list:
-                AlertDialog.Builder builder = new AlertDialog.Builder(getMainActivity());
-                builder.setTitle(R.string.create_new_list);
-                builder.setMessage(R.string.enter_name_of_new_list);
-                final EditText editText = new EditText(getMainActivity());
-                editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_AUTO_COMPLETE | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
-                editText.setSingleLine(true);
-                builder.setView(editText);
-                builder.setPositiveButton(R.string.ok, (dialogInterface, i) -> {
-                    String listname = editText.getText().toString();
-                    Checklist newList = new Checklist(mList, listname);
-                    mList.add(newList);
-                    Log.d(TAG, "created list: " + newList.getText());
-                    mList.notifyChangeListeners();
-                    getMainActivity().save();
-                    getMainActivity().pushFragment(new ChecklistFragment(newList));
-                });
-                builder.setNegativeButton(R.string.cancel, null);
-                builder.show();
-                editText.post(() -> {
-                    editText.setFocusable(true);
-                    editText.setFocusableInTouchMode(true);
-                    editText.requestFocus();
-                    ((InputMethodManager) getMainActivity().getSystemService(Context.INPUT_METHOD_SERVICE)).showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT);
-                });
-                return true;
+        } else if (it == R.id.action_new_list) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(getMainActivity());
+            builder.setTitle(R.string.create_new_list);
+            builder.setMessage(R.string.enter_name_of_new_list);
+            final EditText editText = new EditText(getMainActivity());
+            editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_AUTO_COMPLETE | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+            editText.setSingleLine(true);
+            builder.setView(editText);
+            builder.setPositiveButton(R.string.ok, (dialogInterface, i) -> {
+                String listname = editText.getText().toString();
+                Checklist newList = new Checklist(mList, listname);
+                mList.add(newList);
+                Log.d(TAG, "created list: " + newList.getText());
+                mList.notifyChangeListeners();
+                getMainActivity().save();
+                getMainActivity().pushFragment(new ChecklistFragment(newList));
+            });
+            builder.setNegativeButton(R.string.cancel, null);
+            builder.show();
+            editText.post(() -> {
+                editText.setFocusable(true);
+                editText.setFocusableInTouchMode(true);
+                editText.requestFocus();
+                ((InputMethodManager) getMainActivity().getSystemService(Context.INPUT_METHOD_SERVICE)).showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT);
+            });
 
-            case R.id.action_settings:
-                getMainActivity().pushFragment(new SharedPreferencesFragment());
-                return true;
-        }
+        } else if (it == R.id.action_settings)
+            getMainActivity().pushFragment(new SharedPreferencesFragment());
+        else
+            return super.onOptionsItemSelected(menuItem);
+
+        return true;
     }
 }

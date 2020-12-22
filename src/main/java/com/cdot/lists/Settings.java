@@ -26,13 +26,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Simpleton settings. Some settings are repeated in individual lists, where they override the
- * defaults.
+ * General settings. Some settings are in individual lists.
  */
 public class Settings {
     //private static final String TAG = "Settings";
-
-    static final String UI_PREFERENCES = "UIPreferences";
 
     // Shared Preferences
     public static final String alwaysShow = "showListInFrontOfLockScreen";
@@ -41,45 +38,42 @@ public class Settings {
     public static final String entireRowToggles = "entireRowTogglesItem";
     public static final String lastStoreSaveFailed = "lastStoreSaveFailed";
     public static final String leftHandOperation = "checkBoxOnLeftSide";
+    public static final String stayAwake = "stayAwake";
     public static final String strikeChecked = "strikeThroughCheckedItems";
     public static final String textSizeIndex = "textSizeIndex";
     public static final String uri = "backingStore";
-
     public static final String cacheFile = "checklists.json";
-
     // Must match res/values/strings.xml/text_size_list
     public static final int TEXT_SIZE_DEFAULT = 0;
     public static final int TEXT_SIZE_SMALL = 1;
     public static final int TEXT_SIZE_MEDIUM = 2;
     public static final int TEXT_SIZE_LARGE = 3;
-
-    private static SharedPreferences sPrefs;
-
-    private static Map<String, Boolean> sBoolPrefs = new HashMap<String, Boolean>() {{
+    static final String UI_PREFERENCES = "UIPreferences";
+    private final static Map<String, Boolean> sBoolPrefs = new HashMap<String, Boolean>() {{
         put(alwaysShow, false);
         put(debug, false);
         put(dimChecked, true);
         put(entireRowToggles, true);
         put(lastStoreSaveFailed, false);
         put(leftHandOperation, false);
+        put(stayAwake, false);
         put(strikeChecked, true);
     }};
-
-    private static Map<String, Integer> sIntPrefs = new HashMap<String, Integer>() {{
+    private final static Map<String, Integer> sIntPrefs = new HashMap<String, Integer>() {{
         put(textSizeIndex, TEXT_SIZE_DEFAULT);
     }};
-
-    private static Map<String, Uri> sUriPrefs = new HashMap<String, Uri>() {{
+    private final static Map<String, Uri> sUriPrefs = new HashMap<String, Uri>() {{
         put(uri, null);
     }};
+    private static SharedPreferences sPrefs;
 
     /**
      * Set the preferences context. Simply used to access preferences.
      *
-     * @param cxt the application context, used for all preferences
+     * @param activity the application context, used for all preferences
      */
-    public static void setContext(Context cxt) {
-        sPrefs = cxt.getSharedPreferences(UI_PREFERENCES, Context.MODE_PRIVATE);
+    public static void setActivity(MainActivity activity) {
+        sPrefs = activity.getSharedPreferences(UI_PREFERENCES, Context.MODE_PRIVATE);
         for (Map.Entry<String, Boolean> entry : sBoolPrefs.entrySet()) {
             entry.setValue(sPrefs.getBoolean(entry.getKey(), entry.getValue()));
         }
@@ -91,6 +85,7 @@ public class Settings {
             String pref = sPrefs.getString(entry.getKey(), ev == null ? null : ev.toString());
             entry.setValue(pref != null ? Uri.parse(pref) : null);
         }
+        sPrefs.registerOnSharedPreferenceChangeListener(activity);
     }
 
     public static int getInt(String name) {
