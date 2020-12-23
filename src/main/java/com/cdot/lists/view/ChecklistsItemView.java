@@ -54,7 +54,7 @@ public class ChecklistsItemView extends EntryListItemView {
                 el.remove(mItem, true);
                 Log.d(TAG, "list deleted");
                 el.notifyChangeListeners();
-                getMainActivity().save();
+                checkpoint();
             });
             builder.setNegativeButton(R.string.cancel, null);
             builder.show();
@@ -71,7 +71,7 @@ public class ChecklistsItemView extends EntryListItemView {
                 mItem.setText(editText.getText().toString());
                 Log.d(TAG, "list renamed");
                 mItem.getContainer().notifyChangeListeners();
-                getMainActivity().save();
+                checkpoint();
             });
             builder.setNegativeButton(R.string.cancel, null);
             builder.show();
@@ -79,7 +79,7 @@ public class ChecklistsItemView extends EntryListItemView {
         } else if (act == R.id.action_copy) {
             checklists.copyList(mItem);
             Log.d(TAG, "list copied");
-            getMainActivity().save();
+            checkpoint();
 
         } else
             return false;

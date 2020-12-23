@@ -6,10 +6,10 @@ for f in $DRAWABLE/ic_action*.xml; do
 	cat $f | \
 		sed -e '/android:strokeColor="#......00"/d' | \
 		sed -e '/android:fillColor="#......00"/d' | \
-		sed -e 's/"#8c8c8c"/"?android:colorControlNormal"/g' | \
-		sed -e 's/"#00dac8"/"?android:colorControlActivated"/g' | \
-		sed -e 's/"#d8d8d8"/"?android:colorControlHighlight"/g' | \
-		sed -e 's/"#f.f.f."/"?android:colorBackground"/g' > /tmp/xml
+		sed -e 's/"#8c8c8c"/"#890000"/g' | \
+		sed -e 's/"#00dac8"/"#008857"/g' | \
+		sed -e 's/"#d8d8d8"/"#008857"/g' | \
+		sed -e 's/"#f.f.f."/"#FAFAFA"/g' > /tmp/xml
 	mv /tmp/xml $f
 done
 # Check recolouring is done

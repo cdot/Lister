@@ -81,13 +81,17 @@ public abstract class EntryList extends EntryListItem {
     }
 
     @Override // implements EntryListItem
-    public JSONObject toJSON() throws JSONException {
+    public JSONObject toJSON() {
         JSONObject job = new JSONObject();
         JSONArray its = new JSONArray();
         for (EntryListItem cl : mData)
             its.put(cl.toJSON());
-        job.put("items", its);
-        job.put("sort", sort);
+        try {
+            job.put("items", its);
+            job.put("sort", sort);
+        } catch (JSONException je) {
+            Log.e(TAG, "" + je);
+        }
         return job;
     }
 

@@ -4,6 +4,7 @@
 package com.cdot.lists.view;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
@@ -11,10 +12,11 @@ import android.widget.ImageButton;
 import android.widget.PopupMenu;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.cdot.lists.Lister;
 import com.cdot.lists.MainActivity;
 import com.cdot.lists.R;
-import com.cdot.lists.Settings;
 import com.cdot.lists.fragment.EntryListFragment;
 import com.cdot.lists.model.EntryListItem;
 
@@ -81,8 +83,24 @@ public class EntryListItemView extends RelativeLayout implements View.OnClickLis
         return mFragment.getMainActivity();
     }
 
+    public Lister getLister() {
+        return getMainActivity().getLister();
+    }
+
     public EntryListFragment getFragment() {
         return mFragment;
+    }
+
+    protected void checkpoint() {
+        Activity act = getMainActivity();
+        getLister().saveLists(act,
+                okdata -> {
+                    Log.d(TAG, "checkpoint save OK");
+                },
+                code -> {
+                    act.runOnUiThread(() ->
+                            Toast.makeText(act, code, Toast.LENGTH_SHORT).show());
+                });
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -124,17 +142,17 @@ public class EntryListItemView extends RelativeLayout implements View.OnClickLis
         TextView it = findViewById(R.id.item_text);
         int padding;
         // Size
-        switch (Settings.getInt(Settings.textSizeIndex)) {
-            case Settings.TEXT_SIZE_SMALL:
+        switch (getLister().getInt(Lister.PREF_TEXT_SIZE_INDEX)) {
+            case Lister.TEXT_SIZE_SMALL:
                 it.setTextAppearance(android.R.style.TextAppearance_DeviceDefault_Small);
                 padding = 0;
                 break;
             default:
-            case Settings.TEXT_SIZE_MEDIUM:
+            case Lister.TEXT_SIZE_MEDIUM:
                 it.setTextAppearance(android.R.style.TextAppearance_DeviceDefault_Medium);
                 padding = 5;
                 break;
-            case Settings.TEXT_SIZE_LARGE:
+            case Lister.TEXT_SIZE_LARGE:
                 it.setTextAppearance(android.R.style.TextAppearance_DeviceDefault_Large);
                 padding = 10;
                 break;

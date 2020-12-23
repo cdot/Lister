@@ -19,6 +19,7 @@
 package com.cdot.lists.fragment;
 
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.InputType;
 import android.util.Log;
@@ -30,14 +31,17 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 
+import com.cdot.lists.Lister;
 import com.cdot.lists.R;
 import com.cdot.lists.databinding.ChecklistsFragmentBinding;
 import com.cdot.lists.model.Checklist;
 import com.cdot.lists.model.Checklists;
+import com.cdot.lists.model.EntryList;
 import com.cdot.lists.model.EntryListItem;
 import com.cdot.lists.view.ChecklistsItemView;
 import com.cdot.lists.view.EntryListItemView;
@@ -50,14 +54,25 @@ public class ChecklistsFragment extends EntryListFragment {
 
     private ChecklistsFragmentBinding mBinding;
 
+    public ChecklistsFragment() {}
+
     /**
      * Construct a fragment to manage interaction with the given checklists.
      *
      * @param lists the Checklists being managed
      */
     public ChecklistsFragment(Checklists lists) {
-        mList = lists;
         setHasOptionsMenu(true);
+    }
+
+    @Override // EntryListFragment
+    EntryList getList() {
+        return getLister().getLists();
+    }
+
+    @Override
+    public void onViewStateRestored(Bundle state) {
+        super.onViewStateRestored(state);
     }
 
     @Override // Fragment
@@ -88,8 +103,8 @@ public class ChecklistsFragment extends EntryListFragment {
     @Override // EntryListFragment
     public void onListChanged(EntryListItem item) {
         super.onListChanged(item);
-        mBinding.listsMessage.setVisibility(mList.size() == 0 ? View.VISIBLE : View.GONE);
-        mBinding.itemListView.setVisibility(mList.size() == 0 ? View.GONE : View.VISIBLE);
+        mBinding.listsMessage.setVisibility(getList().size() == 0 ? View.VISIBLE : View.GONE);
+        mBinding.itemListView.setVisibility(getList().size() == 0 ? View.GONE : View.VISIBLE);
     }
 
     @Override // Fragment
@@ -100,7 +115,10 @@ public class ChecklistsFragment extends EntryListFragment {
         int it = menuItem.getItemId();
 
         if (it == R.id.action_import_list) {
-            getMainActivity().importList();
+            Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+            intent.addCategory(Intent.CATEGORY_OPENABLE);
+            intent.setType("*/*");
+            getActivity().startActivityForResult(intent, Lister.REQUEST_IMPORT_LIST);
 
         } else if (it == R.id.action_new_list) {
             AlertDialog.Builder builder = new AlertDialog.Builder(getMainActivity());
@@ -112,11 +130,13 @@ public class ChecklistsFragment extends EntryListFragment {
             builder.setView(editText);
             builder.setPositiveButton(R.string.ok, (dialogInterface, i) -> {
                 String listname = editText.getText().toString();
-                Checklist newList = new Checklist(mList, listname);
-                mList.add(newList);
+                Checklist newList = new Checklist(getList(), listname);
+                getList().add(newList);
                 Log.d(TAG, "created list: " + newList.getText());
-                mList.notifyChangeListeners();
-                getMainActivity().save();
+                getList().notifyChangeListeners();
+                getLister().saveLists(getActivity(),
+                        okdata -> {},
+                        code -> Toast.makeText(getActivity(), code, Toast.LENGTH_LONG).show());
                 getMainActivity().pushFragment(new ChecklistFragment(newList));
             });
             builder.setNegativeButton(R.string.cancel, null);

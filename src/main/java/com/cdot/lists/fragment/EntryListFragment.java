@@ -18,7 +18,8 @@
  */
 package com.cdot.lists.fragment;
 
-import android.content.Context;
+import android.app.Activity;
+import android.os.Build;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -28,17 +29,19 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 
+import com.cdot.lists.Lister;
 import com.cdot.lists.MainActivity;
 import com.cdot.lists.R;
-import com.cdot.lists.Settings;
 import com.cdot.lists.model.EntryList;
 import com.cdot.lists.model.EntryListItem;
 import com.cdot.lists.view.EntryListItemView;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -54,13 +57,25 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
     public transient EntryListItem mMovingItem;
     protected EntryListAdapter mArrayAdapter = null;
 
-    // Shortcut to the list we're viewing
-    protected EntryList mList;
-
     protected ListView mListView;
     protected ViewGroup mListLayout;
 
     private transient EntryListItemView mMovingView;
+
+    // The list we're viewing
+    abstract EntryList getList();
+
+    protected void checkpoint() {
+        Activity act = getActivity();
+        getLister().saveLists(act,
+                okdata -> {
+                    Log.d(TAG, "checkpoint save OK");
+                },
+                code -> {
+                    act.runOnUiThread(() ->
+                            Toast.makeText(act, code, Toast.LENGTH_SHORT).show());
+                });
+    }
 
     // Set the common bindings, obtained from the ViewBinding, and create the array adapter
     protected void setView(ListView listview, ViewGroup listlayout) {
@@ -68,7 +83,6 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
         mListLayout = listlayout;
         mArrayAdapter = new EntryListAdapter(getMainActivity());
         mListView.setAdapter(mArrayAdapter);
-        mList.addChangeListener(this);
     }
 
     /**
@@ -80,13 +94,20 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
     }
 
     @Override
-    public void onAttach(@NonNull Context context) {
-        super.onAttach(context);
+    public void onPause() {
+        getList().removeChangeListener(this);
+        super.onPause();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        getList().addChangeListener(this);
         onActivated();
     }
 
     public void onActivated() {
-        String t = mList.getText();
+        String t = getList().getText();
         if (t == null)
             t = getMainActivity().getString(R.string.app_name);
         if (mListView != null)
@@ -109,14 +130,27 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
     }
 
     /**
+     * Get the application
+     *
+     * @return the main activity, parent of all fragments
+     */
+    public Lister getLister() {
+        return (Lister) getActivity().getApplication();
+    }
+
+    /**
      * Get the list items in display order
      *
      * @return the list. May be modified, but entries point to data source
      */
     protected List<EntryListItem> getDisplayOrder() {
-        List<EntryListItem> mDisplayed = mList.cloneItemList();
-        if (mList.sort)
-            mDisplayed.sort((item, item2) -> item.getText().compareToIgnoreCase(item2.getText()));
+        List<EntryListItem> mDisplayed = getList().cloneItemList();
+        if (getList().sort) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
+                mDisplayed.sort((item, item2) -> item.getText().compareToIgnoreCase(item2.getText()));
+            else
+                Collections.sort(mDisplayed, (item, item2) -> item.getText().compareToIgnoreCase(item2.getText()));
+        }
         return mDisplayed;
     }
 
@@ -126,7 +160,7 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
      * @return true if the list can be manually sorted
      */
     public boolean canManualSort() {
-        return !mList.sort;
+        return !getList().sort;
     }
 
     /**
@@ -169,7 +203,7 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
         int y = ((int) motionEvent.getY()) - listViewTop;
 
         // Get the index of the item being moved in the items list
-        int itemIndex = mList.indexOf(movingItem);
+        int itemIndex = getList().indexOf(movingItem);
 
         // Get the index of the moving view in the list of views. It will stay there until
         // the drag is released.
@@ -198,12 +232,12 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
             moveTo++;
 
         //Log.d(TAG, "Compare " + y + " with " + prevBottom + " and " + nextTop + " moveTo " + moveTo);
-        if (moveTo != itemIndex && moveTo >= 0 && moveTo < mList.size()) {
+        if (moveTo != itemIndex && moveTo >= 0 && moveTo < getList().size()) {
             Log.d(TAG, "Moved from " + itemIndex + " to " + moveTo);
-            mList.remove(movingItem, false);
-            mList.put(moveTo, movingItem);
-            mList.notifyChangeListeners();
-            getMainActivity().save();
+            getList().remove(movingItem, false);
+            getList().put(moveTo, movingItem);
+            getList().notifyChangeListeners();
+            checkpoint();
         }
 
         if (motionEvent.getAction() == MotionEvent.ACTION_MOVE) {
@@ -240,9 +274,11 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
         int it = menuItem.getItemId();
         if (it == R.id.action_alpha_sort) {
             Log.d(TAG, "alpha sort option selected");
-            mList.sort = !mList.sort;
-            mList.notifyChangeListeners();
-            getMainActivity().save();
+            getList().sort = !getList().sort;
+            getList().notifyChangeListeners();
+            ViewGroup vg = getActivity().findViewById(R.id.main_activity);
+            if (vg != null) vg.invalidate();
+            checkpoint();
         } else if (it == R.id.action_help)
             getMainActivity().pushFragment(new HelpFragment(getHelpAsset()));
         else
@@ -255,7 +291,7 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
     public void onPrepareOptionsMenu(@NonNull Menu menu) {
         //super.onPrepareOptionsMenu(menu);
         MenuItem menuItem = menu.findItem(R.id.action_alpha_sort);
-        if (mList != null && mList.sort) {
+        if (getList() != null && getList().sort) {
             menuItem.setIcon(R.drawable.ic_action_alpha_sort_off);
             menuItem.setTitle(R.string.action_alpha_sort_off);
         } else {
@@ -263,7 +299,7 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
             menuItem.setTitle(R.string.action_alpha_sort_on);
         }
         menuItem = menu.findItem(R.id.action_save);
-        menuItem.setVisible(Settings.getBool(Settings.lastStoreSaveFailed));
+        menuItem.setVisible(getLister().getBool(Lister.PREF_LAST_STORE_FAILED));
     }
 
     /**
@@ -281,7 +317,7 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
             EntryListItem item = getDisplayOrder().get(i);
             EntryListItemView itemView = (EntryListItemView) convertView;
             if (itemView == null)
-                itemView = mList.makeItemView(item, EntryListFragment.this);
+                itemView = getList().makeItemView(item, EntryListFragment.this);
             else
                 itemView.setItem(item);
             itemView.updateView();
@@ -290,7 +326,7 @@ public abstract class EntryListFragment extends Fragment implements EntryListIte
 
         @Override
         public int getCount() {
-            return mList.size();
+            return getList().size();
         }
     }
 }

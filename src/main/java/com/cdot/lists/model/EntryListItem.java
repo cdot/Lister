@@ -18,6 +18,8 @@
  */
 package com.cdot.lists.model;
 
+import android.util.Log;
+
 import com.opencsv.CSVReader;
 import com.opencsv.CSVWriter;
 
@@ -31,6 +33,7 @@ import java.util.List;
  * Interface to items in an EntryList
  */
 public abstract class EntryListItem {
+    private static final String TAG = EntryListItem.class.getSimpleName();
 
     // The list that contains this list.
     private final EntryList mParent;
@@ -60,6 +63,15 @@ public abstract class EntryListItem {
      */
     public void addChangeListener(ChangeListener l) {
         mListeners.add(l);
+    }
+
+    /**
+     * Remove a change listener.
+     *
+     * @param l the listener
+     */
+    public void removeChangeListener(ChangeListener l) {
+        mListeners.remove(l);
     }
 
     /**
@@ -111,6 +123,19 @@ public abstract class EntryListItem {
     abstract void fromJSON(JSONObject jo) throws JSONException;
 
     /**
+     * Load from a JSON string
+     *
+     * @param js JSON string
+     */
+    public void fromJSON(String js) {
+        try {
+            JSONObject job = new JSONObject(js);
+            fromJSON(job);
+        } catch (JSONException je) {
+            Log.e(TAG, "" + je);
+        }
+    }
+    /**
      * Load from a Comma-Separated Value object
      *
      * @param r a reader
@@ -121,9 +146,8 @@ public abstract class EntryListItem {
      * Get the JSON object that represents the content of this object
      *
      * @return a JSONObject
-     * @throws JSONException if it fails
      */
-    abstract JSONObject toJSON() throws JSONException;
+    abstract JSONObject toJSON();
 
     /**
      * Write the CSV that represents the content of this object

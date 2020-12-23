@@ -4,7 +4,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:4.0.1'
+        classpath 'com.android.tools.build:gradle:4.1.1'
     }
 }
 apply plugin: 'com.android.application'
@@ -24,14 +24,13 @@ android {
             keyPassword 'W18ble'
         }
     }
-    compileSdkVersion 28
-    buildToolsVersion '28.0.3'
+    compileSdkVersion 30
     buildFeatures.viewBinding = true
 
     defaultConfig {
         applicationId 'com.cdot.lists'
-        minSdkVersion 24
-        targetSdkVersion 28
+        minSdkVersion 23
+        targetSdkVersion 30
         versionCode 1
         versionName "1.0"
     }
@@ -72,7 +71,7 @@ dependencies {
     implementation 'androidx.preference:preference:1.1.1'
 
     testImplementation 'junit:junit:4.13'
-    testImplementation 'org.mockito:mockito-core:2.7.22'
+    testImplementation 'org.mockito:mockito-core:3.2.4'
     testImplementation 'org.json:json:20190722'
 }
 
@@ -80,5 +79,8 @@ allprojects {
     repositories {
         google()
         jcenter()
+    }
+    tasks.withType(JavaCompile) {
+        options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
     }
 }

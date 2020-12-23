@@ -70,10 +70,14 @@ public class Checklists extends EntryList {
     }
 
     @Override // EntryList
-    public JSONObject toJSON() throws JSONException {
+    public JSONObject toJSON() {
         JSONObject job = super.toJSON();
-        job.put("timestamp", mTimestamp);
-        job.put("uri", mURI);
+        try {
+            job.put("timestamp", mTimestamp);
+            job.put("uri", mURI);
+        } catch (JSONException je) {
+            Log.e(TAG, "" + je);
+        }
         return job;
     }
 

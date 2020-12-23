@@ -47,6 +47,7 @@ import com.cdot.lists.R;
 import com.cdot.lists.databinding.ChecklistFragmentBinding;
 import com.cdot.lists.model.Checklist;
 import com.cdot.lists.model.ChecklistItem;
+import com.cdot.lists.model.EntryList;
 import com.cdot.lists.model.EntryListItem;
 import com.cdot.lists.view.ChecklistItemView;
 import com.cdot.lists.view.EntryListItemView;
@@ -63,10 +64,12 @@ import java.util.List;
 public class ChecklistFragment extends EntryListFragment {
     private static final String TAG = ChecklistFragment.class.getSimpleName();
     // helper to avoid frequent casts
-    private final Checklist mChecklist;
+    private Checklist mChecklist;
     // When in edit mode, sorting and moving checked items is disabled
     public boolean mInEditMode = false;
     private ChecklistFragmentBinding mBinding;
+
+    public ChecklistFragment() {}
 
     /**
      * Construct a fragment to manage the given checklist
@@ -74,12 +77,35 @@ public class ChecklistFragment extends EntryListFragment {
      * @param list the list to manage
      */
     public ChecklistFragment(Checklist list) {
-        mList = mChecklist = list;
+        if (list == null)
+            Log.d(TAG, "created with null list!");
+        mChecklist = list;
+    }
+
+    @Override // EntryListFragment
+    EntryList getList() {
+        return mChecklist;
+    }
+    
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle state) {
+        super.onSaveInstanceState(state);
+        state.putString("list", getList().getText());
+    }
+
+    @Override
+    public void onViewStateRestored(Bundle state) {
+        super.onViewStateRestored(state);
+        if (mChecklist == null && state != null) {
+            String listName = state.getString("list");
+            if (listName != null)
+                mChecklist = (Checklist) getLister().getLists().findByText(listName, true);
+        }
     }
 
     @Override // Fragment
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        if (mList == null)
+        if (getList() == null)
             return null;
 
         mBinding = ChecklistFragmentBinding.inflate(inflater, container, false);
@@ -98,7 +124,7 @@ public class ChecklistFragment extends EntryListFragment {
 
         mBinding.addItemText.setImeOptions(EditorInfo.IME_ACTION_DONE);
 
-        enableEditMode(mList.size() == 0);
+        enableEditMode(getList().size() == 0);
 
         return rootView;
     }
@@ -124,9 +150,9 @@ public class ChecklistFragment extends EntryListFragment {
 
         if (id == R.id.action_check_all) {
             if (mChecklist.checkAll(true)) {
-                mList.notifyChangeListeners();
+                getList().notifyChangeListeners();
                 Log.d(TAG, "check all");
-                getMainActivity().save();
+                checkpoint();
             }
             return true;
 
@@ -135,12 +161,12 @@ public class ChecklistFragment extends EntryListFragment {
             if (deleted > 0) {
                 mChecklist.notifyChangeListeners();
                 Log.d(TAG, "checked deleted");
-                getMainActivity().save();
+                checkpoint();
                 Toast.makeText(getMainActivity(), getString(R.string.items_deleted, deleted), Toast.LENGTH_SHORT).show();
-                if (mList.size() == 0) {
+                if (getList().size() == 0) {
                     enableEditMode(true);
                     mChecklist.notifyChangeListeners();
-                    getMainActivity().save();
+                    checkpoint();
                 }
             }
             return true;
@@ -154,13 +180,13 @@ public class ChecklistFragment extends EntryListFragment {
             builder.setMessage(R.string.enter_new_name_of_list);
             final EditText editText = new EditText(getMainActivity());
             editText.setSingleLine(true);
-            editText.setText(mList.getText());
+            editText.setText(getList().getText());
             builder.setView(editText);
             builder.setPositiveButton(R.string.ok, (dialogInterface, i) -> {
                 Log.d(TAG, "list renamed");
-                mList.setText(editText.getText().toString());
-                getMainActivity().notifyListsListeners();
-                getMainActivity().save();
+                getList().setText(editText.getText().toString());
+                getLister().notifyListsListeners();
+                checkpoint();
                 //Objects.requireNonNull(getSupportActionBar()).setTitle(mChecklist.getText());
             });
             builder.setNegativeButton(R.string.cancel, null);
@@ -169,19 +195,20 @@ public class ChecklistFragment extends EntryListFragment {
         } else if (id == R.id.action_uncheck_all) {
             if (mChecklist.checkAll(false)) {
                 Log.d(TAG, "uncheck all");
-                mList.notifyChangeListeners();
-                getMainActivity().save();
+                getList().notifyChangeListeners();
+                checkpoint();
             }
 
         } else if (id == R.id.action_undo_delete) {
             int undone = mChecklist.undoRemove();
-            mChecklist.notifyChangeListeners();
-            Log.d(TAG, "delete undone");
-            getMainActivity().save();
             if (undone == 0)
                 Toast.makeText(getMainActivity(), R.string.no_deleted_items, Toast.LENGTH_SHORT).show();
-            else
+            else {
+                mChecklist.notifyChangeListeners();
+                Log.d(TAG, "delete undone");
+                checkpoint();
                 Toast.makeText(getMainActivity(), getString(R.string.items_restored, undone), Toast.LENGTH_SHORT).show();
+            }
             return true;
 
         } else if (id == R.id.action_save_list_as)
@@ -221,10 +248,10 @@ public class ChecklistFragment extends EntryListFragment {
         }
 
         menu.findItem(R.id.action_settings).setEnabled(!mInEditMode);
-        menu.findItem(R.id.action_check_all).setEnabled(((Checklist) mList).getCheckedCount() < mList.size());
-        menu.findItem(R.id.action_uncheck_all).setEnabled(((Checklist) mList).getCheckedCount() > 0);
-        menu.findItem(R.id.action_undo_delete).setEnabled(mList.getRemoveCount() > 0);
-        menu.findItem(R.id.action_delete_checked).setEnabled(((Checklist) mList).getCheckedCount() > 0);
+        menu.findItem(R.id.action_check_all).setEnabled(((Checklist) getList()).getCheckedCount() < getList().size());
+        menu.findItem(R.id.action_uncheck_all).setEnabled(((Checklist) getList()).getCheckedCount() > 0);
+        menu.findItem(R.id.action_undo_delete).setEnabled(getList().getRemoveCount() > 0);
+        menu.findItem(R.id.action_delete_checked).setEnabled(((Checklist) getList()).getCheckedCount() > 0);
 
         super.onPrepareOptionsMenu(menu);
     }
@@ -232,7 +259,7 @@ public class ChecklistFragment extends EntryListFragment {
     @Override // EntryListFragment
     protected List<EntryListItem> getDisplayOrder() {
         if (mInEditMode)
-            return mList.getData();
+            return getList().getData();
 
         List<EntryListItem> list = super.getDisplayOrder(); // get sorted list
         if (mChecklist.showCheckedAtEnd) {
@@ -286,7 +313,7 @@ public class ChecklistFragment extends EntryListFragment {
         String text = mBinding.addItemText.getText().toString();
         if (text.trim().length() == 0)
             return;
-        EntryListItem find = mList.findByText(text, false);
+        EntryListItem find = getList().findByText(text, false);
         if (find == null || !mChecklist.warnAboutDuplicates)
             addItem(text);
         else
@@ -300,12 +327,12 @@ public class ChecklistFragment extends EntryListFragment {
      */
     private void addItem(String str) {
         ChecklistItem item = new ChecklistItem(mChecklist, str, false);
-        mList.add(item);
+        getList().add(item);
         Log.d(TAG, "item added");
-        mList.notifyChangeListeners();
+        getList().notifyChangeListeners();
         mBinding.addItemText.setText("");
         mBinding.itemListView.smoothScrollToPosition(getDisplayOrder().indexOf(item));
-        getMainActivity().save();
+        checkpoint();
     }
 
     /**
@@ -346,7 +373,7 @@ public class ChecklistFragment extends EntryListFragment {
         });
         builder.setView(picker);
 
-        final String listName = mList.getText();
+        final String listName = getList().getText();
 
         builder.setPositiveButton(R.string.ok, (dialog, id) -> {
             final Intent intent = new Intent(Intent.ACTION_SEND);

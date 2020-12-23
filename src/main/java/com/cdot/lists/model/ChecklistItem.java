@@ -18,6 +18,8 @@
  */
 package com.cdot.lists.model;
 
+import android.util.Log;
+
 import com.opencsv.CSVReader;
 import com.opencsv.CSVWriter;
 
@@ -28,7 +30,7 @@ import org.json.JSONObject;
  * An item in a Checklist
  */
 public class ChecklistItem extends EntryListItem {
-    //private static final String TAG = ChecklistItem.class.getSimpleName();
+    private static final String TAG = ChecklistItem.class.getSimpleName();
 
     private boolean mDone; // has it been checked?
 
@@ -86,11 +88,16 @@ public class ChecklistItem extends EntryListItem {
     }
 
     @Override // implement EntryListItem
-    public JSONObject toJSON() throws JSONException {
+    public JSONObject toJSON() {
         JSONObject iob = new JSONObject();
-        iob.put("name", getText());
+        try {
+            iob.put("name", getText());
+
         if (mDone)
             iob.put("done", true);
+        } catch (JSONException je) {
+            Log.e(TAG, "" + je);
+        }
         return iob;
     }
 

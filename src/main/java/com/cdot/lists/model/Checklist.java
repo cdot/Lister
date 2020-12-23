@@ -18,6 +18,8 @@
  */
 package com.cdot.lists.model;
 
+import android.util.Log;
+
 import com.cdot.lists.fragment.EntryListFragment;
 import com.cdot.lists.view.ChecklistItemView;
 import com.cdot.lists.view.EntryListItemView;
@@ -33,7 +35,7 @@ import java.util.ArrayList;
  * A checklist of checkable items. Can also be an item in a Checklists
  */
 public class Checklist extends EntryList {
-    //private static final String TAG = Checklist.class.getSimpleName();
+    private static final String TAG = Checklist.class.getSimpleName();
 
     // Settings for this list
     public boolean warnAboutDuplicates = true;
@@ -141,20 +143,24 @@ public class Checklist extends EntryList {
     }
 
     @Override // EntryListItem
-    public JSONObject toJSON() throws JSONException {
+    public JSONObject toJSON() {
         JSONObject job = super.toJSON();
-        job.put("name", getText());
-        if (warnAboutDuplicates)
-            job.put("warn_duplicates", true);
-        if (showCheckedAtEnd)
-            job.put("checked_at_end", true);
-        if (autoDeleteChecked)
-            job.put("delete_checked", true);
-        JSONArray items = new JSONArray();
-        for (EntryListItem item : getData()) {
-            items.put(item.toJSON());
+        try {
+            job.put("name", getText());
+            if (warnAboutDuplicates)
+                job.put("warn_duplicates", true);
+            if (showCheckedAtEnd)
+                job.put("checked_at_end", true);
+            if (autoDeleteChecked)
+                job.put("delete_checked", true);
+            JSONArray items = new JSONArray();
+            for (EntryListItem item : getData()) {
+                items.put(item.toJSON());
+            }
+            job.put("items", items);
+        } catch (JSONException je) {
+            Log.e(TAG, "" + je);
         }
-        job.put("items", items);
         return job;
     }
 

@@ -15,8 +15,8 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AlertDialog;
 
+import com.cdot.lists.Lister;
 import com.cdot.lists.R;
-import com.cdot.lists.Settings;
 import com.cdot.lists.fragment.EntryListFragment;
 import com.cdot.lists.model.Checklist;
 import com.cdot.lists.model.ChecklistItem;
@@ -50,11 +50,11 @@ public class ChecklistItemView extends EntryListItemView {
 
     @Override // View.OnClickListener()
     public void onClick(View view) {
-        if (!mIsMoving && Settings.getBool(Settings.entireRowToggles)) {
+        if (!mIsMoving && getLister().getBool(Lister.PREF_ENTIRE_ROW_TOGGLES)) {
             CheckBox cb = findViewById(R.id.checklist_checkbox);
             if (setChecked(!cb.isChecked())) {
                 Log.d(TAG, "Item toggled");
-                getMainActivity().save();
+                checkpoint();
             }
         }
     }
@@ -67,7 +67,7 @@ public class ChecklistItemView extends EntryListItemView {
         cb.setOnClickListener(view -> {
             if (setChecked(cb.isChecked())) {
                 Log.d(TAG, "item checked");
-                getMainActivity().save();
+                checkpoint();
             }
         });
     }
@@ -79,7 +79,7 @@ public class ChecklistItemView extends EntryListItemView {
         // Transparency
         float f = TRANSPARENCY_OPAQUE; // Completely opague
 
-        if (((ChecklistItem) mItem).isDone() && Settings.getBool(Settings.dimChecked))
+        if (((ChecklistItem) mItem).isDone() && getLister().getBool(Lister.PREF_GREY_CHECKED))
             // Greyed out
             f = TRANSPARENCY_GREYED;
         else if (!mIsMoving && mItem == getFragment().mMovingItem)
@@ -92,7 +92,7 @@ public class ChecklistItemView extends EntryListItemView {
         findViewById(R.id.left_layout).setAlpha(f);
 
         // Strike through
-        if (!((ChecklistItem) mItem).isDone() || !Settings.getBool(Settings.strikeChecked))
+        if (!((ChecklistItem) mItem).isDone() || !getLister().getBool(Lister.PREF_STRIKE_CHECKED))
             it.setPaintFlags(it.getPaintFlags() & ~Paint.STRIKE_THRU_TEXT_FLAG);
         else
             it.setPaintFlags(it.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
@@ -107,14 +107,14 @@ public class ChecklistItemView extends EntryListItemView {
         CheckBox checkBox = findViewById(R.id.checklist_checkbox);
         ImageButton moveButton = findViewById(R.id.move_button);
 
-        if (Settings.getBool(Settings.leftHandOperation) && mCheckboxOnRight) {
+        if (getLister().getBool(Lister.PREF_LEFT_HANDED) && mCheckboxOnRight) {
             // Move checkbox to left panel
             right.removeView(checkBox);
             left.removeView(moveButton);
             left.addView(checkBox);
             right.addView(moveButton);
             mCheckboxOnRight = false;
-        } else if (!Settings.getBool(Settings.leftHandOperation) && !mCheckboxOnRight) {
+        } else if (!getLister().getBool(Lister.PREF_LEFT_HANDED) && !mCheckboxOnRight) {
             // Move checkbox to right panel
             left.removeView(checkBox);
             right.removeView(moveButton);
@@ -133,7 +133,7 @@ public class ChecklistItemView extends EntryListItemView {
             list.remove(mItem, true);
             Log.d(TAG, "item deleted");
             list.notifyChangeListeners();
-            getMainActivity().save();
+            checkpoint();
 
         } else if (act == R.id.action_rename) {
             AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
@@ -146,7 +146,7 @@ public class ChecklistItemView extends EntryListItemView {
                 mItem.setText(editText.getText().toString());
                 Log.d(TAG, "item renamed");
                 mItem.notifyChangeListeners();
-                getMainActivity().save();
+                checkpoint();
             });
             builder.setNegativeButton(R.string.cancel, null);
             builder.show();
