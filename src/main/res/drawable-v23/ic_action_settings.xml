@@ -8,14 +8,14 @@
       android:strokeLineJoin="miter"
       android:strokeWidth="0.29629633"
       android:fillColor="#FFDE03"
-      android:strokeColor="#008857"
+      android:strokeColor="#FFFFFF"
       android:fillType="evenOdd"
       android:strokeLineCap="butt"/>
   <path
       android:pathData="m11.1241,6.3637a4.3452,4.3452 0,0 0,-4.3452 4.3452,4.3452 4.3452,0 0,0 4.3452,4.3452 4.3452,4.3452 0,0 0,4.3452 -4.3452,4.3452 4.3452,0 0,0 -4.3452,-4.3452zM11.1241,7.746A2.9626,2.9626 0,0 1,14.0869 10.7089,2.9626 2.9626,0 0,1 11.1241,13.6713 2.9626,2.9626 0,0 1,8.1616 10.7089,2.9626 2.9626,0 0,1 11.1241,7.746Z"
       android:strokeWidth="0.29629633"
       android:fillColor="#FFDE03"
-      android:strokeColor="#008857"
+      android:strokeColor="#FFFFFF"
       android:fillType="nonZero"
       android:strokeLineCap="round"/>
 </vector>

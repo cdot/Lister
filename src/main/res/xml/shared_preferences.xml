@@ -3,29 +3,35 @@
 
     <CheckBoxPreference
         android:key="greyCheckedItems"
-        android:title="@string/option_dim_checked" />
+        android:title="@string/option_grey_checked"
+        android:summary="@string/help_grey_checked"/>
 
     <CheckBoxPreference
         android:key="strikeThroughCheckedItems"
-        android:title="@string/option_strike_checked" />
+        android:title="@string/option_strike_checked"
+        android:summary="@string/help_strike_checked" />
 
     <CheckBoxPreference
         android:key="entireRowTogglesItem"
-        android:title="@string/option_entire_row_toggles" />
+        android:title="@string/option_row_toggles"
+        android:summary="@string/help_row_toggles"/>
 
     <CheckBoxPreference
         android:key="checkBoxOnLeftSide"
-        android:title="@string/option_left_hand_operation" />
+        android:title="@string/option_left_hand"
+        android:summary="@string/help_left_hand" />
 
     <CheckBoxPreference
         android:key="showListInFrontOfLockScreen"
-        android:title="@string/option_show_list_in_front_of_lock_screen" />
+        android:title="@string/option_overlap_lock"
+        android:summary="@string/help_overlap_lock" />
 
     <CheckBoxPreference
-    android:key="stayAwake"
-    android:title="@string/option_stay_awake" />
+        android:key="stayAwake"
+        android:title="@string/option_stay_awake"
+        android:summary="@string/help_stay_awake"/>
 
-    <com.cdot.lists.fragment.IntListPreference
+    <com.cdot.lists.preferences.IntListPreference
         android:key="textSizeIndex"
         android:entries="@array/text_size_options"
         android:entryValues="@array/text_size_values"
@@ -34,14 +40,12 @@
 
     <Preference
         android:key="action_change_uri"
-        android:title="@string/action_change_uri" />
+        android:title="@string/action_change_uri"
+        android:summary="@string/help_change_uri"/>
 
     <Preference
         android:key="action_create_uri"
-        android:title="@string/action_create_uri" />
-
-    <CheckBoxPreference
-        android:key="debug"
-        android:title="@string/option_debug" />
+        android:title="@string/action_create_uri"
+        android:summary="@string/help_create_uri" />
 
 </PreferenceScreen>

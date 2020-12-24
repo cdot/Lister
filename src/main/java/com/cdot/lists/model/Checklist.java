@@ -20,7 +20,7 @@ package com.cdot.lists.model;
 
 import android.util.Log;
 
-import com.cdot.lists.fragment.EntryListFragment;
+import com.cdot.lists.EntryListActivity;
 import com.cdot.lists.view.ChecklistItemView;
 import com.cdot.lists.view.EntryListItemView;
 import com.opencsv.CSVReader;
@@ -30,17 +30,15 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Set;
 
 /**
  * A checklist of checkable items. Can also be an item in a Checklists
  */
 public class Checklist extends EntryList {
+    public static final String moveCheckedItemsToEnd = "movend";
+    public static final String autoDeleteChecked = "autodel";
     private static final String TAG = Checklist.class.getSimpleName();
-
-    // Settings for this list
-    public boolean warnAboutDuplicates = true;
-    public boolean showCheckedAtEnd = false;
-    public boolean autoDeleteChecked = false;
 
     /**
      * Construct and load from cache
@@ -77,9 +75,16 @@ public class Checklist extends EntryList {
             add(new ChecklistItem(this, (ChecklistItem) item));
     }
 
-    @Override
-    public // implement EntryList
-    EntryListItemView makeItemView(EntryListItem item, EntryListFragment cxt) {
+    @Override // EntryList
+    public Set<String> getFlagNames() {
+        Set<String> s = super.getFlagNames();
+        s.add(moveCheckedItemsToEnd);
+        s.add(autoDeleteChecked);
+        return s;
+    }
+
+    @Override // EntryList
+    public EntryListItemView makeItemView(EntryListItem item, EntryListActivity cxt) {
         return new ChecklistItemView(item, false, cxt);
     }
 
@@ -104,21 +109,6 @@ public class Checklist extends EntryList {
         super.fromJSON(job);
         getData().clear();
         setText(job.getString("name"));
-        try {
-            warnAboutDuplicates = job.getBoolean("warn_duplicates");
-        } catch (JSONException je) {
-            warnAboutDuplicates = false;
-        }
-        try {
-            showCheckedAtEnd = job.getBoolean("checked_at_end");
-        } catch (JSONException je) {
-            showCheckedAtEnd = false;
-        }
-        try {
-            autoDeleteChecked = job.getBoolean("delete_checked");
-        } catch (JSONException je) {
-            autoDeleteChecked = false;
-        }
         JSONArray items = job.getJSONArray("items");
         for (int i = 0; i < items.length(); i++) {
             ChecklistItem ci = new ChecklistItem(this, null, false);
@@ -147,12 +137,6 @@ public class Checklist extends EntryList {
         JSONObject job = super.toJSON();
         try {
             job.put("name", getText());
-            if (warnAboutDuplicates)
-                job.put("warn_duplicates", true);
-            if (showCheckedAtEnd)
-                job.put("checked_at_end", true);
-            if (autoDeleteChecked)
-                job.put("delete_checked", true);
             JSONArray items = new JSONArray();
             for (EntryListItem item : getData()) {
                 items.put(item.toJSON());
@@ -172,7 +156,7 @@ public class Checklist extends EntryList {
     public int getCheckedCount() {
         int i = 0;
         for (EntryListItem item : getData()) {
-            if (((ChecklistItem) item).isDone())
+            if (item.getFlag(ChecklistItem.isDone))
                 i++;
         }
         return i;
@@ -187,8 +171,8 @@ public class Checklist extends EntryList {
         boolean changed = false;
         for (EntryListItem item : getData()) {
             ChecklistItem ci = (ChecklistItem) item;
-            if (ci.isDone() != check) {
-                ci.setDone(check);
+            if (ci.getFlag(ChecklistItem.isDone) != check) {
+                ci.setFlag(ChecklistItem.isDone, check);
                 changed = true;
             }
         }
@@ -204,7 +188,7 @@ public class Checklist extends EntryList {
         ArrayList<ChecklistItem> kill = new ArrayList<>();
 
         for (EntryListItem it : getData()) {
-            if (((ChecklistItem) it).isDone())
+            if (it.getFlag(ChecklistItem.isDone))
                 kill.add((ChecklistItem) it);
         }
 

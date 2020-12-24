@@ -16,33 +16,30 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package com.cdot.lists.fragment;
+package com.cdot.lists;
 
 import android.os.Bundle;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
 
-import androidx.annotation.NonNull;
-import androidx.fragment.app.Fragment;
+import androidx.appcompat.app.AppCompatActivity;
 
-import com.cdot.lists.R;
-import com.cdot.lists.databinding.HelpFragmentBinding;
+import com.cdot.lists.databinding.HelpActivityBinding;
 
 /**
  * View help information stored in an html file
  */
-public class HelpFragment extends Fragment {
+public class HelpActivity extends AppCompatActivity {
     String mPage;
 
-    public HelpFragment(String page) {
-        mPage = page;
+    public HelpActivity() {
     }
 
-    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        HelpFragmentBinding binding = HelpFragmentBinding.inflate(inflater, container, false);
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        String asset = savedInstanceState.getString("asset");
+        HelpActivityBinding binding = HelpActivityBinding.inflate(getLayoutInflater());
         binding.webview.getSettings().setBuiltInZoomControls(true);
-        binding.webview.loadUrl("file:///android_asset/html/" + getString(R.string.locale_prefix) + "/" + mPage + ".html");
-        return binding.getRoot();
+        binding.webview.loadUrl("file:///android_asset/html/" + getString(R.string.locale_prefix) + "/" + asset + ".html");
+        setContentView(binding.getRoot());
     }
 }

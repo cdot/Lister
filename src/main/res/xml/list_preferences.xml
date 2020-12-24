@@ -2,15 +2,18 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Preferences specific to a single list -->
     <CheckBoxPreference
-        android:key="moveCheckedItemsToBottom"
-        android:title="@string/option_show_checked_at_end" />
+        android:key="movend"
+        android:summary="@string/help_checked_at_end"
+        android:title="@string/option_checked_at_end" />
 
     <CheckBoxPreference
-        android:key="autoDeleteCheckedItems"
-        android:title="@string/option_auto_delete_checked" />
+        android:key="autodel"
+        android:summary="@string/help_delete_checked"
+        android:title="@string/option_delete_checked" />
 
     <CheckBoxPreference
-        android:key="warnAboutDuplicates"
-        android:title="@string/option_warn_about_duplicates" />
+        android:key="warndup"
+        android:summary="@string/help_warn_duplicate"
+        android:title="@string/option_warn_duplicate" />
 
 </PreferenceScreen>

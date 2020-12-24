@@ -33,7 +33,6 @@ public class Lister extends Application {
 
     // Shared Preferences
     public static final String PREF_ALWAYS_SHOW = "showListInFrontOfLockScreen";
-    public static final String PREF_DEBUG = "debug";
     public static final String PREF_GREY_CHECKED = "greyCheckedItems";
     public static final String PREF_ENTIRE_ROW_TOGGLES = "entireRowTogglesItem";
     public static final String PREF_LAST_STORE_FAILED = "lastStoreSaveFailed";
@@ -53,7 +52,6 @@ public class Lister extends Application {
 
     private final static Map<String, Boolean> sBoolDefaults = new HashMap<String, Boolean>() {{
         put(PREF_ALWAYS_SHOW, false);
-        put(PREF_DEBUG, false);
         put(PREF_GREY_CHECKED, true);
         put(PREF_ENTIRE_ROW_TOGGLES, true);
         put(PREF_LAST_STORE_FAILED, false);
@@ -72,16 +70,17 @@ public class Lister extends Application {
 
     private SharedPreferences mPrefs;
 
-    public static final int REQUEST_CREATE_STORE = 2;
     public static final int REQUEST_IMPORT_LIST = 3;
 
     // Use for debug. bitmask, 0 = normal, 1 = fail network load, 2 = fail network and cache
     static final int FORCE_LOAD_FAIL = 0;
 
-    private final Checklists mLists; // List of lists
+    private Checklists mLists; // List of lists
     private Thread mLoadThread = null;
+    public boolean mListsLoaded = false;
 
     public Lister() {
+        // Always need a checklists instance, as a place to attach listeners
         mLists = new Checklists();
     }
 
@@ -95,14 +94,21 @@ public class Lister extends Application {
         return mPrefs;
     }
 
-    public void loadLists(Context act, SuccessCallback onOK, FailCallback onFail) {
+    /**
+     * Load lists if (and only if) they haven't already been loaded and are residing in memory.
+     * @param cxt ui we are loading from
+     * @param onOK callback
+     * @param onFail callback
+     */
+    public void loadLists(Context cxt, SuccessCallback onOK, FailCallback onFail) {
+
         if (mLoadThread != null && mLoadThread.isAlive()) {
             mLoadThread.interrupt();
             mLoadThread = null;
         }
 
         // Asynchronously load the URI. If the load fails, try the cache
-        final Uri uri = getUri("backingStore");
+        final Uri uri = getUri(PREF_URI);
         if (uri == null)
             return;
         mLoadThread = new Thread(() -> {
@@ -112,7 +118,7 @@ public class Lister extends Application {
                 if (Objects.equals(uri.getScheme(), ContentResolver.SCHEME_FILE)) {
                     stream = new FileInputStream(new File((uri.getPath())));
                 } else if (Objects.equals(uri.getScheme(), ContentResolver.SCHEME_CONTENT)) {
-                    stream = act.getContentResolver().openInputStream(uri);
+                    stream = cxt.getContentResolver().openInputStream(uri);
                 } else {
                     throw new IOException("Failed to load lists. Unknown uri scheme: " + uri.getScheme());
                 }
@@ -124,25 +130,31 @@ public class Lister extends Application {
                     mLists.fromStream(stream);
                     mLists.setURI(uri.toString());
                     Log.d(TAG, mLists.size() + " lists loaded from " + uri);
-                    loadCache(new Checklists(), act, data -> {
-                        Checklists cl = (Checklists)data;
-
-                        Log.d(TAG, "Cache remembers URI " + cl.getURI());
-                        if (cl.isMoreRecentVersionOf(mLists)) {
+                    // Check against the cache
+                    loadCache(new Checklists(), cxt, o -> {
+                        Checklists cachedLists = (Checklists)o;
+                        Log.d(TAG, "Cache remembers URI " + cachedLists.getURI());
+                        if (cachedLists.isMoreRecentVersionOf(mLists)) {
                             Log.d(TAG, "Cache is more recent");
-                            loadCache(mLists, act, onOK, onFail);
-                        } else
+                            loadCache(mLists, cxt, o2 -> {
+                                mListsLoaded = true;
+                                onOK.succeeded(mLists);
+                            }, onFail);
+                        } else {
+                            mListsLoaded = true;
                             onOK.succeeded(mLists);
+                        }
                     }, onFail);
                 }
             } catch (final SecurityException se) {
+                // openInputStream denied, pass back uri_acces_denied to reroute through picker
+                // to re-establish permissions
                 onFail.failed(R.string.uri_access_denied);
-                // openInputStream denied, reroute through picker to re-establish permissions
                 Log.d(TAG, "Security Exception loading " + uri + ": " + se);
             } catch (Exception e) {
                 Log.d(TAG, "Exception loading from " + uri + ": " + e);
                 onFail.failed(R.string.failed_uri_load);
-                loadCache(mLists, act, data -> {
+                loadCache(mLists, cxt, o -> {
                     Log.d(TAG, "Cache comes from " + mLists.getURI());
                     if (!mLists.getURI().equals(uri.toString()))
                         mLists.clear();
@@ -154,7 +166,6 @@ public class Lister extends Application {
     }
 
     private void loadCache(Checklists cacheLists, Context cxt, SuccessCallback onOK, FailCallback onFail) {
-        cacheLists.clear();
         try {
             if ((Lister.FORCE_LOAD_FAIL & 2) != 0)
                 throw new Exception("Cache load fail forced");
@@ -179,6 +190,7 @@ public class Lister extends Application {
      * If there's a failure saving to the cache, this is a major problem that may not be recoverable.
      */
     public void saveLists(Context cxt, SuccessCallback onSuccess, FailCallback onFail) {
+
         // Always save to the cache.
         Log.d(TAG, "Saving to cache");
         try {
@@ -283,35 +295,35 @@ public class Lister extends Application {
     }
 
     public int getInt(String name) {
-        return mPrefs.getInt(name, sIntDefaults.get(name));
+        return getPrefs().getInt(name, sIntDefaults.get(name));
     }
 
     public void setInt(String name, int value) {
-        SharedPreferences.Editor e = mPrefs.edit();
+        SharedPreferences.Editor e = getPrefs().edit();
         sIntDefaults.put(name, value);
         e.putInt(name, value);
         e.apply();
     }
 
     public boolean getBool(String name) {
-        return mPrefs.getBoolean(name, sBoolDefaults.get(name));
+        return getPrefs().getBoolean(name, sBoolDefaults.get(name));
     }
 
     public void setBool(String name, boolean value) {
-        SharedPreferences.Editor e = mPrefs.edit();
+        SharedPreferences.Editor e = getPrefs().edit();
         e.putBoolean(name, value);
         e.apply();
     }
 
     public Uri getUri(String name) {
-        String uris = mPrefs.getString(name, sStringDefaults.get(name));
+        String uris = getPrefs().getString(name, sStringDefaults.get(name));
         if (uris == null)
                 return null;
         return Uri.parse(uris);
     }
 
     public void setUri(String name, Uri value) {
-        SharedPreferences.Editor e = mPrefs.edit();
+        SharedPreferences.Editor e = getPrefs().edit();
         e.putString(name, value.toString());
         e.apply();
     }

@@ -20,6 +20,8 @@ package com.cdot.lists.model;
 
 import android.util.Log;
 
+import androidx.annotation.CallSuper;
+
 import com.opencsv.CSVReader;
 import com.opencsv.CSVWriter;
 
@@ -27,23 +29,33 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Interface to items in an EntryList
  */
 public abstract class EntryListItem {
     private static final String TAG = EntryListItem.class.getSimpleName();
-
+    // UID's are assigned when an item is created. They allow us to track list entries
+    // across activities (list item text need not be unique). UIDs are not serialised.
+    private static int sUID = 0;
     // The list that contains this list.
-    private final EntryList mParent;
+    protected final EntryList mParent;
     private final List<ChangeListener> mListeners = new ArrayList<>();
+    protected int mUID;
     // Label, or list name
     private String mText;
+    // Boolean flags
+    private Map<String, Boolean> mFlags = new HashMap<>();
 
     EntryListItem(EntryList parent) {
         mParent = parent;
         mText = null;
+        mUID = sUID++;
     }
 
     /**
@@ -53,7 +65,15 @@ public abstract class EntryListItem {
      */
     EntryListItem(EntryList parent, EntryListItem copy) {
         this(parent);
+        mFlags = new HashMap<>(copy.mFlags);
         setText(copy.getText());
+    }
+
+    /**
+     * Get the session UID for this item
+     */
+    public int getSessionUID() {
+        return mUID;
     }
 
     /**
@@ -62,7 +82,8 @@ public abstract class EntryListItem {
      * @param l the listener
      */
     public void addChangeListener(ChangeListener l) {
-        mListeners.add(l);
+        if (!mListeners.contains(l))
+            mListeners.add(l);
     }
 
     /**
@@ -115,12 +136,65 @@ public abstract class EntryListItem {
     }
 
     /**
-     * Load from a JSON object
+     * Get a set of the legal flag names for this entry list. Subclasses override to add their
+     * supported flags. By default, no flags are supported.
+     *
+     * @return a set of flag names
+     */
+    @CallSuper
+    public Set<String> getFlagNames() {
+        return new HashSet<>();
+    }
+
+    /**
+     * Get the default value for a flag. Flag defaults are always false unless overridden.
+     *
+     * @param key flag name
+     * @return flag value
+     */
+    public boolean getFlagDefault(String key) {
+        return false;
+    }
+
+    /**
+     * Get the current value for this flag
+     *
+     * @param key flag name
+     * @return flag value
+     */
+    public boolean getFlag(String key) {
+        if (!mFlags.containsKey(key))
+            return getFlagDefault(key);
+        Boolean v = mFlags.get(key);
+        return (v == null) ? false : v;
+    }
+
+    /**
+     * Set the current value for this flag
+     *
+     * @param key flag name
+     * @param val flag value
+     */
+    public void setFlag(String key, boolean val) {
+        mFlags.put(key, val);
+    }
+
+    /**
+     * Load from a JSON object. The base method imports all the flag settings.
      *
      * @param jo JSON object
      * @throws JSONException if anything goes wrong
      */
-    abstract void fromJSON(JSONObject jo) throws JSONException;
+    @CallSuper
+    void fromJSON(JSONObject jo) throws JSONException {
+        for (String k : getFlagNames()) {
+            try {
+                setFlag(k, jo.getBoolean(k));
+            } catch (JSONException ignore) {
+                setFlag(k, getFlagDefault(k));
+            }
+        }
+    }
 
     /**
      * Load from a JSON string
@@ -135,6 +209,7 @@ public abstract class EntryListItem {
             Log.e(TAG, "" + je);
         }
     }
+
     /**
      * Load from a Comma-Separated Value object
      *
@@ -147,7 +222,18 @@ public abstract class EntryListItem {
      *
      * @return a JSONObject
      */
-    abstract JSONObject toJSON();
+    @CallSuper
+    JSONObject toJSON() {
+        JSONObject job = new JSONObject();
+        for (String k : getFlagNames()) {
+            try {
+                if (getFlag(k) != getFlagDefault(k))
+                    job.put(k, getFlag(k));
+            } catch (JSONException ignore) {
+            }
+        }
+        return job;
+    }
 
     /**
      * Write the CSV that represents the content of this object

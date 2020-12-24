@@ -15,13 +15,15 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AlertDialog;
 
+import com.cdot.lists.EntryListActivity;
 import com.cdot.lists.Lister;
 import com.cdot.lists.R;
-import com.cdot.lists.fragment.EntryListFragment;
 import com.cdot.lists.model.Checklist;
 import com.cdot.lists.model.ChecklistItem;
 import com.cdot.lists.model.EntryList;
 import com.cdot.lists.model.EntryListItem;
+
+import static com.cdot.lists.model.ChecklistItem.isDone;
 
 /**
  * View for a single item in a checklist, and for moving same.
@@ -42,8 +44,9 @@ public class ChecklistItemView extends EntryListItemView {
      * @param isMoving true if this is to be used as a view for dragging an item to a new position, false for an item in a fixed list
      * @param cxt      fragment
      */
-    public ChecklistItemView(EntryListItem item, boolean isMoving, EntryListFragment cxt) {
+    public ChecklistItemView(EntryListItem item, boolean isMoving, EntryListActivity cxt) {
         super(item, isMoving, cxt, R.layout.checklist_item_view, R.menu.checklist_item_popup);
+
         mCheckboxOnRight = true;
         updateView();
     }
@@ -67,6 +70,7 @@ public class ChecklistItemView extends EntryListItemView {
         cb.setOnClickListener(view -> {
             if (setChecked(cb.isChecked())) {
                 Log.d(TAG, "item checked");
+                mItem.setFlag(isDone, cb.isChecked());
                 checkpoint();
             }
         });
@@ -79,10 +83,10 @@ public class ChecklistItemView extends EntryListItemView {
         // Transparency
         float f = TRANSPARENCY_OPAQUE; // Completely opague
 
-        if (((ChecklistItem) mItem).isDone() && getLister().getBool(Lister.PREF_GREY_CHECKED))
+        if (mItem.getFlag(ChecklistItem.isDone) && getLister().getBool(Lister.PREF_GREY_CHECKED))
             // Greyed out
             f = TRANSPARENCY_GREYED;
-        else if (!mIsMoving && mItem == getFragment().mMovingItem)
+        else if (!mIsMoving && mItem == mActivity.mMovingItem)
             // Item being moved (but NOT the moving view)
             f = TRANSPARENCY_FAINT;
 
@@ -92,7 +96,7 @@ public class ChecklistItemView extends EntryListItemView {
         findViewById(R.id.left_layout).setAlpha(f);
 
         // Strike through
-        if (!((ChecklistItem) mItem).isDone() || !getLister().getBool(Lister.PREF_STRIKE_CHECKED))
+        if (!mItem.getFlag(ChecklistItem.isDone) || !getLister().getBool(Lister.PREF_STRIKE_CHECKED))
             it.setPaintFlags(it.getPaintFlags() & ~Paint.STRIKE_THRU_TEXT_FLAG);
         else
             it.setPaintFlags(it.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
@@ -122,11 +126,11 @@ public class ChecklistItemView extends EntryListItemView {
             left.addView(moveButton);
             mCheckboxOnRight = true;
         }
-        checkBox.setChecked(((ChecklistItem) mItem).isDone());
+        checkBox.setChecked(mItem.getFlag(ChecklistItem.isDone));
     }
 
     @Override // EntryListItemView
-    protected boolean onAction(int act) {
+    protected boolean onPopupMenuAction(int act) {
         if (act == R.id.action_delete) {
             EntryList list = mItem.getContainer();
             list.newUndoSet();
@@ -164,7 +168,7 @@ public class ChecklistItemView extends EntryListItemView {
      */
     private boolean setChecked(boolean isChecked) {
         Checklist list = (Checklist) mItem.getContainer();
-        if (list.autoDeleteChecked && isChecked) {
+        if (list.getFlag(Checklist.autoDeleteChecked) && isChecked) {
             EntryList el = mItem.getContainer();
             el.newUndoSet();
             el.remove(mItem, true);
@@ -173,7 +177,8 @@ public class ChecklistItemView extends EntryListItemView {
         }
         CheckBox cb = findViewById(R.id.checklist_checkbox);
         cb.setChecked(isChecked);
-        if (((ChecklistItem) mItem).setDone(isChecked)) {
+        if (mItem.getFlag(ChecklistItem.isDone) != isChecked) {
+            mItem.setFlag(ChecklistItem.isDone, true);
             mItem.notifyChangeListeners();
             return true;
         }

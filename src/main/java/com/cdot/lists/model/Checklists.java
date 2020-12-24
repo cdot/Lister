@@ -20,7 +20,7 @@ package com.cdot.lists.model;
 
 import android.util.Log;
 
-import com.cdot.lists.fragment.EntryListFragment;
+import com.cdot.lists.EntryListActivity;
 import com.cdot.lists.view.ChecklistsItemView;
 import com.cdot.lists.view.EntryListItemView;
 import com.opencsv.CSVReader;
@@ -44,7 +44,7 @@ public class Checklists extends EntryList {
     }
 
     @Override // EntryList
-    public EntryListItemView makeItemView(EntryListItem item, EntryListFragment frag) {
+    public EntryListItemView makeItemView(EntryListItem item, EntryListActivity frag) {
         return new ChecklistsItemView(item, false, frag);
     }
 

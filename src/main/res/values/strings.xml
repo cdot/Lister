@@ -43,6 +43,15 @@
 
     <string name="general_settings">General Settings</string>
 
+    <string name="help_change_uri">Select to choose a different place to store lists</string>
+    <string name="help_create_uri">Select to create a different place to store lists</string>
+    <string name="help_grey_checked">Grey out checked items, to make them more obvious</string>
+    <string name="help_left_hand">Flip list items to make left-handed operation easier</string>
+    <string name="help_overlap_lock">Display even when the screen is locked</string>
+    <string name="help_row_toggles">When active, clicking anywhere on a row will toggle the state</string>
+    <string name="help_stay_awake">Keep the screen active. This is a security risk, as the device will stay unlocked!</string>
+    <string name="help_strike_checked">Strike through checked items, to make them more obvious</string>
+
     <string name="import_report">Imported list \'%1$s\'</string>
     <string name="items_deleted">%d items deleted</string>
     <string name="items_restored">%d items restored</string>
@@ -57,18 +66,16 @@
     <string name="new_item_hint">New list item</string>
 
     <string name="ok">OK</string>
-    <string name="option_auto_delete_checked">Delete checked items</string>
-    <string name="option_debug">Debug</string>
-    <string name="option_dim_checked">Grey out checked items</string>
-    <string name="option_entire_row_toggles">Entire row toggles check box</string>
-    <string name="option_left_hand_operation">Left hand operation</string>
-    <string name="option_open_latest">Open latest list on startup</string>
-    <string name="option_show_checked_at_end">Move checked items to bottom</string>
-    <string name="option_show_list_in_front_of_lock_screen">Show list in front of lock screen</string>
-    <string name="option_stay_awake">Stay awake while a list is showing</string>
-    <string name="option_strike_checked">Strike through checked items</string>
+    <string name="option_checked_at_end">Checked at bottom</string>
+    <string name="option_delete_checked">Delete checked</string>
+    <string name="option_grey_checked">Grey out checked</string>
+    <string name="option_left_hand">Left handed</string>
+    <string name="option_overlap_lock">Overlap lock screen</string>
+    <string name="option_row_toggles">Row toggles</string>
+    <string name="option_stay_awake">Stay awake</string>
+    <string name="option_strike_checked">Strike checked</string>
     <string name="option_text_size">Text size</string>
-    <string name="option_warn_about_duplicates">Warn before adding duplicate item</string>
+    <string name="option_warn_duplicate">Warn duplicate</string>
 
     <string name="rename_list">Rename List</string>
 
@@ -76,6 +83,9 @@
     <string name="similar_item_x_already_in_list">Similar item \'%1$s\' already in list. Add \'%2$s\' to list?</string>
 
     <string name="uri_access_denied">Store access denied</string>
+    <string name="help_checked_at_end">Display checked items at the end of the list</string>
+    <string name="help_delete_checked">Delete checked items. Deletion can be undone</string>
+    <string name="help_warn_duplicate">Warn when a duplicate item is about to be added</string>
 
     <!-- Arrays -->
     <string-array name="text_size_options">

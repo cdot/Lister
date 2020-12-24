@@ -4,7 +4,6 @@
 package com.cdot.lists.view;
 
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
@@ -12,12 +11,10 @@ import android.widget.ImageButton;
 import android.widget.PopupMenu;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
+import com.cdot.lists.EntryListActivity;
 import com.cdot.lists.Lister;
-import com.cdot.lists.MainActivity;
 import com.cdot.lists.R;
-import com.cdot.lists.fragment.EntryListFragment;
 import com.cdot.lists.model.EntryListItem;
 
 /**
@@ -33,8 +30,8 @@ public class EntryListItemView extends RelativeLayout implements View.OnClickLis
     protected EntryListItem mItem;
     // The menu resource for this list item
     protected int mMenuResource;
-    // Fragment this view belongs to
-    protected EntryListFragment mFragment;
+    // Activity this view belongs to
+    protected EntryListActivity mActivity;
 
     /**
      * Constructor
@@ -45,10 +42,10 @@ public class EntryListItemView extends RelativeLayout implements View.OnClickLis
      * @param layoutR  R.layout of the view
      * @param menuR    R.menu of the popup menu
      */
-    EntryListItemView(EntryListItem item, boolean isMoving, EntryListFragment cxt, int layoutR, int menuR) {
-        super(cxt.getActivity());
-        inflate(cxt.getActivity(), layoutR, this);
-        mFragment = cxt;
+    EntryListItemView(EntryListItem item, boolean isMoving, EntryListActivity cxt, int layoutR, int menuR) {
+        super(cxt);
+        inflate(cxt, layoutR, this);
+        mActivity = cxt;
         mIsMoving = isMoving;
         mMenuResource = menuR;
         setItem(item);
@@ -79,28 +76,13 @@ public class EntryListItemView extends RelativeLayout implements View.OnClickLis
         mItem = item;
     }
 
-    public MainActivity getMainActivity() {
-        return mFragment.getMainActivity();
-    }
-
     public Lister getLister() {
-        return getMainActivity().getLister();
-    }
-
-    public EntryListFragment getFragment() {
-        return mFragment;
+        return mActivity.getLister();
     }
 
     protected void checkpoint() {
-        Activity act = getMainActivity();
-        getLister().saveLists(act,
-                okdata -> {
-                    Log.d(TAG, "checkpoint save OK");
-                },
-                code -> {
-                    act.runOnUiThread(() ->
-                            Toast.makeText(act, code, Toast.LENGTH_SHORT).show());
-                });
+        getItem().notifyChangeListeners();
+        mActivity.checkpoint();
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -111,7 +93,7 @@ public class EntryListItemView extends RelativeLayout implements View.OnClickLis
             public boolean onTouch(View view, MotionEvent motionEvent) {
                 Log.d(TAG, "OnTouch " + motionEvent.getAction() + " " + Integer.toHexString(System.identityHashCode(this)));
                 if (motionEvent.getAction() == MotionEvent.ACTION_DOWN)
-                    getFragment().mMovingItem = mItem;
+                    mActivity.mMovingItem = mItem;
                 return true;
             }
         });
@@ -132,7 +114,7 @@ public class EntryListItemView extends RelativeLayout implements View.OnClickLis
         it.setText(t);
         setTextFormatting();
         ImageButton mb = findViewById(R.id.move_button);
-        mb.setVisibility(mFragment.canManualSort() ? View.VISIBLE : View.GONE);
+        mb.setVisibility(mActivity.canManualSort() ? View.VISIBLE : View.GONE);
     }
 
     /**
@@ -166,7 +148,7 @@ public class EntryListItemView extends RelativeLayout implements View.OnClickLis
      * @param action the action to handle
      * @return true if the action was handled
      */
-    protected boolean onAction(int action) {
+    protected boolean onPopupMenuAction(int action) {
         return false;
     }
 
@@ -176,7 +158,7 @@ public class EntryListItemView extends RelativeLayout implements View.OnClickLis
     private void showMenu() {
         PopupMenu popupMenu = new PopupMenu(getContext(), this);
         popupMenu.inflate(mMenuResource);
-        popupMenu.setOnMenuItemClickListener(menuItem -> onAction(menuItem.getItemId()));
+        popupMenu.setOnMenuItemClickListener(menuItem -> onPopupMenuAction(menuItem.getItemId()));
         popupMenu.show();
     }
 }

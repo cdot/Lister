@@ -20,7 +20,7 @@ package com.cdot.lists.model;
 
 import android.util.Log;
 
-import com.cdot.lists.fragment.EntryListFragment;
+import com.cdot.lists.EntryListActivity;
 import com.cdot.lists.view.EntryListItemView;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVWriter;
@@ -36,19 +36,21 @@ import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.Stack;
 
 /**
  * Base class for lists of items
  */
 public abstract class EntryList extends EntryListItem {
+    public static final String displaySorted = "sort";
+    public static final String warnAboutDuplicates = "warndup";
     private static final String TAG = EntryList.class.getSimpleName();
-    // Is this list being displayed sorted?
-    public boolean sort = false;
-    // Undo stack
-    Stack<ArrayList<Remove>> mRemoves;
     // The basic list
     private final ArrayList<EntryListItem> mData = new ArrayList<>();
+
+    // Undo stack
+    Stack<ArrayList<Remove>> mRemoves;
 
     /**
      * @param parent the list that contains this list (or null for the root)
@@ -67,28 +69,48 @@ public abstract class EntryList extends EntryListItem {
     EntryList(EntryList parent, EntryList copy) {
         super(parent, copy);
         mRemoves = new Stack<>();
-        sort = copy.sort;
     }
 
-    @Override // implements EntryListItem
+    @Override // EntryListItem
     public void fromJSON(JSONObject job) throws JSONException {
         clear();
-        try {
-            sort = job.getBoolean("sort");
-        } catch (JSONException je) {
-            sort = false;
-        }
+        super.fromJSON(job);
+    }
+
+    /**
+     * Get a set of the legal flag names for this entry list
+     *
+     * @return a set of flag names
+     */
+    @Override // EntryListItem
+    public Set<String> getFlagNames() {
+        Set<String> s = super.getFlagNames();
+        s.add(displaySorted);
+        s.add(warnAboutDuplicates);
+        return s;
+    }
+
+    /**
+     * Get the default value for this flag
+     *
+     * @param key flag name
+     * @return flag value
+     */
+    @Override // EntryListItem
+    public boolean getFlagDefault(String key) {
+        if (warnAboutDuplicates.equals(key))
+            return true;
+        return super.getFlagDefault(key);
     }
 
     @Override // implements EntryListItem
     public JSONObject toJSON() {
-        JSONObject job = new JSONObject();
+        JSONObject job = super.toJSON();
         JSONArray its = new JSONArray();
         for (EntryListItem cl : mData)
             its.put(cl.toJSON());
         try {
             job.put("items", its);
-            job.put("sort", sort);
         } catch (JSONException je) {
             Log.e(TAG, "" + je);
         }
@@ -151,7 +173,7 @@ public abstract class EntryList extends EntryListItem {
      * @param cxt  context of the view
      * @return a new view
      */
-    public abstract EntryListItemView makeItemView(EntryListItem item, EntryListFragment cxt);
+    public abstract EntryListItemView makeItemView(EntryListItem item, EntryListActivity cxt);
 
     /**
      * Add a new item to the end of the list
@@ -252,6 +274,20 @@ public abstract class EntryList extends EntryListItem {
             return null;
         for (EntryListItem item : mData) {
             if (item.getText().toLowerCase().contains(str.toLowerCase()))
+                return item;
+        }
+        return null;
+    }
+
+    /**
+     * Find an item in the list by session UID
+     *
+     * @param uid item to find
+     * @return matched item or null if not found
+     */
+    public EntryListItem findBySessionUID(int uid) {
+        for (EntryListItem item : mData) {
+            if (item.getSessionUID() == uid)
                 return item;
         }
         return null;

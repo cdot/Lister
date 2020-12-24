@@ -16,14 +16,17 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package com.cdot.lists.fragment;
+package com.cdot.lists.preferences;
 
 import android.os.Bundle;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
 import androidx.preference.CheckBoxPreference;
 import androidx.preference.PreferenceFragmentCompat;
 
+import com.cdot.lists.Lister;
+import com.cdot.lists.ListerActivity;
 import com.cdot.lists.R;
 import com.cdot.lists.model.Checklist;
 
@@ -35,36 +38,43 @@ public class ChecklistPreferencesFragment extends PreferenceFragmentCompat {
 
     Checklist mList;
 
-    ChecklistPreferencesFragment(Checklist list) {
+    public ChecklistPreferencesFragment() {
+    }
+
+    public ChecklistPreferencesFragment(Checklist list) {
         mList = list;
+    }
+
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle state) {
+        state.putInt(ListerActivity.UID_EXTRA, mList.getSessionUID());
     }
 
     @Override // PreferenceFragmentCompat
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
         setPreferencesFromResource(R.xml.list_preferences, rootKey);
 
-        CheckBoxPreference cbPref = findPreference("moveCheckedItemsToBottom");
-        cbPref.setChecked(mList.showCheckedAtEnd);
-        cbPref.setOnPreferenceChangeListener((preference, newValue) -> {
-            Log.d(TAG, "setting showCheckedAtEnd to " + newValue);
-            mList.showCheckedAtEnd = (boolean) newValue;
-            return true;
-        });
+        if (mList == null && savedInstanceState != null) {
+            Log.d(TAG, "Recovering list from saved instance state");
+            Lister lister = (Lister) getActivity().getApplication();
+            int uid = savedInstanceState.getInt(ListerActivity.UID_EXTRA);
+            mList = (Checklist) lister.getLists().findBySessionUID(uid);
+        }
 
-        cbPref = findPreference("autoDeleteCheckedItems");
-        cbPref.setChecked(mList.autoDeleteChecked);
-        cbPref.setOnPreferenceChangeListener((preference, newValue) -> {
-            Log.d(TAG, "setting autoDeleteChecked to " + newValue);
-            mList.autoDeleteChecked = (boolean) newValue;
-            return true;
-        });
+        if (mList == null)
+            throw new Error("Null list");
 
-        cbPref = findPreference("warnAboutDuplicates");
-        cbPref.setChecked(mList.warnAboutDuplicates);
-        cbPref.setOnPreferenceChangeListener((preference, newValue) -> {
-            Log.d(TAG, "setting warnAboutDuplicates to " + newValue);
-            mList.warnAboutDuplicates = (boolean) newValue;
-            return true;
-        });
+        for (String k : mList.getFlagNames()) {
+            CheckBoxPreference cbPref = findPreference(k);
+            if (cbPref != null) {
+                cbPref.setChecked(mList.getFlag(k));
+                cbPref.setOnPreferenceChangeListener((preference, newValue) -> {
+                    Log.d(TAG, "setting " + k + " to " + newValue);
+                    mList.setFlag(k, (boolean) newValue);
+                    ((PreferencesActivity) getActivity()).checkpoint();
+                    return true;
+                });
+            }
+        }
     }
 }

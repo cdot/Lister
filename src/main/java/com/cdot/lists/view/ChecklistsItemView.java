@@ -4,16 +4,17 @@
 package com.cdot.lists.view;
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 
 import androidx.appcompat.app.AlertDialog;
 
+import com.cdot.lists.ChecklistActivity;
+import com.cdot.lists.EntryListActivity;
+import com.cdot.lists.ListerActivity;
 import com.cdot.lists.R;
-import com.cdot.lists.fragment.ChecklistFragment;
-import com.cdot.lists.fragment.EntryListFragment;
-import com.cdot.lists.model.Checklist;
 import com.cdot.lists.model.Checklists;
 import com.cdot.lists.model.EntryList;
 import com.cdot.lists.model.EntryListItem;
@@ -26,7 +27,7 @@ public class ChecklistsItemView extends EntryListItemView {
     private static final String TAG = ChecklistsItemView.class.getSimpleName();
 
     @SuppressLint("ClickableViewAccessibility")
-    public ChecklistsItemView(EntryListItem item, boolean isMoving, EntryListFragment cxt) {
+    public ChecklistsItemView(EntryListItem item, boolean isMoving, EntryListActivity cxt) {
         super(item, isMoving, cxt, R.layout.checklists_item_view, R.menu.checklists_popup);
 
         if (!isMoving)
@@ -37,12 +38,14 @@ public class ChecklistsItemView extends EntryListItemView {
 
     @Override // View
     public void onClick(View view) {
-        // A click on a list name will open that list in a ChecklistFragment
-        getMainActivity().pushFragment(new ChecklistFragment((Checklist) mItem));
+        // A click on a list name will open that list in a ChecklistActivity
+        Intent intent = new Intent(getContext(), ChecklistActivity.class);
+        intent.putExtra(ListerActivity.UID_EXTRA, mItem.getSessionUID());
+        getContext().startActivity(intent);
     }
 
     @Override // EntryListItemView
-    protected boolean onAction(int act) {
+    protected boolean onPopupMenuAction(int act) {
         Checklists checklists = (Checklists) mItem.getContainer();
         AlertDialog.Builder builder;
         if (act == R.id.action_delete) {

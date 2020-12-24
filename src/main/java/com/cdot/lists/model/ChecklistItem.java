@@ -26,18 +26,19 @@ import com.opencsv.CSVWriter;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.Set;
+
 /**
  * An item in a Checklist
  */
 public class ChecklistItem extends EntryListItem {
+    public static final String isDone = "done";
     private static final String TAG = ChecklistItem.class.getSimpleName();
-
-    private boolean mDone; // has it been checked?
 
     public ChecklistItem(Checklist checklist, String str, boolean done) {
         super(checklist);
         setText(str);
-        mDone = done;
+        setFlag(isDone, done);
     }
 
     /**
@@ -47,7 +48,14 @@ public class ChecklistItem extends EntryListItem {
      * @param copy      item to copy
      */
     ChecklistItem(Checklist checklist, ChecklistItem copy) {
-        this(checklist, copy.getText(), copy.mDone);
+        this(checklist, copy.getText(), copy.getFlag(isDone));
+    }
+
+    @Override // EntryListItem
+    public Set<String> getFlagNames() {
+        Set<String> s = super.getFlagNames();
+        s.add(isDone);
+        return s;
     }
 
     @Override // implement EntryListItem
@@ -58,22 +66,18 @@ public class ChecklistItem extends EntryListItem {
 
     @Override // implement EntryListItem
     public boolean isMoveable() {
-        return !mDone;
+        return !getFlag(isDone) && !mParent.getFlag(Checklist.moveCheckedItemsToEnd);
     }
 
     @Override // implement EntryListItem
     public boolean equals(EntryListItem ot) {
-        return super.equals(ot) && mDone == ((ChecklistItem) ot).mDone;
+        return super.equals(ot) && getFlag(isDone) == ot.getFlag(isDone);
     }
 
     @Override // implement EntryListItem
     public void fromJSON(JSONObject jo) throws JSONException {
+        super.fromJSON(jo);
         setText(jo.getString("name"));
-        mDone = false;
-        try {
-            mDone = jo.getBoolean("done");
-        } catch (JSONException ignored) {
-        }
     }
 
     @Override // implement EntryListItem
@@ -83,18 +87,15 @@ public class ChecklistItem extends EntryListItem {
             return false;
         setText(row[0]);
         // "false", "0", and "" are read as false. Any other value is read as true
-        setDone(row[1].length() == 0 || row[1].matches("[Ff][Aa][Ll][Ss][Ee]|0"));
+        setFlag(isDone, !(row[1].length() == 0 || row[1].matches("[Ff][Aa][Ll][Ss][Ee]|0")));
         return true;
     }
 
     @Override // implement EntryListItem
     public JSONObject toJSON() {
-        JSONObject iob = new JSONObject();
+        JSONObject iob = super.toJSON();
         try {
             iob.put("name", getText());
-
-        if (mDone)
-            iob.put("done", true);
         } catch (JSONException je) {
             Log.e(TAG, "" + je);
         }
@@ -105,7 +106,7 @@ public class ChecklistItem extends EntryListItem {
     public void toCSV(CSVWriter w) {
         String[] a = new String[2];
         a[0] = getText();
-        a[1] = (mDone ? "TRUE" : "FALSE");
+        a[1] = (getFlag(isDone) ? "TRUE" : "FALSE");
         w.writeNext(a);
     }
 
@@ -113,31 +114,8 @@ public class ChecklistItem extends EntryListItem {
     public String toPlainString(String tab) {
         StringBuilder sb = new StringBuilder();
         sb.append(tab).append(getText());
-        if (mDone)
+        if (getFlag(isDone))
             sb.append(" *");
         return sb.toString();
-    }
-
-    /**
-     * Get the items done status
-     *
-     * @return true if the item is marked as done
-     */
-    public boolean isDone() {
-        return mDone;
-    }
-
-    /**
-     * Set the items done status
-     *
-     * @param done new done status
-     * @return true if the status changed
-     */
-    public boolean setDone(boolean done) {
-        if (mDone != done) {
-            mDone = done;
-            return true;
-        }
-        return false;
     }
 }

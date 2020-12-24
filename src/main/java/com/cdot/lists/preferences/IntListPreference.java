@@ -1,4 +1,4 @@
-package com.cdot.lists.fragment;
+package com.cdot.lists.preferences;
 /*
  * Copyright © 2020 C-Dot Consultants
  *
@@ -27,7 +27,7 @@ import androidx.preference.ListPreference;
  * Customisation of ListPreference to persist integer values rather than the string values that
  * ListPreference insists on.
  */
-public class IntListPreference extends ListPreference {
+class IntListPreference extends ListPreference {
 
     public IntListPreference(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);

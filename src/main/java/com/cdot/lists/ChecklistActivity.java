@@ -16,7 +16,7 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package com.cdot.lists.fragment;
+package com.cdot.lists;
 
 import android.content.Context;
 import android.content.Intent;
@@ -24,13 +24,9 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.text.InputType;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
@@ -43,12 +39,12 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.FileProvider;
 
-import com.cdot.lists.R;
-import com.cdot.lists.databinding.ChecklistFragmentBinding;
+import com.cdot.lists.databinding.ChecklistActivityBinding;
 import com.cdot.lists.model.Checklist;
 import com.cdot.lists.model.ChecklistItem;
 import com.cdot.lists.model.EntryList;
 import com.cdot.lists.model.EntryListItem;
+import com.cdot.lists.preferences.PreferencesActivity;
 import com.cdot.lists.view.ChecklistItemView;
 import com.cdot.lists.view.EntryListItemView;
 import com.opencsv.CSVWriter;
@@ -59,62 +55,56 @@ import java.io.Writer;
 import java.util.List;
 
 /**
- * Fragment for managing interactions with a checklist of items
+ * Activity for managing interactions with a checklist of items
  */
-public class ChecklistFragment extends EntryListFragment {
-    private static final String TAG = ChecklistFragment.class.getSimpleName();
-    // helper to avoid frequent casts
-    private Checklist mChecklist;
+public class ChecklistActivity extends EntryListActivity {
+    private static final String TAG = ChecklistActivity.class.getSimpleName();
     // When in edit mode, sorting and moving checked items is disabled
     public boolean mInEditMode = false;
-    private ChecklistFragmentBinding mBinding;
+    // helper to avoid frequent casts
+    private Checklist mChecklist;
+    private ChecklistActivityBinding mBinding;
 
-    public ChecklistFragment() {}
-
-    /**
-     * Construct a fragment to manage the given checklist
-     *
-     * @param list the list to manage
-     */
-    public ChecklistFragment(Checklist list) {
-        if (list == null)
-            Log.d(TAG, "created with null list!");
-        mChecklist = list;
+    public ChecklistActivity() {
     }
 
-    @Override // EntryListFragment
+    @Override
+        // EntryListActivity
     EntryList getList() {
         return mChecklist;
     }
-    
+
     @Override
     public void onSaveInstanceState(@NonNull Bundle state) {
         super.onSaveInstanceState(state);
-        state.putString("list", getList().getText());
+        state.putInt(UID_EXTRA, getList().getSessionUID());
     }
 
     @Override
-    public void onViewStateRestored(Bundle state) {
-        super.onViewStateRestored(state);
-        if (mChecklist == null && state != null) {
-            String listName = state.getString("list");
-            if (listName != null)
-                mChecklist = (Checklist) getLister().getLists().findByText(listName, true);
+    public void onRestoreInstanceState(@NonNull Bundle state) {
+        super.onRestoreInstanceState(state);
+        if (mChecklist == null) {
+            int uid = state.getInt(UID_EXTRA);
+            if (uid > 0)
+                mChecklist = (Checklist) getLister().getLists().findBySessionUID(uid);
         }
     }
 
-    @Override // Fragment
-    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        if (getList() == null)
-            return null;
+    @Override // AppCompatActivity
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
 
-        mBinding = ChecklistFragmentBinding.inflate(inflater, container, false);
-        View rootView = mBinding.getRoot();
-        setView(mBinding.itemListView, mBinding.checklistFragment);
-        setHasOptionsMenu(true);
+        Intent intent = getIntent();
+        int uid = intent.getIntExtra(UID_EXTRA, -1);
+        EntryList lists = getLister().getLists();
+        mChecklist = (Checklist) lists.findBySessionUID(uid);
 
-        mBinding.addItemText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_AUTO_COMPLETE | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
-        mBinding.addItemText.setOnEditorActionListener((textView, i, keyEvent) -> {
+        mBinding = ChecklistActivityBinding.inflate(getLayoutInflater());
+
+        makeAdapter(mBinding.itemListView);
+
+        mBinding.addItemET.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_AUTO_COMPLETE | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        mBinding.addItemET.setOnEditorActionListener((textView, i, keyEvent) -> {
             if (i == EditorInfo.IME_ACTION_DONE) {
                 addNewItem();
                 return true;
@@ -122,63 +112,92 @@ public class ChecklistFragment extends EntryListFragment {
             return false;
         });
 
-        mBinding.addItemText.setImeOptions(EditorInfo.IME_ACTION_DONE);
+        mBinding.addItemET.setImeOptions(EditorInfo.IME_ACTION_DONE);
 
         enableEditMode(getList().size() == 0);
 
-        return rootView;
+        setContentView(mBinding.getRoot());
     }
 
-    @Override // implements EntryListFragment
+    @Override // implements EntryListActivity
     protected String getHelpAsset() {
         return "Checklist";
     }
 
-    @Override // implements EntryListFragment
+    @Override // implements EntryListActivity
     protected EntryListItemView makeMovingView(EntryListItem item) {
         return new ChecklistItemView(item, true, this);
     }
 
-    @Override // Fragment
-    public void onCreateOptionsMenu(@NonNull Menu menu, MenuInflater inflater) {
-        inflater.inflate(R.menu.checklist, menu);
+    @Override // Activity
+    public boolean onCreateOptionsMenu(@NonNull Menu menu) {
+        Log.d(TAG, "onCreateOptionsMenu");
+        getMenuInflater().inflate(R.menu.checklist, menu);
+        return true;
     }
 
-    @Override // EntryListFragment
-    public boolean onOptionsItemSelected(MenuItem menuItem) {
-        int id = menuItem.getItemId();
+    @Override // EntryListActivity
+    public boolean onPrepareOptionsMenu(@NonNull Menu menu) {
+        Log.d(TAG, "onPrepareOptionsMenu");
+        super.onPrepareOptionsMenu(menu);
 
-        if (id == R.id.action_check_all) {
+        MenuItem it = menu.findItem(R.id.action_edit);
+
+        if (mInEditMode) {
+            it.setIcon(R.drawable.ic_action_item_add_off);
+            it.setTitle(R.string.action_item_add_off);
+        } else {
+            it.setIcon(R.drawable.ic_action_item_add_on);
+            it.setTitle(R.string.action_item_add_on);
+        }
+
+        menu.findItem(R.id.action_settings).setEnabled(!mInEditMode);
+        menu.findItem(R.id.action_check_all).setEnabled(((Checklist) getList()).getCheckedCount() < getList().size());
+        menu.findItem(R.id.action_uncheck_all).setEnabled(((Checklist) getList()).getCheckedCount() > 0);
+        menu.findItem(R.id.action_undo_delete).setEnabled(getList().getRemoveCount() > 0);
+        menu.findItem(R.id.action_delete_checked).setEnabled(((Checklist) getList()).getCheckedCount() > 0);
+
+        return true;
+    }
+
+    @Override // EntryListActivity
+    public boolean onOptionsItemSelected(MenuItem menuItem) {
+        // Beware dispatchTouchEvent stealing events
+        Log.d(TAG, "onOptionsItemSelected");
+        if (super.onOptionsItemSelected(menuItem))
+            return true;
+
+        int it = menuItem.getItemId();
+
+        if (it == R.id.action_check_all) {
             if (mChecklist.checkAll(true)) {
                 getList().notifyChangeListeners();
                 Log.d(TAG, "check all");
                 checkpoint();
             }
-            return true;
 
-        } else if (id == R.id.action_delete_checked) {
+        } else if (it == R.id.action_delete_checked) {
             int deleted = mChecklist.deleteAllChecked();
             if (deleted > 0) {
                 mChecklist.notifyChangeListeners();
                 Log.d(TAG, "checked deleted");
                 checkpoint();
-                Toast.makeText(getMainActivity(), getString(R.string.items_deleted, deleted), Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, getString(R.string.items_deleted, deleted), Toast.LENGTH_SHORT).show();
                 if (getList().size() == 0) {
                     enableEditMode(true);
                     mChecklist.notifyChangeListeners();
                     checkpoint();
                 }
             }
-            return true;
 
-        } else if (id == R.id.action_edit)
+        } else if (it == R.id.action_edit)
             enableEditMode(!mInEditMode);
 
-        else if (id == R.id.action_rename_list) {
-            AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(getMainActivity());
+        else if (it == R.id.action_rename_list) {
+            AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
             builder.setTitle(R.string.rename_list);
             builder.setMessage(R.string.enter_new_name_of_list);
-            final EditText editText = new EditText(getMainActivity());
+            final EditText editText = new EditText(this);
             editText.setSingleLine(true);
             editText.setText(getList().getText());
             builder.setView(editText);
@@ -192,82 +211,55 @@ public class ChecklistFragment extends EntryListFragment {
             builder.setNegativeButton(R.string.cancel, null);
             builder.show();
 
-        } else if (id == R.id.action_uncheck_all) {
+        } else if (it == R.id.action_uncheck_all) {
             if (mChecklist.checkAll(false)) {
                 Log.d(TAG, "uncheck all");
                 getList().notifyChangeListeners();
                 checkpoint();
             }
 
-        } else if (id == R.id.action_undo_delete) {
+        } else if (it == R.id.action_undo_delete) {
             int undone = mChecklist.undoRemove();
             if (undone == 0)
-                Toast.makeText(getMainActivity(), R.string.no_deleted_items, Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, R.string.no_deleted_items, Toast.LENGTH_SHORT).show();
             else {
                 mChecklist.notifyChangeListeners();
                 Log.d(TAG, "delete undone");
                 checkpoint();
-                Toast.makeText(getMainActivity(), getString(R.string.items_restored, undone), Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, getString(R.string.items_restored, undone), Toast.LENGTH_SHORT).show();
             }
-            return true;
 
-        } else if (id == R.id.action_save_list_as)
+        } else if (it == R.id.action_save_list_as)
             exportChecklist();
 
-        else if (id == R.id.action_settings)
-            getMainActivity().pushFragment(new ChecklistPreferencesFragment(mChecklist));
+        else if (it == R.id.action_settings) {
+            Intent intent = new Intent(this, PreferencesActivity.class);
+            intent.putExtra(UID_EXTRA, mChecklist.getSessionUID());
+            startActivityForResult(intent, REQUEST_PREFERENCES);
 
-        else
+        } else
             return super.onOptionsItemSelected(menuItem);
 
         return true;
     }
 
-    @Override // EntryListFragment
+    @Override // EntryListActivity
     public boolean canManualSort() {
-        return !mChecklist.showCheckedAtEnd && super.canManualSort();
+        return !mChecklist.getFlag(Checklist.moveCheckedItemsToEnd) && super.canManualSort();
     }
 
-    @Override // EntryListFragment
-    public boolean dispatchTouchEvent(MotionEvent motionEvent) {
-        // Check the item can be moved
-        if (mChecklist.showCheckedAtEnd)
-            return false;
-        return super.dispatchTouchEvent(motionEvent);
-    }
-
-    @Override // EntryListFragment
-    public void onPrepareOptionsMenu(@NonNull Menu menu) {
-        MenuItem menuItem = menu.findItem(R.id.action_edit);
-        if (mInEditMode) {
-            menuItem.setIcon(R.drawable.ic_action_item_add_off);
-            menuItem.setTitle(R.string.action_item_add_off);
-        } else {
-            menuItem.setIcon(R.drawable.ic_action_item_add_on);
-            menuItem.setTitle(R.string.action_item_add_on);
-        }
-
-        menu.findItem(R.id.action_settings).setEnabled(!mInEditMode);
-        menu.findItem(R.id.action_check_all).setEnabled(((Checklist) getList()).getCheckedCount() < getList().size());
-        menu.findItem(R.id.action_uncheck_all).setEnabled(((Checklist) getList()).getCheckedCount() > 0);
-        menu.findItem(R.id.action_undo_delete).setEnabled(getList().getRemoveCount() > 0);
-        menu.findItem(R.id.action_delete_checked).setEnabled(((Checklist) getList()).getCheckedCount() > 0);
-
-        super.onPrepareOptionsMenu(menu);
-    }
-
-    @Override // EntryListFragment
+    @Override // EntryListActivity
     protected List<EntryListItem> getDisplayOrder() {
         if (mInEditMode)
             return getList().getData();
 
         List<EntryListItem> list = super.getDisplayOrder(); // get sorted list
-        if (mChecklist.showCheckedAtEnd) {
+        if (mChecklist.getFlag(Checklist.moveCheckedItemsToEnd)) {
             int top = list.size();
             int i = 0;
             while (i < top) {
                 ChecklistItem item = (ChecklistItem) list.get(i);
-                if (item.isDone()) {
+                if (item.getFlag(ChecklistItem.isDone)) {
                     list.add(list.remove(i));
                     top--;
                 } else
@@ -285,23 +277,21 @@ public class ChecklistFragment extends EntryListFragment {
     private void enableEditMode(boolean isOn) {
         mInEditMode = isOn;
         notifyAdapter();
-        getMainActivity().invalidateOptionsMenu();
-
-        View nic = mBinding.newItemContainer;
+        invalidateOptionsMenu();
 
         // Show/hide soft keyboard
-        InputMethodManager inputMethodManager = (InputMethodManager) getMainActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+        InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
         if (mInEditMode) {
-            nic.setVisibility(View.VISIBLE);
-            mBinding.addItemText.setFocusable(true);
-            mBinding.addItemText.setFocusableInTouchMode(true);
-            mBinding.addItemText.requestFocus();
-            inputMethodManager.showSoftInput(mBinding.addItemText, InputMethodManager.SHOW_IMPLICIT);
+            mBinding.addItemET.setVisibility(View.VISIBLE);
+            mBinding.addItemET.setFocusable(true);
+            mBinding.addItemET.setFocusableInTouchMode(true);
+            mBinding.addItemET.requestFocus();
+            inputMethodManager.showSoftInput(mBinding.addItemET, InputMethodManager.SHOW_IMPLICIT);
         } else {
-            nic.setVisibility(View.INVISIBLE);
-            View currentFocus = getMainActivity().getCurrentFocus();
+            mBinding.addItemET.setVisibility(View.INVISIBLE);
+            View currentFocus = getCurrentFocus();
             if (currentFocus == null)
-                currentFocus = mBinding.addItemText;
+                currentFocus = mBinding.addItemET;
             inputMethodManager.hideSoftInputFromWindow(currentFocus.getWindowToken(), 0);
         }
     }
@@ -310,11 +300,11 @@ public class ChecklistFragment extends EntryListFragment {
      * Handle adding an item from the typing area
      */
     private void addNewItem() {
-        String text = mBinding.addItemText.getText().toString();
+        String text = mBinding.addItemET.getText().toString();
         if (text.trim().length() == 0)
             return;
         EntryListItem find = getList().findByText(text, false);
-        if (find == null || !mChecklist.warnAboutDuplicates)
+        if (find == null || !mChecklist.getFlag(EntryList.warnAboutDuplicates))
             addItem(text);
         else
             promptSimilarItem(text, find.getText());
@@ -330,7 +320,7 @@ public class ChecklistFragment extends EntryListFragment {
         getList().add(item);
         Log.d(TAG, "item added");
         getList().notifyChangeListeners();
-        mBinding.addItemText.setText("");
+        mBinding.addItemET.setText("");
         mBinding.itemListView.smoothScrollToPosition(getDisplayOrder().indexOf(item));
         checkpoint();
     }
@@ -342,7 +332,7 @@ public class ChecklistFragment extends EntryListFragment {
      * @param similar  the text of a similar item already in the list
      */
     private void promptSimilarItem(final String proposed, String similar) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(getMainActivity());
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle(R.string.similar_item_already_in_list);
         builder.setMessage(getString(R.string.similar_item_x_already_in_list, similar, proposed));
         builder.setPositiveButton(R.string.ok, (dialogInterface, i) -> addItem(proposed));
@@ -354,12 +344,12 @@ public class ChecklistFragment extends EntryListFragment {
      * Export the checklist in a user-selected format
      */
     private void exportChecklist() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(getMainActivity());
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle(R.string.export_format);
-        final Spinner picker = new Spinner(getMainActivity());
+        final Spinner picker = new Spinner(this);
         // Helper for indexing the array of share formats, must be final for inner class access
         final int[] mPlace = new int[1];
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(getMainActivity(),
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
                 android.R.layout.simple_spinner_item, getResources().getStringArray(R.array.share_format_description));
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         picker.setAdapter(adapter);
@@ -394,7 +384,7 @@ public class ChecklistFragment extends EntryListFragment {
 
             try {
                 // Write a local file for the attachment
-                File sendFile = new File(getMainActivity().getExternalFilesDir("send"), fileName);
+                File sendFile = new File(getExternalFilesDir("send"), fileName);
                 Writer w = new FileWriter(sendFile);
                 switch (mimeType) {
                     case "text/plain":
@@ -418,8 +408,8 @@ public class ChecklistFragment extends EntryListFragment {
 
                 // Expose the local file using a URI from the FileProvider, and add the URI to the intent
                 // See https://medium.com/@ali.muzaffar/what-is-android-os-fileuriexposedexception-and-what-you-can-do-about-it-70b9eb17c6d0
-                String authRoot = getMainActivity().getApplicationContext().getPackageName().replace(".debug", "");
-                Uri uri = FileProvider.getUriForFile(getMainActivity(), authRoot + ".provider", sendFile);
+                String authRoot = getPackageName().replace(".debug", "");
+                Uri uri = FileProvider.getUriForFile(this, authRoot + ".provider", sendFile);
                 intent.putExtra(Intent.EXTRA_STREAM, uri);
 
                 // Fire off the intent
@@ -428,7 +418,7 @@ public class ChecklistFragment extends EntryListFragment {
             } catch (Exception e) {
                 String mess = getString(R.string.failed_export, e.getMessage());
                 Log.d(TAG, mess);
-                Toast.makeText(getMainActivity(), mess, Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, mess, Toast.LENGTH_SHORT).show();
             }
         });
         builder.setNegativeButton(R.string.cancel, null);
