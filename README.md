@@ -12,13 +12,13 @@ which I had been using for shopping lists. I wanted a slightly different data mo
 me to store lists on Google Drive and share them across a number of different devices.
 
 # Usage
-The app is available as an android package from github pages.
-
-https://cdot.github.io/Mr-Lister/release/Mr%20Lister-release.apk
-
-Download the APK to your device and open it from Downloads. Android must be configured to allow
+(Download the Android package)[https://cdot.github.io/Mr-Lister/release/Mr%20Lister-release.apk]
+to your device and open it from Downloads. Android must be configured to allow
 installation from Unknown Sources.
 
 (Read this to find out more about what Google considers as 'Unknown')[https://www.androidcentral.com/unknown-sources]
 
 All the help you should need is available from inside the application - it's pretty simple!
+
+All sources are in this repository, so you can always check the project out and build your own
+version. Contributions in the form of pull requests are welcome.
