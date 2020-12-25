@@ -15,13 +15,17 @@ repositories {
     jcenter()
 }
 
+def localProperties = new Properties()
+localProperties.load(new FileInputStream(rootProject.file("local.properties")))
+
 android {
     signingConfigs {
-        debug {
-            storeFile file('/home/crawford/Projects/Lister/signature.jks')
-            storePassword 'W18ble'
-            keyAlias 'key0'
-            keyPassword 'W18ble'
+        release {
+            // Set the following in your local.properties
+            storeFile file(localProperties['KEY_STORE_FILE'])
+            storePassword localProperties['KEY_STORE_PASSWORD']
+            keyAlias localProperties['KEY_ALIAS']
+            keyPassword localProperties['KEY_PASSWORD']
         }
     }
     compileSdkVersion 30
@@ -72,8 +76,6 @@ dependencies {
     implementation 'androidx.constraintlayout:constraintlayout:2.0.4'
 
     testImplementation 'junit:junit:4.13'
-    testImplementation 'org.mockito:mockito-core:3.2.4'
-    testImplementation 'org.json:json:20190722'
 }
 
 allprojects {
