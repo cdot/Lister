@@ -11,7 +11,7 @@
         android:strokeAlpha="0.7"
         android:strokeLineJoin="round"
         android:strokeWidth="3"
-        android:strokeColor="?android:colorControlNormal"
+        android:strokeColor="?android:colorActivatedHighlight"
         android:fillType="nonZero"
         android:fillAlpha="0.5"
         android:strokeLineCap="round" />

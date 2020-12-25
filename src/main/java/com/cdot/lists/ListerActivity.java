@@ -124,7 +124,7 @@ public class ListerActivity extends AppCompatActivity implements SharedPreferenc
         ensureListsLoaded();
     }
 
-    private synchronized void ensureListsLoaded() {
+    protected synchronized void ensureListsLoaded() {
         if (getLister().mListsLoaded)
             return;
         getLister().loadLists(this,

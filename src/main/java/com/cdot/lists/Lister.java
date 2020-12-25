@@ -49,7 +49,9 @@ public class Lister extends Application {
     public static final int TEXT_SIZE_SMALL = 1;
     public static final int TEXT_SIZE_MEDIUM = 2;
     public static final int TEXT_SIZE_LARGE = 3;
-
+    public static final int REQUEST_IMPORT_LIST = 3;
+    // Use for debug. bitmask, 0 = normal, 1 = fail network load, 2 = fail network and cache
+    static final int FORCE_LOAD_FAIL = 0;
     private final static Map<String, Boolean> sBoolDefaults = new HashMap<String, Boolean>() {{
         put(PREF_ALWAYS_SHOW, false);
         put(PREF_GREY_CHECKED, true);
@@ -59,25 +61,16 @@ public class Lister extends Application {
         put(PREF_STAY_AWAKE, false);
         put(PREF_STRIKE_CHECKED, true);
     }};
-
     private final static Map<String, Integer> sIntDefaults = new HashMap<String, Integer>() {{
         put(PREF_TEXT_SIZE_INDEX, TEXT_SIZE_DEFAULT);
     }};
-
     private final static Map<String, String> sStringDefaults = new HashMap<String, String>() {{
         put(PREF_URI, null);
     }};
-
+    public boolean mListsLoaded = false;
     private SharedPreferences mPrefs;
-
-    public static final int REQUEST_IMPORT_LIST = 3;
-
-    // Use for debug. bitmask, 0 = normal, 1 = fail network load, 2 = fail network and cache
-    static final int FORCE_LOAD_FAIL = 0;
-
     private Checklists mLists; // List of lists
     private Thread mLoadThread = null;
-    public boolean mListsLoaded = false;
 
     public Lister() {
         // Always need a checklists instance, as a place to attach listeners
@@ -96,8 +89,9 @@ public class Lister extends Application {
 
     /**
      * Load lists if (and only if) they haven't already been loaded and are residing in memory.
-     * @param cxt ui we are loading from
-     * @param onOK callback
+     *
+     * @param cxt    ui we are loading from
+     * @param onOK   callback
      * @param onFail callback
      */
     public void loadLists(Context cxt, SuccessCallback onOK, FailCallback onFail) {
@@ -129,22 +123,30 @@ public class Lister extends Application {
                 else {
                     mLists.fromStream(stream);
                     mLists.setURI(uri.toString());
-                    Log.d(TAG, mLists.size() + " lists loaded from " + uri);
                     // Check against the cache
-                    loadCache(new Checklists(), cxt, o -> {
-                        Checklists cachedLists = (Checklists)o;
-                        Log.d(TAG, "Cache remembers URI " + cachedLists.getURI());
-                        if (cachedLists.isMoreRecentVersionOf(mLists)) {
-                            Log.d(TAG, "Cache is more recent");
-                            loadCache(mLists, cxt, o2 -> {
-                                mListsLoaded = true;
-                                onOK.succeeded(mLists);
-                            }, onFail);
-                        } else {
-                            mListsLoaded = true;
-                            onOK.succeeded(mLists);
-                        }
-                    }, onFail);
+                    loadCache(new Checklists(), cxt,
+                            o -> {
+                                Checklists cachedLists = (Checklists) o;
+                                Log.d(TAG, "Cache remembers URI " + cachedLists.getURI());
+                                if (cachedLists.isMoreRecentVersionOf(mLists)) {
+                                    Log.d(TAG, "Cache is more recent");
+                                    loadCache(mLists, cxt, o2 -> {
+                                        mListsLoaded = true;
+                                        Log.d(TAG, mLists.size() + " lists loaded from cache");
+                                        onOK.succeeded(mLists);
+                                    }, onFail);
+                                } else {
+                                    mListsLoaded = true;
+                                    onOK.succeeded(mLists);
+                                }
+                            },
+                            code -> {
+                                if (code == R.string.no_cache)
+                                    // Backing store loaded OK but cache did not exist. That's OK.
+                                    onOK.succeeded(mLists);
+                                else
+                                    onFail.failed(code);
+                            });
                 }
             } catch (final SecurityException se) {
                 // openInputStream denied, pass back uri_acces_denied to reroute through picker
@@ -155,9 +157,9 @@ public class Lister extends Application {
                 Log.d(TAG, "Exception loading from " + uri + ": " + e);
                 onFail.failed(R.string.failed_uri_load);
                 loadCache(mLists, cxt, o -> {
-                    Log.d(TAG, "Cache comes from " + mLists.getURI());
                     if (!mLists.getURI().equals(uri.toString()))
                         mLists.clear();
+                    Log.d(TAG, mLists.size() + " lists loaded from cache");
                     onOK.succeeded(mLists);
                 }, onFail);
             }
@@ -267,7 +269,8 @@ public class Lister extends Application {
             Log.d(TAG, "imported list: " + newList.getText());
             mLists.notifyChangeListeners();
             Log.d(TAG, "Save imported list");
-            saveLists(cxt, d -> {}, onFail);
+            saveLists(cxt, d -> {
+            }, onFail);
             onOK.succeeded(newList);
         } catch (Exception e) {
             Log.e(TAG, "import failed " + e.getMessage());
@@ -275,8 +278,8 @@ public class Lister extends Application {
         }
     }
 
-    public void handleChangeStore(Intent resultData, Context cxt) {
-        Uri newURI = resultData.getData();
+    public void handleChangeStore(Context cxt, Intent intent, SuccessCallback onOK, FailCallback onFail) {
+        Uri newURI = intent.getData();
         if (newURI == null)
             return;
 
@@ -284,9 +287,13 @@ public class Lister extends Application {
         if (!newURI.equals(oldURI)) {
             setUri(PREF_URI, newURI);
 
-            // Persist granted access across reboots
-            int takeFlags = resultData.getFlags() & (Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-            cxt.getContentResolver().takePersistableUriPermission(newURI, takeFlags);
+            mListsLoaded = false;
+            loadLists(this, lists -> {
+                // Persist granted access across reboots
+                int takeFlags = intent.getFlags() & (Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                cxt.getContentResolver().takePersistableUriPermission(getUri(PREF_URI), takeFlags);
+                onOK.succeeded(lists);
+            }, onFail);
         }
     }
 
@@ -318,7 +325,7 @@ public class Lister extends Application {
     public Uri getUri(String name) {
         String uris = getPrefs().getString(name, sStringDefaults.get(name));
         if (uris == null)
-                return null;
+            return null;
         return Uri.parse(uris);
     }
 

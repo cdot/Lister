@@ -19,8 +19,8 @@
 package com.cdot.lists.preferences;
 
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
+import android.widget.Toast;
 
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
@@ -60,13 +60,9 @@ public class PreferencesActivity extends ListerActivity {
         if ((requestCode == REQUEST_CHANGE_STORE || requestCode == REQUEST_CREATE_STORE)
                 && resultCode == RESULT_OK && resultData != null) {
             Lister lister = (Lister) getApplication();
-            Uri cur = lister.getUri(Lister.PREF_URI);
-            Uri neu = resultData.getData();
-            if (neu != null && !neu.equals(cur) || neu == null && cur != null) {
-                lister.setUri(Lister.PREF_URI, neu);
-                // Pass the request on to MainActivity for it to handle the store change
-                lister.handleChangeStore(resultData, this);
-            }
+            lister.handleChangeStore(this, resultData,
+                    lists -> ensureListsLoaded(),
+                    code -> runOnUiThread(() -> Toast.makeText(this, code, Toast.LENGTH_LONG).show()));
         } else
             super.onActivityResult(requestCode, resultCode, resultData);
     }

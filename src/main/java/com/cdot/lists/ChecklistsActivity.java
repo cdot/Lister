@@ -172,6 +172,8 @@ public class ChecklistsActivity extends EntryListActivity {
                     },
                     resource -> Toast.makeText(this, resource, Toast.LENGTH_LONG).show());
         } else if (requestCode == ListerActivity.REQUEST_CHANGE_STORE || requestCode == ListerActivity.REQUEST_CREATE_STORE)
-            getLister().handleChangeStore(resultData, this);
+            getLister().handleChangeStore(this, resultData,
+                    lists -> ensureListsLoaded(),
+                    code -> runOnUiThread(() -> Toast.makeText(this, code, Toast.LENGTH_LONG).show()));
     }
 }
