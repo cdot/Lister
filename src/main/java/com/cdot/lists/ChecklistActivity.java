@@ -132,8 +132,8 @@ public class ChecklistActivity extends EntryListActivity {
     }
 
     @Override // implements EntryListActivity
-    protected String getHelpAsset() {
-        return "Checklist";
+    protected int getHelpAsset() {
+        return R.raw.checklist_help;
     }
 
     @Override // EntryListActivity

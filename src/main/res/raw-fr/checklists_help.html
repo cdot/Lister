@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Listes de contrôle</title>
+        <link rel="stylesheet" href="styles.css" type="text/css" />
+    </head>
+    <body>
+        <p>Ouvrez une liste en touchant son nom.</p>
+        <p>Un appui long sur le nom de la liste fera apparaître un menu contextuel qui vous permet
+            de:
+        <ul>
+            <li>Renommer</li>
+            <li>Effacer</li>
+            <li>Créer une copie</li>
+        </ul>
+        </p>
+        <p>Créer une copie fera une copie identique de la liste. Vous pouvez l'utiliser pour créer
+            une liste de modèles avec, par exemple, les produits d'épicerie de base que vous achetez
+            toujours.
+        </p>
+        <p>Sauf si le tri alphabétique est activé, une poignée sur chaque liste
+            <img src="img/ic_action_move.svg" />
+            vous permet de déplacer la liste vers une autre position dans la liste des listes.
+            Touchez et maintenez pour faire glisser la liste.
+        </p>
+        <h2>Actions</h2>
+        <dl>
+            <dt>
+                <img src="img/ic_action_save.svg" />
+                Sauver
+            </dt>
+            <dd>
+                Cette action apparaîtra si la liste doit être enregistrée car une sauvegarde
+                précédente a échoué.
+            </dd>
+            <dt>
+                <img src="img/ic_action_alpha_sort_on.svg" />
+                Tri actif / inactif
+            </dt>
+            <dd>Activez le tri alphabétique. Cela montre uniquement les listes triées, cela
+                n'affecte pas l'ordre sous-jacent. Lorsque cette option est activée, vous ne pouvez
+                pas trier manuellement les listes.
+            </dd>
+            <dt>
+                <img src="img/ic_action_item_add_on.svg" />
+                Nouvelle liste
+            </dt>
+            <dd>Créer liste nouvelle</dd>
+            <dt>
+                <img src="img/ic_action_import.svg" />
+                Importer liste
+            </dt>
+            <dd>Importez des listes. Les listes peuvent provenir de n'importe quel fournisseur de
+                contenu pris en charge par votre appareil, par ex. la carte SD ou Google Drive si
+                l'application Drive est installée. Deux formats sont pris en charge, JSON comme
+                précédemment exporté à partir de Lister, ou le format CSV (valeur séparée par des
+                virgules) avec des colonnes:
+                <table>
+                    <tr>
+                        <th>Liste nom</th>
+                        <th>Article</th>
+                        <th>complet ("F" or "T")</th>
+                    </tr>
+                </table>
+                e.g.
+                <table>
+                    <tr>
+                        <td>Achats</td>
+                        <td>Pain</td>
+                        <td>F</td>
+                    </tr>
+                    <tr>
+                        <td>Achats</td>
+                        <td>Lait</td>
+                        <td>F</td>
+                    </tr>
+                    <tr>
+                        <td>Wishes</td>
+                        <td>Paix mondiale</td>
+                        <td>F</td>
+                    </tr>
+                    <tr>
+                        <td>Wishes</td>
+                        <td>Maserati</td>
+                        <td>F</td>
+                    </tr>
+                </table>
+                Le format CSV peut être exporté à partir de feuilles de calcul.
+            </dd>
+            <dt>
+                <img src="img/ic_action_settings.svg" />
+                Préférences
+            </dt>
+            <dd>Modifiez les paramètres spécifiques à cet appareil.</dd>
+        </dl>
+        <hr>
+        Mr Lister est gratuit et sans annonces. Le code source est disponible sur
+        <a href="https://github.com/cdot/Lister">https://github.com/cdot/Lister</a>
+        </hr>
+    </body>
+</html>

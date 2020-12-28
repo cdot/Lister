@@ -25,6 +25,11 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.cdot.lists.databinding.HelpActivityBinding;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+
 /**
  * View help information stored in an html file
  */
@@ -37,15 +42,22 @@ public class HelpActivity extends AppCompatActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        String asset;
         Intent intent = getIntent();
-        if (intent != null)
-            asset = intent.getStringExtra(ASSET_EXTRA);
-        else
-            asset = savedInstanceState.getString(ASSET_EXTRA);
+        int asset = intent.getIntExtra(ASSET_EXTRA, 0);
         HelpActivityBinding binding = HelpActivityBinding.inflate(getLayoutInflater());
         binding.webview.getSettings().setBuiltInZoomControls(true);
-        binding.webview.loadUrl("file:///android_asset/html/" + getString(R.string.locale_prefix) + "/" + asset + ".html");
+        // Get the right HTML for the current locale
+        try {
+            InputStream is = getResources().openRawResource(asset);
+            BufferedReader br = new BufferedReader(new InputStreamReader(is));
+            String data;
+            StringBuilder sb = new StringBuilder();
+            while ((data = br.readLine()) != null)
+                sb.append(data).append("\n");
+            data = sb.toString();
+            binding.webview.loadDataWithBaseURL("file:///android_asset/", data, "text/html", "utf-8", null);
+        } catch (IOException ieo) {
+        }
         setContentView(binding.getRoot());
     }
 }

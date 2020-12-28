@@ -4,6 +4,9 @@ or Google Drive, or anything else that supports the Android Content Resolver int
 
 Useful for shared shopping lists, and any other kind of checklist.
 
+![GitHub Logo](Screenshot_1609182789.png)
+![GitHub Logo](Screenshot_1609182783.png) 
+![GitHub Logo](Screenshot_1609182816.png)
 
 # History
 The app was inspired by the ["rList" application](https://play.google.com/store/apps/details?id=com.rundgong.shoppinglist),
@@ -20,4 +23,5 @@ must be configured to allow installation from Unknown Sources.
 All the help you should need is available from inside the application - it's pretty simple!
 
 All sources are in this repository, so you can always check the project out and build your own
-version. Contributions in the form of pull requests are welcome.
+version. Contributions in the form of pull requests are welcome. One sample translation is provided,
+to French using automated translation so probably awful.

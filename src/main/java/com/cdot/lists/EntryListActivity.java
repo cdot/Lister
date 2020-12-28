@@ -144,9 +144,9 @@ public abstract class EntryListActivity extends ListerActivity implements EntryL
     /**
      * Get the name of an HTML help asset appropriate for this fragment
      *
-     * @return basename (without path) of an HTML help asset
+     * @return resource id for a raw html asset
      */
-    protected abstract String getHelpAsset();
+    protected abstract int getHelpAsset();
 
     /**
      * Moving items in the list

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Checklists</title>
+        <link rel="stylesheet" href="styles.css" type="text/css" />
+    </head>
+    <body>
+        <p>Open a list by touching its name.</p>
+        <p>A long touch on the list name will bring up a context menu that lets you:
+        <ul>
+            <li>Rename List</li>
+            <li>Delete</li>
+            <li>Create Copy</li>
+        </ul>
+        </p>
+        <p>Create copy will make an identical copy of the list. You can use this to create template
+            list with e.g. the basic groceries that you always buy.
+        </p>
+        <p>Unless alphabetic sorting is on, a handle on each list
+            <img src="img/ic_action_move.svg" />
+            lets you move the list to another position in the list of lists. Touch and hold to drag
+            the list.
+        </p>
+        <h2>Actions</h2>
+        <dl>
+            <dt>
+                <img src="img/ic_action_save.svg" />
+                Save
+            </dt>
+            <dd>
+                This action will appear if the list has to be saved because a previous save failed.
+            </dd>
+            <dt>
+                <img src="img/ic_action_alpha_sort_on.svg" />
+                Sort on/off
+            </dt>
+            <dd>Toggle alphabetic sorting. This only shows the lists as sorted, it doesn't affect
+                the underlying ordering. When this is enabled, you can't manually sort the lists.
+            </dd>
+            <dt>
+                <img src="img/ic_action_item_add_on.svg" />
+                New list
+            </dt>
+            <dd>Create a new list</dd>
+            <dt>
+                <img src="img/ic_action_import.svg" />
+                Import List
+            </dt>
+            <dd>Import lists. The lists can come from any
+                content provider that your device supports e.g. the SD card, or Google Drive if the
+                Drive app is installed. Two formats are supported, JSON as previously exported from
+                Lister, or CSV (comma-separated value) format with columns:
+                <table>
+                    <tr>
+                        <th>List name</th>
+                        <th>Item</th>
+                        <th>checked ("F" or "T")</th>
+                    </tr>
+                </table>
+                e.g.
+                <table>
+                    <tr>
+                        <td>Shopping</td>
+                        <td>Bread</td>
+                        <td>F</td>
+                    </tr>
+                    <tr>
+                        <td>Shopping</td>
+                        <td>Milk</td>
+                        <td>F</td>
+                    </tr>
+                    <tr>
+                        <td>Wishes</td>
+                        <td>World Peace</td>
+                        <td>F</td>
+                    </tr>
+                    <tr>
+                        <td>Wishes</td>
+                        <td>Maserati</td>
+                        <td>F</td>
+                    </tr>
+                </table>
+                CSV format can be exported from spreadsheet programs.
+            </dd>
+            <dt>
+                <img src="img/ic_action_settings.svg" />
+                Preferences
+            </dt>
+            <dd>Change settings that are specific to this device.</dd>
+        </dl>
+        <hr />
+        Mr Lister is free of charge and free of ads.
+        Source code is available from
+        <a href="https://github.com/cdot/Lister">https://github.com/cdot/Lister</a>
+    </body>
+</html>

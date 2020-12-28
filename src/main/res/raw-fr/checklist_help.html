@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Listes de contrôle</title>
+        <link rel="stylesheet" href="styles.css" type="text/css" />
+    </head>
+    <body>
+        Les éléments sont vérifiés en touchant la case à cocher (ou en appuyant n'importe où sur la
+        ligne, si elle est activée). Les cases à cocher peuvent être placées de chaque côté de
+        l'écran.
+        <p>Un appui long sur un élément vous permet de le renommer ou de le supprimer.</p>
+        À moins que le tri ne soit activé, une poignée sur chaque élément
+        <img src="img / ic_action_move.svg">
+        vous permet de déplacer l'élément vers un autre position dans la liste. Appuyez de manière
+        prolongée pour faire glisser l'élément.
+        <h2>Actions</h2>
+        <dl>
+            <dt>
+                <img src="img/ic_action_alpha_sort_on.svg">
+                Sort on/off
+            </dt>
+            <dd>Toggle alphabetic sorting. This only shows the list as sorted, it doesn't affect the
+                underlying ordering. When this is enabled, you can't manually sort the items
+            </dd>
+            <dt>
+                <img src="img/ic_action_save.svg">
+                Save
+            </dt>
+            <dd>This action will appear if the list has to be saved because a previous save failed
+            </dd>
+            <dt>
+                <img src="img/ic_action_item_add_on.svg">
+                Tri actif / inactif
+            </dt>
+            <dd>Lorsque l'ajout est activé, vous pouvez ajouter de nombreux éléments.
+            </dd>
+            <dt>
+                <td><img src="img/ic_action_uncheck_all.svg">Décocher tout
+            </dt>
+            <dt>
+                <img src="img/ic_action_check_all.svg">
+                Cochez toutes
+            </dt>
+            <dt>
+                <img src="img/ic_action_delete.svg">
+                Supprimer tout coché
+            </dt>
+            <dd></dd>
+            <dt>
+                <img src="img/ic_action_undo.svg">
+                Annuler effacer
+            </dt>
+            <dd>Annule la dernière suppression, tant que la liste est ouverte. Lorsque vous quittez
+                la vue de liste, l'historique des annulations est perdu.
+            </dd>
+            <dt>
+                <img src="img/ic_action_rename.svg">
+                Renommer Liste
+            </dt>
+            <dt>
+                <img src="img/ic_action_export.svg">
+                Exporter List
+            </dt>
+            <dd>Exportez cette liste vers n'importe quel fournisseur de contenu pris en charge par
+                votre téléphone, par ex. la carte SD, l'e-mail, ou Google Drive si l'application
+                Drive est installée, dans un certain nombre de formats différents. Lors de
+                l'exportation vers JSON, cela créera un fichier avec une liste qui pourra ensuite
+                être importée en utilisant l'option "Importer des listes" sur le premier écran.
+            </dd>
+            <dt>
+                <img src="img/ic_action_settings.svg">
+                Paramètres de la liste
+            </dt>
+            <dd>Modifiez les paramètres spécifiques à cette liste.</dd>
+        </dl>
+    </body>
+</html>
