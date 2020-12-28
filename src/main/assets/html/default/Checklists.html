@@ -18,46 +18,36 @@
 <p>Unless alphabetic sorting is on, a handle on each list <img src="../img/ic_action_move.svg">
 lets you move the list to another position in the list of lists. Touch and hold to drag the list.</p>
 <h2>Action Bar</h2>
-<table>
-    <tr>
-        <td><img src="../img/ic_action_save.svg"></td>
-        <td>Save</td>
-        <td>This action will appear if the list has to be saved because a previous save failed.
-        </td>
-        <td>
-        </td>
-    </tr>
-    <tr>
-        <td><img src="../img/ic_action_alpha_sort_on.svg"></td>
-        <td>Sort on/off</td>
-        <td>Toggle alphabetic sorting. This only shows the lists as sorted, it doesn't affect the
-            underlying ordering. When this is enabled, you can't manually sort the lists.
-        </td>
-        <td>
-        </td>
-    </tr>
-    <tr>
-        <td><img src="../img/ic_action_item_add_on.svg"></td>
-        <td>New list</td>
-        <td>Create a new list</td>
-    </tr>
-    <tr>
-        <td><img src="../img/ic_action_import.svg"></td>
-        <td>Import List</td>
-        <td>Import a list. The list can come from any
-            content provider that your device supports e.g. the SD card, or Google Drive if the Drive
-            app is installed. It must
-            be in JSON format previously exported, or in CSV format where the first column is the
-            name of the item, and the second column a checked value ("false", "0", and ""
-            are read as false. Any other value is read as true)
-        </td>
-    </tr>
-    <tr>
-        <td><img src="../img/ic_action_settings.svg"></td>
-        <td>Device settings</td>
-        <td>Change settings that are specific to this device.</td>
-    </tr>
-</table>
+<dl>
+    <dt>
+        <img src="../img/ic_action_save.svg"> Save
+    </dt>
+    <dd>
+        This action will appear if the list has to be saved because a previous save failed.
+    </dd>
+    <dt><img src="../img/ic_action_alpha_sort_on.svg"> Sort on/off</dt>
+    <dd>Toggle alphabetic sorting. This only shows the lists as sorted, it doesn't affect the
+        underlying ordering. When this is enabled, you can't manually sort the lists.
+    </dd>
+    <dt><img src="../img/ic_action_item_add_on.svg"> New list</dt>
+    <dd>Create a new list</dd>
+    <dt><img src="../img/ic_action_import.svg"> Import List</dt>
+    <dd>Import lists. The lists can come from any
+        content provider that your device supports e.g. the SD card, or Google Drive if the Drive
+        app is installed. Two formats are supported, JSON as previously exported from Lister, or
+        CSV (comma-separated value) format with columns:
+        <table><tr><th>List name</th><th>Item</th><th>checked ("F" or "T")</th></tr></table>
+        e.g.
+        <table>
+            <tr><td>Shopping</td><td>Bread</td><td>F</td></tr>
+            <tr><td>Shopping</td><td>Milk</td><td>F</td></tr>
+            <tr><td>Wishes</td><td>World Peace</td><td>F</td></tr>
+            <tr><td>Wishes</td><td>Maserati</td><td>F</td></tr>
+        </table>
+        CSV format can be exported from spreadsheet programs.
+    </dd>
+    <dt><img src="../img/ic_action_settings.svg"> Device settings</dt>
+    <dd>Change settings that are specific to this device.</dd>
 </dl>
 <hr>
 Mr Lister is free of charge and free of ads.

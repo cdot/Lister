@@ -1,3 +1,4 @@
-th { text-align: left }
-.settings dt { font-weight: bold }
-img { display:inline; width: 20px; height: 20px; }
+dt { font-weight: bold }
+img { display:inline; width: 20px; height: 20px; vertical-align: middle; }
+th,td { border:1px solid #69899F; }
+table{ border-collapse: collapse; }

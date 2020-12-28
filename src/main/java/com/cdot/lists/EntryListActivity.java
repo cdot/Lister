@@ -256,7 +256,7 @@ public abstract class EntryListActivity extends ListerActivity implements EntryL
             checkpoint();
         } else if (it == R.id.action_help) {
             Intent hint = new Intent(this, HelpActivity.class);
-            hint.putExtra("asset", getHelpAsset());
+            hint.putExtra(HelpActivity.ASSET_EXTRA, getHelpAsset());
             startActivity(hint);
         } else
             return false;

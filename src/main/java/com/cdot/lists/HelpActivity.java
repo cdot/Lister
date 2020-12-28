@@ -18,6 +18,7 @@
  */
 package com.cdot.lists;
 
+import android.content.Intent;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -28,7 +29,7 @@ import com.cdot.lists.databinding.HelpActivityBinding;
  * View help information stored in an html file
  */
 public class HelpActivity extends AppCompatActivity {
-    String mPage;
+    public static final String ASSET_EXTRA = HelpActivity.class.getCanonicalName() + ".asset";
 
     public HelpActivity() {
     }
@@ -36,7 +37,12 @@ public class HelpActivity extends AppCompatActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        String asset = savedInstanceState.getString("asset");
+        String asset;
+        Intent intent = getIntent();
+        if (intent != null)
+            asset = intent.getStringExtra(ASSET_EXTRA);
+        else
+            asset = savedInstanceState.getString(ASSET_EXTRA);
         HelpActivityBinding binding = HelpActivityBinding.inflate(getLayoutInflater());
         binding.webview.getSettings().setBuiltInZoomControls(true);
         binding.webview.loadUrl("file:///android_asset/html/" + getString(R.string.locale_prefix) + "/" + asset + ".html");
