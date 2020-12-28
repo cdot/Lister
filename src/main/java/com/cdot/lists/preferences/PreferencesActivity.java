@@ -20,7 +20,7 @@ package com.cdot.lists.preferences;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.widget.Toast;
+import android.view.View;
 
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
@@ -28,12 +28,14 @@ import androidx.fragment.app.FragmentTransaction;
 import com.cdot.lists.Lister;
 import com.cdot.lists.ListerActivity;
 import com.cdot.lists.model.Checklist;
+import com.google.android.material.snackbar.Snackbar;
 
 /**
  * Activity used to host preference fragments
  * Use startActivityForResult to know when the back is pressed
  */
 public class PreferencesActivity extends ListerActivity {
+    PreferencesFragment mFragment;
 
     @Override // AppCompatActivity
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,21 +50,26 @@ public class PreferencesActivity extends ListerActivity {
             Checklist list = (Checklist) lister.getLists().findBySessionUID(uid);
             if (list == null)
                 throw new Error("Could not find list " + uid);
-            mFragmentTransaction.replace(android.R.id.content, new ChecklistPreferencesFragment(list));
+            mFragmentTransaction.replace(android.R.id.content, mFragment = new ChecklistPreferencesFragment(list));
         } else
-            mFragmentTransaction.replace(android.R.id.content, new SharedPreferencesFragment(lister));
+            mFragmentTransaction.replace(android.R.id.content, mFragment = new SharedPreferencesFragment(lister));
 
         mFragmentTransaction.commit();
+    }
+
+    @Override // ListerActivity
+    protected View getRootView() {
+        // This activity has no views other than those provided by the fragment
+        return mFragment.getRootView();
     }
 
     @Override // AppCompatActivity
     public void onActivityResult(int requestCode, int resultCode, Intent resultData) {
         if ((requestCode == REQUEST_CHANGE_STORE || requestCode == REQUEST_CREATE_STORE)
                 && resultCode == RESULT_OK && resultData != null) {
-            Lister lister = (Lister) getApplication();
-            lister.handleChangeStore(this, resultData,
-                    lists -> ensureListsLoaded(),
-                    code -> runOnUiThread(() -> Toast.makeText(this, code, Toast.LENGTH_LONG).show()));
+            getLister().handleChangeStore(this, resultData,
+                lists -> ensureListsLoaded(),
+                code -> report(code, Snackbar.LENGTH_INDEFINITE));
         } else
             super.onActivityResult(requestCode, resultCode, resultData);
     }

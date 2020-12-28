@@ -27,7 +27,6 @@ import android.util.Log;
 
 import androidx.preference.CheckBoxPreference;
 import androidx.preference.Preference;
-import androidx.preference.PreferenceFragmentCompat;
 
 import com.cdot.lists.Lister;
 import com.cdot.lists.ListerActivity;
@@ -36,7 +35,7 @@ import com.cdot.lists.R;
 /**
  * Handle shared preferences
  */
-public class SharedPreferencesFragment extends PreferenceFragmentCompat {
+public class SharedPreferencesFragment extends PreferencesFragment {
     private static final String TAG = SharedPreferencesFragment.class.getSimpleName();
     private final Lister mLister;
 
@@ -64,6 +63,7 @@ public class SharedPreferencesFragment extends PreferenceFragmentCompat {
         initBoolPref(Lister.PREF_ENTIRE_ROW_TOGGLES);
         initBoolPref(Lister.PREF_ALWAYS_SHOW);
         initBoolPref(Lister.PREF_STAY_AWAKE);
+        initBoolPref(Lister.PREF_WARN_DUPLICATE);
 
         IntListPreference ilPref = findPreference(Lister.PREF_TEXT_SIZE_INDEX);
         int val = mLister.getInt(Lister.PREF_TEXT_SIZE_INDEX);
@@ -79,6 +79,7 @@ public class SharedPreferencesFragment extends PreferenceFragmentCompat {
 
         Preference pref = findPreference("action_change_uri");
         pref.setOnPreferenceClickListener(v -> handleStoreClick(Intent.ACTION_OPEN_DOCUMENT, ListerActivity.REQUEST_CHANGE_STORE));
+        pref.setVisible(mLister.getUri(Lister.PREF_URI) != null);
 
         pref = findPreference("action_create_uri");
         pref.setOnPreferenceClickListener(v -> handleStoreClick(Intent.ACTION_CREATE_DOCUMENT, ListerActivity.REQUEST_CREATE_STORE));

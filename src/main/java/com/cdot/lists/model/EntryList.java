@@ -20,8 +20,6 @@ package com.cdot.lists.model;
 
 import android.util.Log;
 
-import com.cdot.lists.EntryListActivity;
-import com.cdot.lists.view.EntryListItemView;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVWriter;
 import com.opencsv.exceptions.CsvException;
@@ -50,24 +48,21 @@ public abstract class EntryList extends EntryListItem {
     private final ArrayList<EntryListItem> mData = new ArrayList<>();
 
     // Undo stack
-    Stack<ArrayList<Remove>> mRemoves;
+    Stack<ArrayList<Remove>> mRemoves = new Stack<>();
 
     /**
-     * @param parent the list that contains this list (or null for the root)
+     * Construct new list
      */
-    EntryList(EntryList parent) {
-        super(parent);
-        mRemoves = new Stack<>();
+    EntryList() {
     }
 
     /**
      * Copy constructor
      *
-     * @param parent the list that contains this list (or null for the root)
-     * @param copy   the item being copied
+     * @param copy the item being copied
      */
-    EntryList(EntryList parent, EntryList copy) {
-        super(parent, copy);
+    EntryList(EntryList copy) {
+        super(copy);
         mRemoves = new Stack<>();
     }
 
@@ -119,7 +114,6 @@ public abstract class EntryList extends EntryListItem {
 
     @Override // implement EntryListItem
     public void toCSV(CSVWriter w) {
-        w.writeNext(new String[]{"Item", "Checked"});
         for (EntryListItem it : mData) {
             it.toCSV(w);
         }
@@ -153,6 +147,12 @@ public abstract class EntryList extends EntryListItem {
         return mData;
     }
 
+    /**
+     * Make a copy of the data list. This is so the created list can be sorted before display without
+     * impacting the underlying list.
+     *
+     * @return a copy of the list of entry items.
+     */
     public List<EntryListItem> cloneItemList() {
         return (List<EntryListItem>) mData.clone();
     }
@@ -167,33 +167,16 @@ public abstract class EntryList extends EntryListItem {
     }
 
     /**
-     * Factory for creating item views
-     *
-     * @param item item to view
-     * @param cxt  context of the view
-     * @return a new view
-     */
-    public abstract EntryListItemView makeItemView(EntryListItem item, EntryListActivity cxt);
-
-    /**
      * Add a new item to the end of the list
      *
      * @param item the item to add
      */
-    public void add(EntryListItem item) {
+    public void addChild(EntryListItem item) {
+        if (item.getParent() != null)
+            ((EntryList) item.getParent()).remove(item, false);
         mData.add(item);
-    }
-
-    /**
-     * Get the entry at the given index
-     *
-     * @param i index of the list to remove
-     * @return the index of the added item
-     */
-    EntryListItem get(int i) {
-        if (i >= mData.size())
-            return null;
-        return mData.get(i);
+        item.setParent(this);
+        notifyChangeListeners();
     }
 
     /**
@@ -201,9 +184,14 @@ public abstract class EntryList extends EntryListItem {
      *
      * @param item the item to add
      * @param i    the index of the added item
+     * @throws IndexOutOfBoundsException if the index is out of range (index < 0 || index > size())
      */
     public void put(int i, EntryListItem item) {
+        if (item.getParent() != null)
+            ((EntryList) item.getParent()).remove(item, false);
         mData.add(i, item);
+        item.setParent(this);
+        notifyChangeListeners();
     }
 
     /**
@@ -212,6 +200,7 @@ public abstract class EntryList extends EntryListItem {
     public void clear() {
         mData.clear();
         mRemoves.clear();
+        notifyChangeListeners();
     }
 
     public int getRemoveCount() {
@@ -230,7 +219,13 @@ public abstract class EntryList extends EntryListItem {
                 mRemoves.push(new ArrayList<>());
             mRemoves.peek().add(new Remove(mData.indexOf(item), item));
         }
+        item.setParent(null);
         mData.remove(item);
+        notifyChangeListeners();
+    }
+
+    public boolean itemsAreMoveable() {
+        return !getFlag(Checklist.moveCheckedItemsToEnd);
     }
 
     /**
@@ -252,8 +247,10 @@ public abstract class EntryList extends EntryListItem {
         ArrayList<Remove> items = mRemoves.pop();
         if (items.size() == 0)
             return 0;
-        for (Remove it : items)
+        for (Remove it : items) {
             mData.add(it.index, it.item);
+            it.item.setParent(this);
+        }
         notifyChangeListeners();
         return items.size();
     }
@@ -305,29 +302,57 @@ public abstract class EntryList extends EntryListItem {
     }
 
     /**
-     * Load the object from JSON or CSV read from the stream
+     * Load the object from the given mime type read from the stream
      *
-     * @param stream source of the JSON or CSV
+     * @param stream   source of the JSON or CSV
+     * @param mimeType data type to expect (or null if unknown)
      * @throws Exception if something goes wrong
      */
-    public void fromStream(InputStream stream) throws Exception {
+    public void fromStream(InputStream stream, String mimeType) throws Exception {
         BufferedReader br = new BufferedReader(new InputStreamReader(stream));
         String data;
         StringBuilder sb = new StringBuilder();
         while ((data = br.readLine()) != null)
             sb.append(data).append("\n");
         data = sb.toString();
-        try {
-            // See if it's JSON
-            fromJSON(new JSONObject(data));
-        } catch (JSONException je) {
-            // See if it's CSV...
+        if ("application/json".equals(mimeType)) {
+            try {
+                // See if it's JSON
+                fromJSON(new JSONObject(data));
+            } catch (JSONException je) {
+                Log.d(TAG, "" + je);
+                throw new Exception("Format error, could not read JSON");
+            }
+        } else if ("text/csv".equals(mimeType)) {
             try {
                 fromCSV(new CSVReader(new StringReader(data)));
             } catch (CsvException csve) {
-                throw new Exception("Format error, could not read JSON or CSV");
+                Log.d(TAG, "" + csve);
+                throw new Exception("Format error, could not read CSV");
+            }
+        } else {
+            try {
+                // See if it's JSON
+                fromJSON(new JSONObject(data));
+            } catch (JSONException je) {
+                // See if it's CSV...
+                try {
+                    fromCSV(new CSVReader(new StringReader(data)));
+                } catch (CsvException csve) {
+                    throw new Exception("Format error, could not read JSON or CSV");
+                }
             }
         }
+    }
+
+    /**
+     * Load the object from JSON or CSV read from the stream
+     *
+     * @param stream source of the JSON or CSV
+     * @throws Exception if something goes wrong
+     */
+    public void fromStream(InputStream stream) throws Exception {
+        fromStream(stream, "application/json");
     }
 
     // An item that has been removed, and the index it was removed from, for undos

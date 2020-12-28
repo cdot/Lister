@@ -20,9 +20,6 @@ package com.cdot.lists.model;
 
 import android.util.Log;
 
-import com.cdot.lists.EntryListActivity;
-import com.cdot.lists.view.ChecklistItemView;
-import com.cdot.lists.view.EntryListItemView;
 import com.opencsv.CSVReader;
 
 import org.json.JSONArray;
@@ -36,18 +33,21 @@ import java.util.Set;
  * A checklist of checkable items. Can also be an item in a Checklists
  */
 public class Checklist extends EntryList {
-    public static final String moveCheckedItemsToEnd = "movend";
-    public static final String autoDeleteChecked = "autodel";
     private static final String TAG = Checklist.class.getSimpleName();
 
+    public static final String moveCheckedItemsToEnd = "movend";
+    public static final String autoDeleteChecked = "autodel";
+
     /**
-     * Construct and load from cache
-     *
-     * @param name   private file list is stored in
-     * @param parent container
+     * Constructor
      */
-    public Checklist(EntryList parent, String name) {
-        super(parent);
+    public Checklist() {
+    }
+
+    /**
+     * Constructor
+     */
+    public Checklist(String name) {
         setText(name);
     }
 
@@ -55,11 +55,9 @@ public class Checklist extends EntryList {
      * Process the JSON given and load from it
      *
      * @param job    the JSON object
-     * @param parent new container list
      * @throws JSONException if something goes wrong
      */
-    Checklist(EntryList parent, JSONObject job) throws JSONException {
-        super(parent);
+    public Checklist(JSONObject job) throws JSONException {
         fromJSON(job);
     }
 
@@ -67,12 +65,11 @@ public class Checklist extends EntryList {
      * Construct by copying an existing list and saving it to a new list
      *
      * @param copy   list to clone
-     * @param parent new container list
      */
-    Checklist(EntryList parent, Checklist copy) {
-        super(parent, copy);
+    public Checklist(Checklist copy) {
+        super(copy);
         for (EntryListItem item : copy.getData())
-            add(new ChecklistItem(this, (ChecklistItem) item));
+            addChild(new ChecklistItem((ChecklistItem) item));
     }
 
     @Override // EntryList
@@ -81,11 +78,6 @@ public class Checklist extends EntryList {
         s.add(moveCheckedItemsToEnd);
         s.add(autoDeleteChecked);
         return s;
-    }
-
-    @Override // EntryList
-    public EntryListItemView makeItemView(EntryListItem item, EntryListActivity cxt) {
-        return new ChecklistItemView(item, false, cxt);
     }
 
     @Override // implement EntryListItem
@@ -111,23 +103,28 @@ public class Checklist extends EntryList {
         setText(job.getString("name"));
         JSONArray items = job.getJSONArray("items");
         for (int i = 0; i < items.length(); i++) {
-            ChecklistItem ci = new ChecklistItem(this, null, false);
+            ChecklistItem ci = new ChecklistItem((String)null);
             ci.fromJSON(items.getJSONObject(i));
-            getData().add(ci);
+            addChild(ci);
         }
     }
 
+    // CSV lists continue of a set of rows, each with the list name in the first column,
+    // the item name in the second column, and the done status in the third column
     @Override // EntryListItem
     public boolean fromCSV(CSVReader r) throws Exception {
-        setText("CSV");
-        String[] row = r.readNext();
-        if (row == null || !row[0].equals("Item"))
+        if (r.peek() == null)
             return false;
-        while (true) {
-            ChecklistItem ci = new ChecklistItem(this, null, false);
-            if (!ci.fromCSV(r))
-                break;
-            getData().add(ci);
+        if (getText() == null || r.peek()[0].equals(getText())) {
+            // recognised header row
+            if (getText() == null)
+                setText(r.peek()[0]);
+            while (r.peek() != null && r.peek()[0].equals(getText())) {
+                ChecklistItem ci = new ChecklistItem();
+                if (!ci.fromCSV(r))
+                    break;
+                addChild(ci);
+            }
         }
         return true;
     }
@@ -172,7 +169,10 @@ public class Checklist extends EntryList {
         for (EntryListItem item : getData()) {
             ChecklistItem ci = (ChecklistItem) item;
             if (ci.getFlag(ChecklistItem.isDone) != check) {
-                ci.setFlag(ChecklistItem.isDone, check);
+                if (check)
+                    ci.setFlag(ChecklistItem.isDone);
+                else
+                    ci.clearFlag(ChecklistItem.isDone);
                 changed = true;
             }
         }

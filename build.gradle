@@ -34,7 +34,7 @@ android {
     defaultConfig {
         applicationId 'com.cdot.lists'
         minSdkVersion 23
-        targetSdkVersion 30
+        targetSdkVersion 28
         versionCode 1
         versionName "1.0"
     }
@@ -75,7 +75,18 @@ dependencies {
     implementation 'androidx.preference:preference:1.1.1'
     implementation 'androidx.constraintlayout:constraintlayout:2.0.4'
 
+    // Emulator tests
+    // androidTestImplementation 'junit:junit:4.13'
+    // androidTestImplementation 'androidx.test:core:1.3.0'
+
+    // Roboelectric and JVM tests
     testImplementation 'junit:junit:4.13'
+    testImplementation 'org.robolectric:robolectric:4.3.1'
+    testImplementation 'androidx.test:core:1.3.0'
+    testImplementation "org.json:json:20190722"
+    testImplementation "org.hamcrest:hamcrest-junit:2.0.0.0"
+    testImplementation "uk.co.datumedge:hamcrest-json:0.1"
+    testImplementation "org.skyscreamer:jsonassert:1.5.0"
 }
 
 allprojects {

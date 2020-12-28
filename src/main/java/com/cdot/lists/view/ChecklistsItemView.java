@@ -6,6 +6,7 @@ package com.cdot.lists.view;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.EditText;
 
@@ -15,6 +16,8 @@ import com.cdot.lists.ChecklistActivity;
 import com.cdot.lists.EntryListActivity;
 import com.cdot.lists.ListerActivity;
 import com.cdot.lists.R;
+import com.cdot.lists.databinding.ChecklistsItemViewBinding;
+import com.cdot.lists.model.Checklist;
 import com.cdot.lists.model.Checklists;
 import com.cdot.lists.model.EntryList;
 import com.cdot.lists.model.EntryListItem;
@@ -25,13 +28,15 @@ import com.cdot.lists.model.EntryListItem;
 @SuppressLint("ViewConstructor")
 public class ChecklistsItemView extends EntryListItemView {
     private static final String TAG = ChecklistsItemView.class.getSimpleName();
+    ChecklistsItemViewBinding mBinding;
 
     @SuppressLint("ClickableViewAccessibility")
     public ChecklistsItemView(EntryListItem item, boolean isMoving, EntryListActivity cxt) {
-        super(item, isMoving, cxt, R.layout.checklists_item_view, R.menu.checklists_popup);
+        super(item, cxt);
+        mBinding = ChecklistsItemViewBinding.inflate(LayoutInflater.from(cxt), this, true);
 
         if (!isMoving)
-            addListeners();
+            addItemListeners(mBinding.moveButton, R.menu.checklists_popup);
 
         updateView();
     }
@@ -46,14 +51,14 @@ public class ChecklistsItemView extends EntryListItemView {
 
     @Override // EntryListItemView
     protected boolean onPopupMenuAction(int act) {
-        Checklists checklists = (Checklists) mItem.getContainer();
+        Checklists checklists = (Checklists) mItem.getParent();
         AlertDialog.Builder builder;
         if (act == R.id.action_delete) {
             builder = new AlertDialog.Builder(getContext());
             builder.setTitle(R.string.confirm_delete);
             builder.setMessage(getContext().getString(R.string.confirm_delete_list, mItem.getText()));
             builder.setPositiveButton(R.string.ok, (dialogInterface, which_button) -> {
-                EntryList el = mItem.getContainer();
+                EntryList el = mItem.getParent();
                 el.remove(mItem, true);
                 Log.d(TAG, "list deleted");
                 el.notifyChangeListeners();
@@ -73,14 +78,18 @@ public class ChecklistsItemView extends EntryListItemView {
             builder.setPositiveButton(R.string.ok, (dialogInterface, i) -> {
                 mItem.setText(editText.getText().toString());
                 Log.d(TAG, "list renamed");
-                mItem.getContainer().notifyChangeListeners();
+                mItem.getParent().notifyChangeListeners();
                 checkpoint();
             });
             builder.setNegativeButton(R.string.cancel, null);
             builder.show();
 
         } else if (act == R.id.action_copy) {
-            checklists.copyList(mItem);
+            Checklist checklist = new Checklist((Checklist)mItem);
+            String newname = checklist.getText() + " (copy)";
+            checklist.setText(newname);
+            checklists.addChild(checklist);
+            checklists.notifyChangeListeners();
             Log.d(TAG, "list copied");
             checkpoint();
 

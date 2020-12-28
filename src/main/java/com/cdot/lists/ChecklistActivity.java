@@ -29,11 +29,12 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
+import android.webkit.MimeTypeMap;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
+import android.widget.ListView;
 import android.widget.Spinner;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
@@ -42,12 +43,17 @@ import androidx.core.content.FileProvider;
 import com.cdot.lists.databinding.ChecklistActivityBinding;
 import com.cdot.lists.model.Checklist;
 import com.cdot.lists.model.ChecklistItem;
+import com.cdot.lists.model.Checklists;
 import com.cdot.lists.model.EntryList;
 import com.cdot.lists.model.EntryListItem;
 import com.cdot.lists.preferences.PreferencesActivity;
 import com.cdot.lists.view.ChecklistItemView;
 import com.cdot.lists.view.EntryListItemView;
+import com.google.android.material.snackbar.Snackbar;
 import com.opencsv.CSVWriter;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -68,8 +74,7 @@ public class ChecklistActivity extends EntryListActivity {
     public ChecklistActivity() {
     }
 
-    @Override
-        // EntryListActivity
+    @Override // EntryListActivity
     EntryList getList() {
         return mChecklist;
     }
@@ -78,6 +83,11 @@ public class ChecklistActivity extends EntryListActivity {
     public void onSaveInstanceState(@NonNull Bundle state) {
         super.onSaveInstanceState(state);
         state.putInt(UID_EXTRA, getList().getSessionUID());
+    }
+
+    @Override // ListerActivity
+    protected View getRootView() {
+        return mBinding.getRoot();
     }
 
     @Override
@@ -99,9 +109,11 @@ public class ChecklistActivity extends EntryListActivity {
         EntryList lists = getLister().getLists();
         mChecklist = (Checklist) lists.findBySessionUID(uid);
 
+        Log.d(TAG, "onCreate list " + mChecklist);
+
         mBinding = ChecklistActivityBinding.inflate(getLayoutInflater());
 
-        makeAdapter(mBinding.itemListView);
+        makeAdapter();
 
         mBinding.addItemET.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_AUTO_COMPLETE | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
         mBinding.addItemET.setOnEditorActionListener((textView, i, keyEvent) -> {
@@ -115,8 +127,8 @@ public class ChecklistActivity extends EntryListActivity {
         mBinding.addItemET.setImeOptions(EditorInfo.IME_ACTION_DONE);
 
         enableEditMode(getList().size() == 0);
-
         setContentView(mBinding.getRoot());
+        getSupportActionBar().setTitle(mChecklist.getText());
     }
 
     @Override // implements EntryListActivity
@@ -124,21 +136,25 @@ public class ChecklistActivity extends EntryListActivity {
         return "Checklist";
     }
 
+    @Override // EntryListActivity
+    public ListView getListView() {
+        return mBinding.itemListView;
+    }
+
     @Override // implements EntryListActivity
-    protected EntryListItemView makeMovingView(EntryListItem item) {
-        return new ChecklistItemView(item, true, this);
+    protected EntryListItemView makeItemView(EntryListItem item, boolean drag) {
+        return new ChecklistItemView(item, drag, this);
     }
 
     @Override // Activity
     public boolean onCreateOptionsMenu(@NonNull Menu menu) {
-        Log.d(TAG, "onCreateOptionsMenu");
+        //Log.d(TAG, "onCreateOptionsMenu");
         getMenuInflater().inflate(R.menu.checklist, menu);
         return true;
     }
 
     @Override // EntryListActivity
     public boolean onPrepareOptionsMenu(@NonNull Menu menu) {
-        Log.d(TAG, "onPrepareOptionsMenu");
         super.onPrepareOptionsMenu(menu);
 
         MenuItem it = menu.findItem(R.id.action_edit);
@@ -163,7 +179,7 @@ public class ChecklistActivity extends EntryListActivity {
     @Override // EntryListActivity
     public boolean onOptionsItemSelected(MenuItem menuItem) {
         // Beware dispatchTouchEvent stealing events
-        Log.d(TAG, "onOptionsItemSelected");
+        //Log.d(TAG, "onOptionsItemSelected");
         if (super.onOptionsItemSelected(menuItem))
             return true;
 
@@ -182,7 +198,7 @@ public class ChecklistActivity extends EntryListActivity {
                 mChecklist.notifyChangeListeners();
                 Log.d(TAG, "checked deleted");
                 checkpoint();
-                Toast.makeText(this, getString(R.string.items_deleted, deleted), Toast.LENGTH_SHORT).show();
+                report(getString(R.string.items_deleted, deleted), Snackbar.LENGTH_SHORT);
                 if (getList().size() == 0) {
                     enableEditMode(true);
                     mChecklist.notifyChangeListeners();
@@ -221,15 +237,15 @@ public class ChecklistActivity extends EntryListActivity {
         } else if (it == R.id.action_undo_delete) {
             int undone = mChecklist.undoRemove();
             if (undone == 0)
-                Toast.makeText(this, R.string.no_deleted_items, Toast.LENGTH_SHORT).show();
+                report(R.string.no_deleted_items, Snackbar.LENGTH_SHORT);
             else {
                 mChecklist.notifyChangeListeners();
                 Log.d(TAG, "delete undone");
                 checkpoint();
-                Toast.makeText(this, getString(R.string.items_restored, undone), Toast.LENGTH_SHORT).show();
+                report(getString(R.string.items_restored, undone), Snackbar.LENGTH_SHORT);
             }
 
-        } else if (it == R.id.action_save_list_as)
+        } else if (it == R.id.action_export_list)
             exportChecklist();
 
         else if (it == R.id.action_settings) {
@@ -316,10 +332,9 @@ public class ChecklistActivity extends EntryListActivity {
      * @param str the text of the item
      */
     private void addItem(String str) {
-        ChecklistItem item = new ChecklistItem(mChecklist, str, false);
-        getList().add(item);
-        Log.d(TAG, "item added");
-        getList().notifyChangeListeners();
+        ChecklistItem item = new ChecklistItem(str);
+        getList().addChild(item);
+        Log.d(TAG, "item " + item + " added to " + getList());
         mBinding.addItemET.setText("");
         mBinding.itemListView.smoothScrollToPosition(getDisplayOrder().indexOf(item));
         checkpoint();
@@ -373,7 +388,7 @@ public class ChecklistActivity extends EntryListActivity {
             String mimeType = getResources().getStringArray(R.array.share_format_mimetype)[mPlace[0]];
             intent.setType(mimeType);
 
-            String ext = getResources().getStringArray(R.array.share_format_mimeext)[mPlace[0]];
+            String ext = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType) ;
             String fileName = listName.replaceAll("[/\u0000]", "_") + ext;
             // WTF! The EXTRA_SUBJECT is used as the document title for Drive saves!
             intent.putExtra(Intent.EXTRA_SUBJECT, fileName);
@@ -393,7 +408,17 @@ public class ChecklistActivity extends EntryListActivity {
                         break;
 
                     case "application/json":
-                        w.write(mChecklist.toJSON().toString());
+                        // This doesn't have to be fast, so we use the clunky but safe mechanism of serialising to
+                        // JSON to simplify parenthood
+                        JSONObject listJob = mChecklist.toJSON();
+                        Checklists container = new Checklists();
+                        Checklist copy = new Checklist();
+                        try {
+                            copy.fromJSON(listJob);
+                        } catch (JSONException ignore) {
+                        }
+                        container.addChild(copy);
+                        w.write(container.toJSON().toString());
                         break;
 
                     case "text/csv":
@@ -416,9 +441,8 @@ public class ChecklistActivity extends EntryListActivity {
                 startActivity(Intent.createChooser(intent, fileName));
 
             } catch (Exception e) {
-                String mess = getString(R.string.failed_export, e.getMessage());
-                Log.d(TAG, mess);
-                Toast.makeText(this, mess, Toast.LENGTH_SHORT).show();
+                Log.d(TAG, "Export failed " + e.getMessage());
+                report(R.string.failed_export, Snackbar.LENGTH_SHORT);
             }
         });
         builder.setNegativeButton(R.string.cancel, null);

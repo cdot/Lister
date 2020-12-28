@@ -8,13 +8,14 @@
     <string name="action_create_uri">Create New Store</string>
     <string name="action_delete">Delete</string>
     <string name="action_delete_checked">Delete All Checked Items</string>
-    <string name="action_device_settings">Device settings</string>
+    <string name="action_device_settings">Preferences</string>
     <string name="action_edit_list">Edit List</string>
+    <string name="action_export_all_lists">Export All Lists</string>
     <string name="action_export_list">Export List</string>
     <string name="action_help">Help</string>
     <string name="action_item_add_off">Add off</string>
     <string name="action_item_add_on">Add on</string>
-    <string name="action_import_list">Import List</string>
+    <string name="action_import_lists">Import Lists</string>
     <string name="action_list_settings">List settings</string>
     <string name="action_new_list">New List</string>
     <string name="action_rename_list">Rename</string>
@@ -25,6 +26,7 @@
 
     <string name="cache_is_newer">Local cache is newer than saved lists</string>
     <string name="cancel">Cancel</string>
+    <string name="close">Close</string>
     <string name="confirm_delete">Confirm Delete</string>
     <string name="confirm_delete_list">Delete list \'%1$s\'?</string>
     <string name="create_new_list">Create New List</string>
@@ -34,28 +36,35 @@
     <string name="enter_new_name_of_list">Enter new name of list:</string>
     <string name="export_format">Format to Export</string>
 
-    <string name="failed_cache_load">Could not load cache: %1$s</string>
-    <string name="failed_export">Export Failed: %1$s</string>
+    <string name="failed_access_denied">Store access denied</string>
+    <string name="failed_cache_load">Could not load cache</string>
+    <string name="failed_export">Export Failed</string>
     <string name="failed_import">Import failed</string>
+    <string name="failed_no_uri">Please create a store in Preferences</string>
     <string name="failed_save_to_cache">Save to cache failed. Recent changes may be lost!</string>
+    <string name="failed_save_to_cache_and_uri">Store and Cache saves both failed</string>
     <string name="failed_save_to_uri">Save to store failed. Recent changes have been saved in the cache, but may be lost!</string>
     <string name="failed_uri_access">Access to store denied. Please re-confirm store location</string>
-    <string name="failed_uri_load">Could not load from store</string>
+    <string name="failed_uri_load">Could not load from store, relying on cache</string>
 
     <string name="general_settings">General Settings</string>
 
-    <string name="help_change_uri">Select to choose a different place to store lists</string>
-    <string name="help_create_uri">Select to create a different place to store lists</string>
+    <string name="help_change_uri">Choose a different existing list store</string>
+    <string name="help_checked_at_end">Display checked items at the end of the list</string>
+    <string name="help_create_uri">Create a new place to store lists</string>
+    <string name="help_delete_checked">Delete checked items. Deletion can be undone</string>
     <string name="help_grey_checked">Grey out checked items, to make them more obvious</string>
     <string name="help_left_hand">Flip list items to make left-handed operation easier</string>
     <string name="help_overlap_lock">Display even when the screen is locked</string>
     <string name="help_row_toggles">When active, clicking anywhere on a row will toggle the state</string>
     <string name="help_stay_awake">Keep the screen active. This is a security risk, as the device will stay unlocked!</string>
     <string name="help_strike_checked">Strike through checked items, to make them more obvious</string>
+    <string name="help_warn_duplicate_item">Warn when a duplicate item is about to be added to the list</string>
+    <string name="help_warn_duplicate_list">Warn about duplicate list names</string>
 
-    <string name="import_report">Imported list \'%1$s\'</string>
-    <string name="items_deleted">%d items deleted</string>
-    <string name="items_restored">%d items restored</string>
+    <string name="import_report">Imported %1$s</string>
+    <string name="items_deleted">%d entries deleted</string>
+    <string name="items_restored">%d entries restored</string>
 
     <string name="locale_prefix">default</string>
 
@@ -76,17 +85,13 @@
     <string name="option_stay_awake">Stay awake</string>
     <string name="option_strike_checked">Strike checked</string>
     <string name="option_text_size">Text size</string>
-    <string name="option_warn_duplicate">Warn duplicate</string>
+    <string name="option_warn_duplicate_item">Warn about duplicate items</string>
+    <string name="option_warn_duplicate_list">Warn about duplicate lists</string>
 
     <string name="rename_list">Rename List</string>
 
-    <string name="similar_item_already_in_list">Similar item already in list</string>
-    <string name="similar_item_x_already_in_list">Similar item \'%1$s\' already in list. Add \'%2$s\' to list?</string>
-
-    <string name="uri_access_denied">Store access denied</string>
-    <string name="help_checked_at_end">Display checked items at the end of the list</string>
-    <string name="help_delete_checked">Delete checked items. Deletion can be undone</string>
-    <string name="help_warn_duplicate">Warn when a duplicate item is about to be added</string>
+    <string name="similar_item_already_in_list">Similar entry found</string>
+    <string name="similar_item_x_already_in_list">Similar entry \'%1$s\' already there. Add another \'%2$s\'?</string>
 
     <!-- Arrays -->
     <string-array name="text_size_options">
@@ -105,8 +110,8 @@
 
     <string-array name="share_format_description">
         <item>Plain text</item>
-        <item>JSON data (.json)</item>
-        <item>Comma-separated Values (.csv)</item>
+        <item>JSON data</item>
+        <item>Comma-separated Values</item>
     </string-array>
 
     <string-array name="share_format_mimetype">
@@ -114,11 +119,4 @@
         <item>application/json</item>
         <item>text/csv</item>
     </string-array>
-
-    <string-array name="share_format_mimeext">
-        <item>.txt</item>
-        <item>.json</item>
-        <item>.csv</item>
-    </string-array>
-
 </resources>

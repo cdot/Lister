@@ -21,41 +21,23 @@ import com.cdot.lists.model.EntryListItem;
  * Base class of views on list entries. Provides the basic functionality of a sortable text view.
  */
 @SuppressLint("ViewConstructor")
-public class EntryListItemView extends RelativeLayout implements View.OnClickListener {
+public abstract class EntryListItemView extends RelativeLayout implements View.OnClickListener {
     private final String TAG = EntryListItemView.class.getSimpleName();
 
-    // True if this view is of an item being moved
-    protected boolean mIsMoving;
     // The item being moved
     protected EntryListItem mItem;
-    // The menu resource for this list item
-    protected int mMenuResource;
     // Activity this view belongs to
     protected EntryListActivity mActivity;
 
     /**
      * Constructor
-     *
      * @param item     the item this is a view of
-     * @param isMoving whether this is the special case of an item that is being moved
      * @param cxt      the context for the view
-     * @param layoutR  R.layout of the view
-     * @param menuR    R.menu of the popup menu
      */
-    EntryListItemView(EntryListItem item, boolean isMoving, EntryListActivity cxt, int layoutR, int menuR) {
+    EntryListItemView(EntryListItem item, EntryListActivity cxt) {
         super(cxt);
-        inflate(cxt, layoutR, this);
         mActivity = cxt;
-        mIsMoving = isMoving;
-        mMenuResource = menuR;
         setItem(item);
-        if (!isMoving)
-            addListeners();
-    }
-
-    @Override // implement View.OnLongClickListener
-    public void onClick(View view) {
-        // override in subclasses
     }
 
     /**
@@ -85,20 +67,25 @@ public class EntryListItemView extends RelativeLayout implements View.OnClickLis
         mActivity.checkpoint();
     }
 
+    /**
+     *
+     * @param butt moveButton
+     * @param menuR R.menu of the popup menu
+     */
     @SuppressLint("ClickableViewAccessibility")
-    void addListeners() {
-        ImageButton butt = findViewById(R.id.move_button);
-        butt.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View view, MotionEvent motionEvent) {
-                Log.d(TAG, "OnTouch " + motionEvent.getAction() + " " + Integer.toHexString(System.identityHashCode(this)));
-                if (motionEvent.getAction() == MotionEvent.ACTION_DOWN)
-                    mActivity.mMovingItem = mItem;
-                return true;
+    void addItemListeners(ImageButton butt, int menuR) {
+        butt.setOnTouchListener((view, motionEvent) -> {
+            if (motionEvent.getAction() == MotionEvent.ACTION_DOWN) {
+                Log.d(TAG, "OnDrag " + mItem.getText());
+                mActivity.mMovingItem = mItem;
             }
+            return true;
         });
         setOnLongClickListener(view -> {
-            showMenu();
+            PopupMenu popupMenu = new PopupMenu(getContext(), this);
+            popupMenu.inflate(menuR);
+            popupMenu.setOnMenuItemClickListener(menuItem -> onPopupMenuAction(menuItem.getItemId()));
+            popupMenu.show();
             return true;
         });
         setOnClickListener(this);
@@ -112,7 +99,7 @@ public class EntryListItemView extends RelativeLayout implements View.OnClickLis
         TextView it = findViewById(R.id.item_text);
         String t = mItem.getText();
         it.setText(t);
-        setTextFormatting();
+        setTextFormatting(it);
         ImageButton mb = findViewById(R.id.move_button);
         mb.setVisibility(mActivity.canManualSort() ? View.VISIBLE : View.GONE);
     }
@@ -120,26 +107,19 @@ public class EntryListItemView extends RelativeLayout implements View.OnClickLis
     /**
      * Format the text according to current status of the item. Base class handles global settings.
      */
-    protected void setTextFormatting() {
-        TextView it = findViewById(R.id.item_text);
-        int padding;
-        // Size
+    protected void setTextFormatting(TextView it) {
         switch (getLister().getInt(Lister.PREF_TEXT_SIZE_INDEX)) {
             case Lister.TEXT_SIZE_SMALL:
                 it.setTextAppearance(android.R.style.TextAppearance_DeviceDefault_Small);
-                padding = 0;
                 break;
             default:
             case Lister.TEXT_SIZE_MEDIUM:
                 it.setTextAppearance(android.R.style.TextAppearance_DeviceDefault_Medium);
-                padding = 5;
                 break;
             case Lister.TEXT_SIZE_LARGE:
                 it.setTextAppearance(android.R.style.TextAppearance_DeviceDefault_Large);
-                padding = 10;
                 break;
         }
-        it.setPadding(0, padding, 0, padding);
     }
 
     /**
@@ -150,15 +130,5 @@ public class EntryListItemView extends RelativeLayout implements View.OnClickLis
      */
     protected boolean onPopupMenuAction(int action) {
         return false;
-    }
-
-    /**
-     * Show the popup menu for the item
-     */
-    private void showMenu() {
-        PopupMenu popupMenu = new PopupMenu(getContext(), this);
-        popupMenu.inflate(mMenuResource);
-        popupMenu.setOnMenuItemClickListener(menuItem -> onPopupMenuAction(menuItem.getItemId()));
-        popupMenu.show();
     }
 }

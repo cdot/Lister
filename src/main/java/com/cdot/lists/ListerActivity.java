@@ -24,14 +24,16 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.DocumentsContract;
 import android.util.Log;
+import android.view.View;
 import android.view.WindowManager;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
-public class ListerActivity extends AppCompatActivity implements SharedPreferences.OnSharedPreferenceChangeListener {
+import com.google.android.material.snackbar.Snackbar;
+
+public abstract class ListerActivity extends AppCompatActivity implements SharedPreferences.OnSharedPreferenceChangeListener {
     // Request codes handled in onActivityResult
     public static final int REQUEST_CHANGE_STORE = 1;
     public static final int REQUEST_CREATE_STORE = 2;
@@ -68,7 +70,6 @@ public class ListerActivity extends AppCompatActivity implements SharedPreferenc
 
     void setStayAwake() {
         boolean stay = getLister().getBool(Lister.PREF_STAY_AWAKE);
-        Log.d(TAG, "Settings: stay awake " + stay);
         if (stay)
             getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         else
@@ -105,7 +106,6 @@ public class ListerActivity extends AppCompatActivity implements SharedPreferenc
     @Override // Activity
     public void onResume() {
         super.onResume();
-        Log.d(TAG, "onResume");
         ensureListsLoaded();
         setStayAwake(); // re-acquire wakelock if necessary
         getLister().getPrefs().registerOnSharedPreferenceChangeListener(this);
@@ -124,17 +124,15 @@ public class ListerActivity extends AppCompatActivity implements SharedPreferenc
         ensureListsLoaded();
     }
 
-    protected synchronized void ensureListsLoaded() {
-        if (getLister().mListsLoaded)
-            return;
+    public synchronized void ensureListsLoaded() {
         getLister().loadLists(this,
                 lists -> runOnUiThread(this::onListsLoaded),
                 code -> {
-                    if (code == R.string.uri_access_denied) {
+                    if (code == R.string.failed_access_denied) {
                         // In a thread, have to use the UI thread to request access
                         runOnUiThread(() -> {
                             AlertDialog.Builder builder = new AlertDialog.Builder(this);
-                            builder.setTitle(R.string.uri_access_denied);
+                            builder.setTitle(R.string.failed_access_denied);
                             builder.setMessage(R.string.failed_uri_access);
                             builder.setPositiveButton(R.string.ok, (dialogInterface, i) -> {
                                 Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
@@ -151,9 +149,9 @@ public class ListerActivity extends AppCompatActivity implements SharedPreferenc
                             });
                             builder.show();
                         });
-                    } else {
-                        runOnUiThread(() -> Toast.makeText(this, code, Toast.LENGTH_LONG).show());
+                        return true;
                     }
+                    return report(code, Snackbar.LENGTH_INDEFINITE);
                 });
     }
 
@@ -163,17 +161,34 @@ public class ListerActivity extends AppCompatActivity implements SharedPreferenc
     public void checkpoint() {
         getLister().saveLists(this,
                 okdata -> Log.d(TAG, "checkpoint save OK"),
-                code -> runOnUiThread(() ->
-                        Toast.makeText(this, code, Toast.LENGTH_SHORT).show()));
+                code -> report(code, Snackbar.LENGTH_SHORT));
     }
 
     // Strictly speaking, this only applies in ChecklistsActivity, as it's the only place
     // these preferences can be changed
     @Override // SharedPreferences.OnSharedPreferencesListener
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-        if (getLister().PREF_ALWAYS_SHOW.equals(key))
+        if (Lister.PREF_ALWAYS_SHOW.equals(key))
             setShowOverLockScreen();
-        else if (getLister().PREF_STAY_AWAKE.equals(key))
+        else if (Lister.PREF_STAY_AWAKE.equals(key))
             setStayAwake();
+    }
+
+    protected abstract View getRootView();
+
+    public boolean report(int code, int duration) {
+        runOnUiThread(() -> Snackbar.make(getRootView(), code, duration)
+                .setAction(R.string.close, x -> {
+                    // Responds to click on the action
+                }).show());
+        return true;
+    }
+
+    public boolean report(String mess, int duration) {
+        runOnUiThread(() -> Snackbar.make(getRootView(), mess, duration)
+                .setAction(R.string.close, x -> {
+                    // Responds to click on the action
+                }).show());
+        return true;
     }
 }

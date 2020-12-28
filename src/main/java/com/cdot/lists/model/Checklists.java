@@ -20,9 +20,6 @@ package com.cdot.lists.model;
 
 import android.util.Log;
 
-import com.cdot.lists.EntryListActivity;
-import com.cdot.lists.view.ChecklistsItemView;
-import com.cdot.lists.view.EntryListItemView;
 import com.opencsv.CSVReader;
 
 import org.json.JSONArray;
@@ -40,12 +37,6 @@ public class Checklists extends EntryList {
     private String mURI; // URI it was loaded from (or is a cache for)
 
     public Checklists() {
-        super(null);
-    }
-
-    @Override // EntryList
-    public EntryListItemView makeItemView(EntryListItem item, EntryListActivity frag) {
-        return new ChecklistsItemView(item, false, frag);
     }
 
     @Override // implement EntryListItem
@@ -89,39 +80,43 @@ public class Checklists extends EntryList {
             mURI = job.has("uri") ? job.getString("uri") : "";
             JSONArray lists = job.getJSONArray("items");
             for (int i = 0; i < lists.length(); i++)
-                add(new Checklist(this, lists.getJSONObject(i)));
+                addChild(new Checklist(lists.getJSONObject(i)));
             Log.d(TAG, "Extracted " + lists.length() + " lists from JSON");
         } catch (JSONException je) {
             // Only one list
             Log.d(TAG, "Could not get lists from JSON, assume one list only");
-            add(new Checklist(this, job));
+            addChild(new Checklist(job));
         }
     }
 
     @Override // EntryListItem
     public boolean fromCSV(CSVReader r) throws Exception {
-        throw new Exception("Unable to read multiple lists from CSV");
+        while (r.peek() != null) {
+            Checklist list = new Checklist();
+            list.fromCSV(r);
+            addChild(list);
+        }
+        return true;
     }
 
     @Override // EntryList
     public String toPlainString(String tab) {
         StringBuilder sb = new StringBuilder();
         for (EntryListItem item : getData()) {
-            sb.append(tab).append(item.getText()).append(":\n");
-            sb.append(item.toPlainString(tab + "\t")).append("\n");
+            sb.append(item.toPlainString(tab)).append("\n");
         }
         return sb.toString();
     }
 
     /**
-     * Get the URI this was loaded from (may be null)
+     * Get the store URI this was loaded from (may be null)
      */
     public String getURI() {
         return mURI;
     }
 
     /**
-     * Record the URI this was loaded from
+     * Record the store URI this was loaded from
      */
     public void setURI(String uri) {
         mURI = uri;
@@ -136,18 +131,5 @@ public class Checklists extends EntryList {
      */
     public boolean isMoreRecentVersionOf(Checklists other) {
         return other.mURI.equals(mURI) && mTimestamp > other.mTimestamp;
-    }
-
-    /**
-     * Make a copy of the list at the given index
-     *
-     * @param i index of the list to clone
-     */
-    public void copyList(EntryListItem i) {
-        Checklist checklist = new Checklist(this, (Checklist) i);
-        String newname = checklist.getText() + " (copy)";
-        checklist.setText(newname);
-        add(checklist);
-        notifyChangeListeners();
     }
 }

@@ -10,9 +10,10 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.util.Log;
+import android.webkit.MimeTypeMap;
 
-import com.cdot.lists.model.Checklist;
 import com.cdot.lists.model.Checklists;
+import com.cdot.lists.model.EntryListItem;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -22,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -29,8 +31,6 @@ import java.util.Objects;
  * Application singleton that handles the lists and preferences
  */
 public class Lister extends Application {
-    public static final String TAG = Lister.class.getSimpleName();
-
     // Shared Preferences
     public static final String PREF_ALWAYS_SHOW = "showListInFrontOfLockScreen";
     public static final String PREF_GREY_CHECKED = "greyCheckedItems";
@@ -41,20 +41,19 @@ public class Lister extends Application {
     public static final String PREF_STRIKE_CHECKED = "strikeThroughCheckedItems";
     public static final String PREF_TEXT_SIZE_INDEX = "textSizeIndex";
     public static final String PREF_URI = "backingStore";
-
+    public static final String PREF_WARN_DUPLICATE = "warnDuplicates";
     public static final String CACHE_FILE = "checklists.json";
-
     // Must match res/values/strings.xml/text_size_list
     public static final int TEXT_SIZE_DEFAULT = 0;
     public static final int TEXT_SIZE_SMALL = 1;
     public static final int TEXT_SIZE_MEDIUM = 2;
     public static final int TEXT_SIZE_LARGE = 3;
-    public static final int REQUEST_IMPORT_LIST = 3;
-    // Use for debug. bitmask, 0 = normal, 1 = fail network load, 2 = fail network and cache
-    static final int FORCE_LOAD_FAIL = 0;
+    public static final int REQUEST_IMPORT = 3;
+    private static final String TAG = Lister.class.getSimpleName();
     private final static Map<String, Boolean> sBoolDefaults = new HashMap<String, Boolean>() {{
         put(PREF_ALWAYS_SHOW, false);
         put(PREF_GREY_CHECKED, true);
+        put(PREF_WARN_DUPLICATE, true);
         put(PREF_ENTIRE_ROW_TOGGLES, true);
         put(PREF_LAST_STORE_FAILED, false);
         put(PREF_LEFT_HANDED, false);
@@ -67,9 +66,12 @@ public class Lister extends Application {
     private final static Map<String, String> sStringDefaults = new HashMap<String, String>() {{
         put(PREF_URI, null);
     }};
-    public boolean mListsLoaded = false;
+    // TESTING ONLY
+    public static int FORCE_CACHE_FAIL = 0;
+    private final Checklists mLists; // List of lists
+    private boolean mListsLoaded = false;
+    private boolean mListsLoading = false;
     private SharedPreferences mPrefs;
-    private Checklists mLists; // List of lists
     private Thread mLoadThread = null;
 
     public Lister() {
@@ -96,18 +98,20 @@ public class Lister extends Application {
      */
     public void loadLists(Context cxt, SuccessCallback onOK, FailCallback onFail) {
 
-        if (mLoadThread != null && mLoadThread.isAlive()) {
-            mLoadThread.interrupt();
-            mLoadThread = null;
-        }
+        // We can arrive here after synchronization lock is released by a previous load
+        if (mListsLoaded || mListsLoading)
+            return;
+
+        mListsLoading = true;
 
         // Asynchronously load the URI. If the load fails, try the cache
-        final Uri uri = getUri(PREF_URI);
-        if (uri == null)
-            return;
         mLoadThread = new Thread(() -> {
+            final Uri uri = getUri(PREF_URI);
+
             Log.d(TAG, "Starting load thread to load from " + uri);
             try {
+                if (uri == null)
+                    throw new Exception("Null URI (this is OK)");
                 InputStream stream;
                 if (Objects.equals(uri.getScheme(), ContentResolver.SCHEME_FILE)) {
                     stream = new FileInputStream(new File((uri.getPath())));
@@ -116,52 +120,69 @@ public class Lister extends Application {
                 } else {
                     throw new IOException("Failed to load lists. Unknown uri scheme: " + uri.getScheme());
                 }
-                if (mLoadThread.isInterrupted())
-                    return;
-                if ((FORCE_LOAD_FAIL & 1) != 0)
-                    throw new IOException("Load from net failure forced");
-                else {
-                    mLists.fromStream(stream);
-                    mLists.setURI(uri.toString());
-                    // Check against the cache
-                    loadCache(new Checklists(), cxt,
-                            o -> {
-                                Checklists cachedLists = (Checklists) o;
-                                Log.d(TAG, "Cache remembers URI " + cachedLists.getURI());
-                                if (cachedLists.isMoreRecentVersionOf(mLists)) {
-                                    Log.d(TAG, "Cache is more recent");
-                                    loadCache(mLists, cxt, o2 -> {
-                                        mListsLoaded = true;
-                                        Log.d(TAG, mLists.size() + " lists loaded from cache");
-                                        onOK.succeeded(mLists);
-                                    }, onFail);
-                                } else {
-                                    mListsLoaded = true;
-                                    onOK.succeeded(mLists);
-                                }
-                            },
-                            code -> {
-                                if (code == R.string.no_cache)
-                                    // Backing store loaded OK but cache did not exist. That's OK.
-                                    onOK.succeeded(mLists);
-                                else
-                                    onFail.failed(code);
-                            });
-                }
+
+                mLists.fromStream(stream);
+                mLists.setURI(uri.toString());
+                // Check against the cache
+                loadCache(new Checklists(), cxt,
+                        o -> {
+                            Checklists cachedLists = (Checklists) o;
+                            Log.d(TAG, "Cache remembers URI " + cachedLists.getURI());
+                            if (cachedLists.isMoreRecentVersionOf(mLists)) {
+                                Log.d(TAG, "Cache is more recent");
+                                loadCache(mLists, cxt,
+                                        o2 -> {
+                                            Log.d(TAG, mLists.size() + " lists loaded from cache");
+                                            mListsLoading = false;
+                                            mListsLoaded = true;
+                                            onOK.succeeded(mLists);
+                                        },
+                                        code -> {
+                                            // Could not load from cache, even though we already loaded from cache!
+                                            mListsLoading = false;
+                                            return onFail.failed(code);
+                                        });
+                            } else {
+                                mListsLoaded = true;
+                                mListsLoading = false;
+                                onOK.succeeded(mLists);
+                            }
+                        },
+                        code -> {
+                            onFail.failed(code);
+                            mListsLoading = false;
+                            // Backing store loaded OK but cache failed. That's OK.
+                            mListsLoaded = true;
+                            onOK.succeeded(mLists);
+                            return true;
+                        });
             } catch (final SecurityException se) {
                 // openInputStream denied, pass back uri_acces_denied to reroute through picker
                 // to re-establish permissions
-                onFail.failed(R.string.uri_access_denied);
-                Log.d(TAG, "Security Exception loading " + uri + ": " + se);
+                Log.e(TAG, "Security Exception loading " + uri + ": " + se);
+                mListsLoading = false;
+                onFail.failed(R.string.failed_access_denied);
             } catch (Exception e) {
-                Log.d(TAG, "Exception loading from " + uri + ": " + e);
-                onFail.failed(R.string.failed_uri_load);
-                loadCache(mLists, cxt, o -> {
-                    if (!mLists.getURI().equals(uri.toString()))
-                        mLists.clear();
-                    Log.d(TAG, mLists.size() + " lists loaded from cache");
-                    onOK.succeeded(mLists);
-                }, onFail);
+                if (uri == null) {
+                    onFail.failed(R.string.failed_no_uri);
+                } else {
+                    Log.e(TAG, "Exception loading from " + uri + ": " + e);
+                    onFail.failed(R.string.failed_uri_load);
+                }
+                Log.d(TAG, "Loading " + mLists + " from cache");
+                loadCache(mLists, cxt,
+                        o -> {
+                            if (uri != null && !mLists.getURI().equals(uri.toString()))
+                                mLists.clear();
+                            Log.d(TAG, mLists.size() + " lists loaded to " + mLists + " from cache");
+                            mListsLoaded = true;
+                            mListsLoading = false;
+                            onOK.succeeded(mLists);
+                        },
+                        code -> {
+                            mListsLoading = false;
+                            return onFail.failed(code);
+                        });
             }
         });
         mLoadThread.start();
@@ -169,19 +190,19 @@ public class Lister extends Application {
 
     private void loadCache(Checklists cacheLists, Context cxt, SuccessCallback onOK, FailCallback onFail) {
         try {
-            if ((Lister.FORCE_LOAD_FAIL & 2) != 0)
-                throw new Exception("Cache load fail forced");
-            else {
+            if (FORCE_CACHE_FAIL != 0) {
+                // TESTING ONLY
+                onFail.failed(FORCE_CACHE_FAIL);
+            } else {
                 FileInputStream fis = cxt.openFileInput(CACHE_FILE);
                 cacheLists.fromStream(fis);
-                Log.d(TAG, cacheLists.size() + " lists loaded from cache");
                 onOK.succeeded(cacheLists);
             }
         } catch (FileNotFoundException ce) {
-            Log.d(TAG, "FileNotFoundException loading cache " + CACHE_FILE + ": " + ce);
+            Log.e(TAG, "FileNotFoundException loading cache " + CACHE_FILE + ": " + ce);
             onFail.failed(R.string.no_cache);
         } catch (Exception ce) {
-            Log.d(TAG, "Failed cache load " + CACHE_FILE + ": " + ce);
+            Log.e(TAG, "Failed cache load " + CACHE_FILE + ": " + ce);
             onFail.failed(R.string.failed_cache_load);
         }
     }
@@ -190,24 +211,37 @@ public class Lister extends Application {
      * Save changes.
      * If there's a failure saving to the backing store, we set lastStoreSaveFailed in the preferences.
      * If there's a failure saving to the cache, this is a major problem that may not be recoverable.
+     *
+     * @param onSuccess succeeded will be called with null parameter
+     * @param onFail    failed will be called with a resource id indicating the type of failure
      */
     public void saveLists(Context cxt, SuccessCallback onSuccess, FailCallback onFail) {
 
         // Always save to the cache.
         Log.d(TAG, "Saving to cache");
+        boolean coke = false;
         try {
+            if (FORCE_CACHE_FAIL != 0)
+                throw new Exception("TEST CACHE SAVE FAIL");
             String jsonString = mLists.toJSON().toString(1);
             FileOutputStream stream = cxt.openFileOutput(CACHE_FILE, Context.MODE_PRIVATE);
             stream.write(jsonString.getBytes());
             stream.close();
+            coke = true;
         } catch (Exception e) {
             Log.e(TAG, "Exception saving to cache: " + e);
             onFail.failed(R.string.failed_save_to_cache);
         }
 
+        final boolean cacheOK = coke;
         final Uri uri = getUri(PREF_URI);
-        if (uri == null)
+        if (uri == null) {
+            if (cacheOK)
+                onSuccess.succeeded(null);
+            else
+                onFail.failed(R.string.failed_save_to_cache_and_uri);
             return;
+        }
 
         final byte[] data;
         try {
@@ -239,11 +273,13 @@ public class Lister extends Application {
                     Log.e(TAG, "Exception while saving to Uri " + ioe.getMessage());
                     setBool(PREF_LAST_STORE_FAILED, true);
                     onFail.failed(R.string.failed_save_to_uri);
+                    if (cacheOK)
+                        onSuccess.succeeded(null);
                 }
             }).start();
         } catch (Exception e) {
             Log.e(TAG, "" + e);
-            onFail.failed(R.string.failed_save_to_cache);
+            onFail.failed(R.string.failed_save_to_uri);
         }
     }
 
@@ -254,24 +290,38 @@ public class Lister extends Application {
             return;
         }
         try {
+            Log.d(TAG, "Importing from " + uri);
             InputStream stream;
-            if (Objects.equals(uri.getScheme(), "file")) {
-                stream = new FileInputStream(new File((uri.getPath())));
-            } else if (Objects.equals(uri.getScheme(), "content")) {
-                stream = cxt.getContentResolver().openInputStream(uri);
-            } else {
-                throw new IOException("Failed to load lists. Unknown uri scheme: " + uri.getScheme());
-            }
-            Checklist newList = new Checklist(mLists, "Unknown");
-            newList.fromStream(stream);
+            // Work out the mime type
+            String type = null;
+            String extension = MimeTypeMap.getFileExtensionFromUrl(uri.toString());
+            if ("json".equals(extension))
+                type = "application/json";
+            else if ("csv".equals(extension))
+                type = "text.csv";
+            else if (extension != null)
+                // getting desperate
+                type = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
+            if (type == null)
+                // last ditch
+                type = cxt.getContentResolver().getType(uri);
 
-            mLists.add(newList);
-            Log.d(TAG, "imported list: " + newList.getText());
-            mLists.notifyChangeListeners();
-            Log.d(TAG, "Save imported list");
+            if (Objects.equals(uri.getScheme(), "file"))
+                stream = new FileInputStream(new File(uri.getPath()));
+            else if (Objects.equals(uri.getScheme(), "content"))
+                stream = cxt.getContentResolver().openInputStream(uri);
+            else
+                throw new IOException("Failed to load lists. Unknown uri scheme: " + uri.getScheme());
+
+            Checklists newLists = new Checklists();
+            newLists.fromStream(stream, type);
+            List<EntryListItem> ret = newLists.cloneItemList();
+            for (EntryListItem eli : ret)
+                mLists.addChild(eli); // depopulates newLists, but not ret
             saveLists(cxt, d -> {
+                Log.d(TAG, "Saved imported lists");
+                onOK.succeeded(ret);
             }, onFail);
-            onOK.succeeded(newList);
         } catch (Exception e) {
             Log.e(TAG, "import failed " + e.getMessage());
             onFail.failed(R.string.failed_import);
@@ -302,18 +352,19 @@ public class Lister extends Application {
     }
 
     public int getInt(String name) {
-        return getPrefs().getInt(name, sIntDefaults.get(name));
+        Integer deflt = sIntDefaults.get(name);
+        return getPrefs().getInt(name, deflt == null ? 0 : deflt);
     }
 
     public void setInt(String name, int value) {
         SharedPreferences.Editor e = getPrefs().edit();
-        sIntDefaults.put(name, value);
         e.putInt(name, value);
         e.apply();
     }
 
     public boolean getBool(String name) {
-        return getPrefs().getBoolean(name, sBoolDefaults.get(name));
+        Boolean deflt = sBoolDefaults.get(name);
+        return getPrefs().getBoolean(name, deflt == null ? false : deflt);
     }
 
     public void setBool(String name, boolean value) {
@@ -323,20 +374,25 @@ public class Lister extends Application {
     }
 
     public Uri getUri(String name) {
-        String uris = getPrefs().getString(name, sStringDefaults.get(name));
-        if (uris == null)
-            return null;
-        return Uri.parse(uris);
+        String deflt = sStringDefaults.get(name);
+        String uris = getPrefs().getString(name, deflt);
+        return (uris == null) ? null : Uri.parse(uris);
     }
 
     public void setUri(String name, Uri value) {
         SharedPreferences.Editor e = getPrefs().edit();
-        e.putString(name, value.toString());
+        e.putString(name, value == null ? null : value.toString());
         e.apply();
     }
 
     public interface FailCallback {
-        void failed(int resource);
+        /**
+         * Return false if it's unsafe to continue with the operation after recording the failure
+         *
+         * @param resource resource (error) code
+         * @return true if the operation is safe to continue, false otherwise
+         */
+        boolean failed(int resource);
     }
 
     public interface SuccessCallback {

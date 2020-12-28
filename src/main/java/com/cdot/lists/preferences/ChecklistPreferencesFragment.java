@@ -23,7 +23,6 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.preference.CheckBoxPreference;
-import androidx.preference.PreferenceFragmentCompat;
 
 import com.cdot.lists.Lister;
 import com.cdot.lists.ListerActivity;
@@ -33,7 +32,7 @@ import com.cdot.lists.model.Checklist;
 /**
  * Handle preferences that are carried in a list
  */
-public class ChecklistPreferencesFragment extends PreferenceFragmentCompat {
+public class ChecklistPreferencesFragment extends PreferencesFragment {
     private static final String TAG = ChecklistPreferencesFragment.class.getSimpleName();
 
     Checklist mList;
@@ -70,7 +69,10 @@ public class ChecklistPreferencesFragment extends PreferenceFragmentCompat {
                 cbPref.setChecked(mList.getFlag(k));
                 cbPref.setOnPreferenceChangeListener((preference, newValue) -> {
                     Log.d(TAG, "setting " + k + " to " + newValue);
-                    mList.setFlag(k, (boolean) newValue);
+                    if ((boolean)newValue)
+                        mList.setFlag(k);
+                    else
+                        mList.clearFlag(k);
                     ((PreferencesActivity) getActivity()).checkpoint();
                     return true;
                 });

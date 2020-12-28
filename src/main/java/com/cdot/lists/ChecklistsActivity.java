@@ -21,18 +21,23 @@ package com.cdot.lists;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.text.InputType;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
+import android.webkit.MimeTypeMap;
 import android.widget.EditText;
-import android.widget.Toast;
+import android.widget.ListView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
+import androidx.core.content.FileProvider;
 
 import com.cdot.lists.databinding.ChecklistsActivityBinding;
 import com.cdot.lists.model.Checklist;
@@ -41,6 +46,12 @@ import com.cdot.lists.model.EntryListItem;
 import com.cdot.lists.preferences.PreferencesActivity;
 import com.cdot.lists.view.ChecklistsItemView;
 import com.cdot.lists.view.EntryListItemView;
+import com.google.android.material.snackbar.Snackbar;
+
+import java.io.File;
+import java.io.FileWriter;
+import java.io.Writer;
+import java.util.List;
 
 /**
  * Activity that displays a list of checklists. The checklists are stored in the MainActivity.
@@ -53,10 +64,14 @@ public class ChecklistsActivity extends EntryListActivity {
     public ChecklistsActivity() {
     }
 
-    @Override
-        // EntryListActivity
+    @Override // EntryListActivity
     EntryList getList() {
         return getLister().getLists();
+    }
+
+    @Override // ListerActivity
+    protected View getRootView() {
+        return mBinding.getRoot();
     }
 
     @Override // AppCompatActivity
@@ -68,8 +83,8 @@ public class ChecklistsActivity extends EntryListActivity {
     }
 
     @Override // EntryListActivity
-    protected EntryListItemView makeMovingView(EntryListItem item) {
-        return new ChecklistsItemView(item, true, this);
+    protected EntryListItemView makeItemView(EntryListItem item, boolean drag) {
+        return new ChecklistsItemView(item, drag, this);
     }
 
     @Override // EntryListActivity
@@ -87,30 +102,30 @@ public class ChecklistsActivity extends EntryListActivity {
 
     @Override // EntryListActivity
     public void onListsLoaded() {
-        makeAdapter(mBinding.itemListView);
+        makeAdapter();
         super.onListsLoaded();
     }
 
     @Override // AppCompatActivity
     public boolean onCreateOptionsMenu(@NonNull Menu menu) {
-        Log.d(TAG, "onCreateOptionsMenu");
+        //Log.d(TAG, "onCreateOptionsMenu");
         getMenuInflater().inflate(R.menu.checklists, menu);
         return true;
     }
 
     @Override // AppCompatActivity
     public boolean onOptionsItemSelected(MenuItem menuItem) {
-        Log.d(TAG, "onOptionsItemSelected");
+        //Log.d(TAG, "onOptionsItemSelected");
         if (super.onOptionsItemSelected(menuItem))
             return true;
 
         int it = menuItem.getItemId();
 
-        if (it == R.id.action_import_list) {
+        if (it == R.id.action_import_lists) {
             Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
             intent.addCategory(Intent.CATEGORY_OPENABLE);
             intent.setType("*/*");
-            startActivityForResult(intent, Lister.REQUEST_IMPORT_LIST);
+            startActivityForResult(intent, Lister.REQUEST_IMPORT);
 
         } else if (it == R.id.action_new_list) {
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -121,19 +136,7 @@ public class ChecklistsActivity extends EntryListActivity {
             editText.setSingleLine(true);
             builder.setView(editText);
             builder.setPositiveButton(R.string.ok, (dialogInterface, i) -> {
-                String listname = editText.getText().toString();
-                EntryList ls = getList();
-                Checklist newList = new Checklist(ls, listname);
-                ls.add(newList);
-                Log.d(TAG, "created list: " + newList.getText());
-                ls.notifyChangeListeners();
-                getLister().saveLists(this,
-                        okdata -> {
-                        },
-                        code -> Toast.makeText(this, code, Toast.LENGTH_LONG).show());
-                Intent intent = new Intent(this, ChecklistActivity.class);
-                intent.putExtra(UID_EXTRA, newList.getSessionUID());
-                startActivity(intent);
+                addNewList(editText.getText().toString());
             });
             builder.setNegativeButton(R.string.cancel, null);
             builder.show();
@@ -144,36 +147,148 @@ public class ChecklistsActivity extends EntryListActivity {
                 ((InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE)).showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT);
             });
 
+        } else if (it == R.id.action_export_all_lists) {
+            exportChecklists();
+
         } else if (it == R.id.action_settings) {
             Intent sint = new Intent(this, PreferencesActivity.class);
             startActivityForResult(sint, REQUEST_PREFERENCES);
+
         } else
             return super.onOptionsItemSelected(menuItem);
 
         return true;
     }
 
+    private static final int LISTS_CHANGED = 0xC04EFE;
+
+    private final Handler mMessageHandler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+            if (msg.what == LISTS_CHANGED) {
+                invalidateOptionsMenu(); // update menu items
+                getList().notifyChangeListeners();
+            }
+        }
+    };
+
+    @Override // EntryListActivity
+    public ListView getListView() {
+        return mBinding.itemListView;
+    }
+
     @Override // AppCompatActivity
     public void onActivityResult(int requestCode, int resultCode, Intent resultData) {
         super.onActivityResult(requestCode, resultCode, resultData);
-        Log.d(TAG, "onActivityResult");
+        //Log.d(TAG, "onActivityResult");
         if (resultCode != Activity.RESULT_OK || resultData == null)
             return;
 
-        if (requestCode == Lister.REQUEST_IMPORT_LIST) {
+        if (requestCode == Lister.REQUEST_IMPORT) {
+            if (mArrayAdapter == null)
+                // need to create the adapter if lists are empty and there isn't one yet
+                makeAdapter();
             getLister().importList(resultData.getData(), this,
-                    data -> {
-                        Checklist newList = (Checklist) data;
-                        invalidateOptionsMenu(); // update menu items
-                        Toast.makeText(this, getString(R.string.import_report, newList.getText()), Toast.LENGTH_LONG).show();
-                        Intent intent = new Intent(this, ChecklistActivity.class);
-                        intent.putExtra(UID_EXTRA, newList.getSessionUID());
-                        startActivity(intent);
+                    imports -> {
+                        StringBuilder report = new StringBuilder();
+                        for (EntryListItem eli : (List<EntryListItem>)imports) {
+                            Log.d(TAG, "Imported list: " + eli.getText());
+                            if (report.length() > 0)
+                                report.append(", ");
+                            report.append("'").append(eli.getText()).append("'");
+                        }
+                        report(getString(R.string.import_report, report), Snackbar.LENGTH_INDEFINITE);
+                        Message msg = mMessageHandler.obtainMessage(LISTS_CHANGED);
+                        mMessageHandler.sendMessage(msg);
                     },
-                    resource -> Toast.makeText(this, resource, Toast.LENGTH_LONG).show());
+                    code -> report(code, Snackbar.LENGTH_LONG));
         } else if (requestCode == ListerActivity.REQUEST_CHANGE_STORE || requestCode == ListerActivity.REQUEST_CREATE_STORE)
             getLister().handleChangeStore(this, resultData,
                     lists -> ensureListsLoaded(),
-                    code -> runOnUiThread(() -> Toast.makeText(this, code, Toast.LENGTH_LONG).show()));
+                    code -> report(code, Snackbar.LENGTH_SHORT));
+    }
+
+    /**
+     * Handle adding an item from the typing area
+     */
+    private void addNewList(String text) {
+        if (text.trim().length() == 0)
+            return;
+        EntryListItem find = getList().findByText(text, false);
+        if (find == null || !getLister().getBool(Lister.PREF_WARN_DUPLICATE))
+            addItem(text);
+        else
+            promptSimilarItem(text, find.getText());
+    }
+
+    /**
+     * Handle adding an item after it's confirmed
+     *
+     * @param str the text of the item
+     */
+    private void addItem(String str) {
+        Checklist item = new Checklist(str);
+        getList().addChild(item);
+        Log.d(TAG, "item " + item + " added to " + getList());
+        mBinding.itemListView.smoothScrollToPosition(getDisplayOrder().indexOf(item));
+        checkpoint();
+    }
+
+    /**
+     * Prompt for similar item already in the list
+     *
+     * @param proposed the text of the proposed item
+     * @param similar  the text of a similar item already in the list
+     */
+    private void promptSimilarItem(final String proposed, String similar) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(R.string.similar_item_already_in_list);
+        builder.setMessage(getString(R.string.similar_item_x_already_in_list, similar, proposed));
+        builder.setPositiveButton(R.string.ok, (dialogInterface, i) -> addItem(proposed));
+        builder.setNegativeButton(R.string.cancel, null);
+        builder.show();
+    }
+
+    /**
+     * Export the checklists in JSON format
+     */
+    private void exportChecklists() {
+
+        final String listName = getList().getText();
+        final Intent intent = new Intent(Intent.ACTION_SEND);
+
+        intent.putExtra(Intent.EXTRA_TITLE, listName); // Dialog title
+
+        intent.setType("application/json");
+
+        String ext = MimeTypeMap.getSingleton().getExtensionFromMimeType("application/json") ;
+        String fileName = listName.replaceAll("[/\u0000]", "_") + ext;
+        // WTF! The EXTRA_SUBJECT is used as the document title for Drive saves!
+        intent.putExtra(Intent.EXTRA_SUBJECT, fileName);
+
+        // text body e.g. for email
+        String text = getList().toPlainString("");
+        intent.putExtra(Intent.EXTRA_TEXT, text);
+
+        try {
+            // Write a local file for the attachment
+            File sendFile = new File(getExternalFilesDir("send"), fileName);
+            Writer w = new FileWriter(sendFile);
+            w.write(getList().toJSON().toString());
+            w.close();
+
+            // Expose the local file using a URI from the FileProvider, and add the URI to the intent
+            // See https://medium.com/@ali.muzaffar/what-is-android-os-fileuriexposedexception-and-what-you-can-do-about-it-70b9eb17c6d0
+            String authRoot = getPackageName().replace(".debug", "");
+            Uri uri = FileProvider.getUriForFile(this, authRoot + ".provider", sendFile);
+            intent.putExtra(Intent.EXTRA_STREAM, uri);
+
+            // Fire off the intent
+            startActivity(Intent.createChooser(intent, fileName));
+
+        } catch (Exception e) {
+            Log.d(TAG, "Export failed " + e.getMessage());
+            report(R.string.failed_export, Snackbar.LENGTH_INDEFINITE);
+        }
     }
 }

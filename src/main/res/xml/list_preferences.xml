@@ -13,7 +13,7 @@
 
     <CheckBoxPreference
         android:key="warndup"
-        android:summary="@string/help_warn_duplicate"
-        android:title="@string/option_warn_duplicate" />
+        android:summary="@string/help_warn_duplicate_item"
+        android:title="@string/option_warn_duplicate_item" />
 
 </PreferenceScreen>

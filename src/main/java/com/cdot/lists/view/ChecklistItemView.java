@@ -6,11 +6,12 @@ package com.cdot.lists.view;
 import android.annotation.SuppressLint;
 import android.graphics.Paint;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AlertDialog;
@@ -18,6 +19,7 @@ import androidx.appcompat.app.AlertDialog;
 import com.cdot.lists.EntryListActivity;
 import com.cdot.lists.Lister;
 import com.cdot.lists.R;
+import com.cdot.lists.databinding.ChecklistItemViewBinding;
 import com.cdot.lists.model.Checklist;
 import com.cdot.lists.model.ChecklistItem;
 import com.cdot.lists.model.EntryList;
@@ -39,14 +41,33 @@ public class ChecklistItemView extends EntryListItemView {
     // True if the checkbox is on the right (which is where the basic layout has it)
     private boolean mCheckboxOnRight;
 
+    private final ChecklistItemViewBinding mBinding;
+
+    // True if this view is of an item being moved
+    private final boolean mIsMoving;
+
     /**
      * @param item     the item being viewed
      * @param isMoving true if this is to be used as a view for dragging an item to a new position, false for an item in a fixed list
      * @param cxt      fragment
      */
     public ChecklistItemView(EntryListItem item, boolean isMoving, EntryListActivity cxt) {
-        super(item, isMoving, cxt, R.layout.checklist_item_view, R.menu.checklist_item_popup);
-
+        super(item, cxt);
+        mIsMoving = isMoving;
+        mBinding = ChecklistItemViewBinding.inflate(LayoutInflater.from(cxt), this, true);
+        if (!isMoving) {
+            addItemListeners(mBinding.moveButton, R.menu.checklist_item_popup);
+            mBinding.checklistCheckbox.setOnClickListener(view -> {
+                if (setChecked(mBinding.checklistCheckbox.isChecked())) {
+                    Log.d(TAG, "item checked");
+                    if (mBinding.checklistCheckbox.isChecked())
+                        mItem.setFlag(isDone);
+                    else
+                        mItem.clearFlag(isDone);
+                    checkpoint();
+                }
+            });
+        }
         mCheckboxOnRight = true;
         updateView();
     }
@@ -54,7 +75,7 @@ public class ChecklistItemView extends EntryListItemView {
     @Override // View.OnClickListener()
     public void onClick(View view) {
         if (!mIsMoving && getLister().getBool(Lister.PREF_ENTIRE_ROW_TOGGLES)) {
-            CheckBox cb = findViewById(R.id.checklist_checkbox);
+            CheckBox cb = mBinding.checklistCheckbox;
             if (setChecked(!cb.isChecked())) {
                 Log.d(TAG, "Item toggled");
                 checkpoint();
@@ -62,23 +83,9 @@ public class ChecklistItemView extends EntryListItemView {
         }
     }
 
-    @Override
-        // EntryListItemView
-    void addListeners() {
-        super.addListeners();
-        final CheckBox cb = findViewById(R.id.checklist_checkbox);
-        cb.setOnClickListener(view -> {
-            if (setChecked(cb.isChecked())) {
-                Log.d(TAG, "item checked");
-                mItem.setFlag(isDone, cb.isChecked());
-                checkpoint();
-            }
-        });
-    }
-
     @Override // EntryListItemView
-    protected void setTextFormatting() {
-        super.setTextFormatting();
+    protected void setTextFormatting(TextView it) {
+        super.setTextFormatting(it);
 
         // Transparency
         float f = TRANSPARENCY_OPAQUE; // Completely opague
@@ -86,14 +93,14 @@ public class ChecklistItemView extends EntryListItemView {
         if (mItem.getFlag(ChecklistItem.isDone) && getLister().getBool(Lister.PREF_GREY_CHECKED))
             // Greyed out
             f = TRANSPARENCY_GREYED;
-        else if (!mIsMoving && mItem == mActivity.mMovingItem)
+        else if (!mIsMoving && mItem == mActivity.mMovingItem) {
             // Item being moved (but NOT the moving view)
             f = TRANSPARENCY_FAINT;
+            mBinding.rightLayout.setAlpha(f);
+            mBinding.leftLayout.setAlpha(f);
+        }
 
-        TextView it = findViewById(R.id.item_text);
         it.setAlpha(f);
-        findViewById(R.id.right_layout).setAlpha(f);
-        findViewById(R.id.left_layout).setAlpha(f);
 
         // Strike through
         if (!mItem.getFlag(ChecklistItem.isDone) || !getLister().getBool(Lister.PREF_STRIKE_CHECKED))
@@ -106,10 +113,10 @@ public class ChecklistItemView extends EntryListItemView {
     public void updateView() {
         super.updateView();
 
-        LinearLayout left = findViewById(R.id.left_layout);
-        LinearLayout right = findViewById(R.id.right_layout);
-        CheckBox checkBox = findViewById(R.id.checklist_checkbox);
-        ImageButton moveButton = findViewById(R.id.move_button);
+        ViewGroup left = mBinding.leftLayout;
+        ViewGroup right = mBinding.rightLayout;
+        CheckBox checkBox = mBinding.checklistCheckbox;
+        ImageButton moveButton = mBinding.moveButton;
 
         if (getLister().getBool(Lister.PREF_LEFT_HANDED) && mCheckboxOnRight) {
             // Move checkbox to left panel
@@ -132,7 +139,7 @@ public class ChecklistItemView extends EntryListItemView {
     @Override // EntryListItemView
     protected boolean onPopupMenuAction(int act) {
         if (act == R.id.action_delete) {
-            EntryList list = mItem.getContainer();
+            EntryList list = mItem.getParent();
             list.newUndoSet();
             list.remove(mItem, true);
             Log.d(TAG, "item deleted");
@@ -167,18 +174,20 @@ public class ChecklistItemView extends EntryListItemView {
      * @param isChecked the check status
      */
     private boolean setChecked(boolean isChecked) {
-        Checklist list = (Checklist) mItem.getContainer();
+        Checklist list = (Checklist) mItem.getParent();
         if (list.getFlag(Checklist.autoDeleteChecked) && isChecked) {
-            EntryList el = mItem.getContainer();
+            EntryList el = mItem.getParent();
             el.newUndoSet();
             el.remove(mItem, true);
             el.notifyChangeListeners();
             return true;
         }
-        CheckBox cb = findViewById(R.id.checklist_checkbox);
-        cb.setChecked(isChecked);
+        mBinding.checklistCheckbox.setChecked(isChecked);
         if (mItem.getFlag(ChecklistItem.isDone) != isChecked) {
-            mItem.setFlag(ChecklistItem.isDone, true);
+            if (isChecked)
+                mItem.setFlag(ChecklistItem.isDone);
+            else
+                mItem.clearFlag(ChecklistItem.isDone);
             mItem.notifyChangeListeners();
             return true;
         }

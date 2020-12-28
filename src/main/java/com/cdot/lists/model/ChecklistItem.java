@@ -35,20 +35,26 @@ public class ChecklistItem extends EntryListItem {
     public static final String isDone = "done";
     private static final String TAG = ChecklistItem.class.getSimpleName();
 
-    public ChecklistItem(Checklist checklist, String str, boolean done) {
-        super(checklist);
+    public ChecklistItem() {
+    }
+
+    public ChecklistItem(String str) {
         setText(str);
-        setFlag(isDone, done);
     }
 
     /**
      * Construct by copying the given item into the given checklist
      *
-     * @param checklist container for the copied item
      * @param copy      item to copy
      */
-    ChecklistItem(Checklist checklist, ChecklistItem copy) {
-        this(checklist, copy.getText(), copy.getFlag(isDone));
+    public ChecklistItem(ChecklistItem copy) {
+        this(copy.getText());
+        for (String f : getFlagNames()) {
+            if (copy.getFlag(f))
+                setFlag(f);
+            else
+                clearFlag(f);
+        }
     }
 
     @Override // EntryListItem
@@ -59,14 +65,8 @@ public class ChecklistItem extends EntryListItem {
     }
 
     @Override // implement EntryListItem
-    public void notifyChangeListeners() {
-        // Listeners are attached to the root item, so pass the signal up
-        getContainer().notifyChangeListeners();
-    }
-
-    @Override // implement EntryListItem
     public boolean isMoveable() {
-        return !getFlag(isDone) && !mParent.getFlag(Checklist.moveCheckedItemsToEnd);
+        return getParent() == null || getParent().itemsAreMoveable();
     }
 
     @Override // implement EntryListItem
@@ -85,9 +85,12 @@ public class ChecklistItem extends EntryListItem {
         String[] row = r.readNext();
         if (row == null)
             return false;
-        setText(row[0]);
-        // "false", "0", and "" are read as false. Any other value is read as true
-        setFlag(isDone, !(row[1].length() == 0 || row[1].matches("[Ff][Aa][Ll][Ss][Ee]|0")));
+        setText(row[1]);
+        // "f", "false", "0", and "" are read as false. Any other value is read as true
+        if (row[2].length() == 0 || row[2].matches("[Ff]([Aa][Ll][Ss][Ee])?|0"))
+            clearFlag(isDone);
+        else
+            setFlag(isDone);
         return true;
     }
 
@@ -104,9 +107,10 @@ public class ChecklistItem extends EntryListItem {
 
     @Override // implement EntryListItem
     public void toCSV(CSVWriter w) {
-        String[] a = new String[2];
-        a[0] = getText();
-        a[1] = (getFlag(isDone) ? "TRUE" : "FALSE");
+        String[] a = new String[3];
+        a[0] = getParent().getText();
+        a[1] = getText();
+        a[2] = (getFlag(isDone) ? "T" : "F");
         w.writeNext(a);
     }
 

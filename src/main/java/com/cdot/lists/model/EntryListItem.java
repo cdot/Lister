@@ -42,9 +42,9 @@ public abstract class EntryListItem {
     private static final String TAG = EntryListItem.class.getSimpleName();
     // UID's are assigned when an item is created. They allow us to track list entries
     // across activities (list item text need not be unique). UIDs are not serialised.
-    private static int sUID = 0;
+    private static int sUID = 1;
     // The list that contains this list.
-    protected final EntryList mParent;
+    protected EntryList mParent;
     private final List<ChangeListener> mListeners = new ArrayList<>();
     protected int mUID;
     // Label, or list name
@@ -52,8 +52,7 @@ public abstract class EntryListItem {
     // Boolean flags
     private Map<String, Boolean> mFlags = new HashMap<>();
 
-    EntryListItem(EntryList parent) {
-        mParent = parent;
+    EntryListItem() {
         mText = null;
         mUID = sUID++;
     }
@@ -63,9 +62,9 @@ public abstract class EntryListItem {
      *
      * @param copy the item to copy from
      */
-    EntryListItem(EntryList parent, EntryListItem copy) {
-        this(parent);
-        mFlags = new HashMap<>(copy.mFlags);
+    EntryListItem(EntryListItem copy) {
+        this();
+        mFlags.putAll(copy.mFlags);
         setText(copy.getText());
     }
 
@@ -99,6 +98,8 @@ public abstract class EntryListItem {
      * Notify any views of this list that the list contents have changed and redisplay is required.
      */
     public void notifyChangeListeners() {
+        if (getParent() != null)
+            getParent().notifyChangeListeners();
         for (ChangeListener cl : mListeners)
             cl.onListChanged(this);
     }
@@ -108,8 +109,16 @@ public abstract class EntryListItem {
      *
      * @return the containing list, or null for the root
      */
-    public EntryList getContainer() {
+    public EntryList getParent() {
         return mParent;
+    }
+
+    /**
+     * Set the list that contains this item. The item is neither removed from the previous parent,
+     * nor added to the new parent.
+     */
+    void setParent(EntryList parent) {
+        mParent = parent;
     }
 
     /**
@@ -170,13 +179,19 @@ public abstract class EntryListItem {
     }
 
     /**
-     * Set the current value for this flag
-     *
+     * Set this flag true
      * @param key flag name
-     * @param val flag value
      */
-    public void setFlag(String key, boolean val) {
-        mFlags.put(key, val);
+    public void setFlag(String key) {
+        mFlags.put(key, true);
+    }
+
+    /**
+     * Set this flag false
+     * @param key flag name
+     */
+    public void clearFlag(String key) {
+        mFlags.put(key, false);
     }
 
     /**
@@ -189,9 +204,15 @@ public abstract class EntryListItem {
     void fromJSON(JSONObject jo) throws JSONException {
         for (String k : getFlagNames()) {
             try {
-                setFlag(k, jo.getBoolean(k));
+                if (jo.getBoolean(k))
+                    setFlag(k);
+                else
+                    clearFlag(k);
             } catch (JSONException ignore) {
-                setFlag(k, getFlagDefault(k));
+                if (getFlagDefault(k))
+                    setFlag(k);
+                else
+                    clearFlag(k);
             }
         }
     }
@@ -261,5 +282,9 @@ public abstract class EntryListItem {
      */
     public interface ChangeListener {
         void onListChanged(EntryListItem item);
+    }
+
+    public String toString() {
+        return getClass().getSimpleName() + ":" + getSessionUID() + "(" + getText() + ")";
     }
 }

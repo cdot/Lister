@@ -17,6 +17,11 @@
         android:summary="@string/help_row_toggles"/>
 
     <CheckBoxPreference
+        android:key="warnDuplicates"
+        android:summary="@string/help_warn_duplicate_list"
+        android:title="@string/option_warn_duplicate_list" />
+
+    <CheckBoxPreference
         android:key="checkBoxOnLeftSide"
         android:title="@string/option_left_hand"
         android:summary="@string/help_left_hand" />

@@ -26,9 +26,9 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
-import android.widget.RelativeLayout;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -41,11 +41,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Base class of list view activities. The layouts for these activities are observe a layout template
- * that supplies the following resources:
- * ListView R.id.entry_list_activity_list_view
- * androidx.appcompat.widget.Toolbar R.id.entry_list_activity_toolbar
- * RelativeLayout R.id.entry_list_activity_layout
+ * Base class of list view activities.
  * The common code here supports moving items in the list and some base menu functionality.
  */
 public abstract class EntryListActivity extends ListerActivity implements EntryListItem.ChangeListener {
@@ -54,28 +50,28 @@ public abstract class EntryListActivity extends ListerActivity implements EntryL
     public transient EntryListItem mMovingItem;
     protected EntryListAdapter mArrayAdapter = null;
 
-    protected ListView mListView;
-    protected ViewGroup mListLayout;
-
     private transient EntryListItemView mMovingView;
 
     // The list we're viewing
     abstract EntryList getList();
 
+    abstract ListView getListView();
+
     // Set the common bindings, obtained from the ViewBinding, and create the array adapter
-    protected void makeAdapter(ListView listview) {
-        mListView = listview;
-        mArrayAdapter = new EntryListAdapter(this);
-        mListView.setAdapter(mArrayAdapter);
+    protected void makeAdapter() {
+        if (mArrayAdapter == null) {
+            mArrayAdapter = new EntryListAdapter(this);
+            getListView().setAdapter(mArrayAdapter);
+        }
     }
 
     @Override // ListerActivity
     public void onListsLoaded() {
-        Log.d(TAG, "onListsLoaded");
         super.onListsLoaded();
-        EntryList ls = getList();
-        ls.notifyChangeListeners();
-        String t = ls.getText();
+        EntryList list = getList();
+        Log.d(TAG, "onListsLoaded list " + list);
+        list.notifyChangeListeners();
+        String t = list.getText();
         if (t == null)
             t = getString(R.string.app_name);
         getSupportActionBar().setTitle(t);
@@ -97,9 +93,11 @@ public abstract class EntryListActivity extends ListerActivity implements EntryL
 
     @Override
     public void onResume() {
+        Log.d(TAG, "onResume");
+        super.onResume();
         EntryList ls = getList();
         ls.addChangeListener(this);
-        super.onResume();
+        ls.notifyChangeListeners();
     }
 
     @Override // implement EntryListItem.ChangeListener
@@ -134,13 +132,14 @@ public abstract class EntryListActivity extends ListerActivity implements EntryL
     }
 
     /**
-     * Make a view that can be used for dragging an item in the list. This will be the same type
-     * as a normal entry in the list but will have no event handlers and may have display differences.
+     * Make a view that can be used to display an item in the list.
      *
      * @param movingItem the item being moved
+     * @param drag true to make it a moving view. This will be the same type
+     * as a normal entry in the list but will have no event handlers and may have display differences.
      * @return a View that is used to display the dragged item
      */
-    protected abstract EntryListItemView makeMovingView(EntryListItem movingItem);
+    protected abstract EntryListItemView makeItemView(EntryListItem movingItem, boolean drag);
 
     /**
      * Get the name of an HTML help asset appropriate for this fragment
@@ -163,23 +162,26 @@ public abstract class EntryListActivity extends ListerActivity implements EntryL
         // get screen position of the ListView and the Activity
         int[] iArr = new int[2];
 
-        mListView.getLocationOnScreen(iArr);
+        ListView lv = getListView();
+        lv.getLocationOnScreen(iArr);
         int listViewTop = iArr[1];
-        mListLayout.getLocationOnScreen(iArr);
+        ViewParent vp = lv.getParent();
+        ViewGroup listLayout = (ViewGroup)vp;
+        listLayout.getLocationOnScreen(iArr);
         int activityTop = iArr[1];
 
         // Convert touch location to relative to the ListView
         int y = ((int) motionEvent.getY()) - listViewTop;
-        EntryList ls = getList();
+        EntryList list = getList();
 
         // Get the index of the item being moved in the items list
-        int itemIndex = ls.indexOf(mMovingItem);
+        int itemIndex = list.indexOf(mMovingItem);
 
         // Get the index of the moving view in the list of views. It will stay there until
         // the drag is released.
-        int viewIndex = mListView.getChildCount() - 1;
+        int viewIndex = lv.getChildCount() - 1;
         while (viewIndex >= 0) {
-            if (((EntryListItemView) mListView.getChildAt(viewIndex)).getItem() == mMovingItem)
+            if (((EntryListItemView) lv.getChildAt(viewIndex)).getItem() == mMovingItem)
                 break;
             viewIndex--;
         }
@@ -188,13 +190,13 @@ public abstract class EntryListActivity extends ListerActivity implements EntryL
         //Log.d(TAG, "Moving item at " + itemIndex + " viewIndex " + viewIndex);
         int prevBottom = Integer.MIN_VALUE;
         if (viewIndex > 0) // Not first view
-            prevBottom = mListView.getChildAt(viewIndex - 1).getBottom();
+            prevBottom = lv.getChildAt(viewIndex - 1).getBottom();
 
         int nextTop = Integer.MAX_VALUE;
-        if (viewIndex < mListView.getChildCount() - 1) // Not last view
-            nextTop = mListView.getChildAt(viewIndex + 1).getTop();
+        if (viewIndex < lv.getChildCount() - 1) // Not last view
+            nextTop = lv.getChildAt(viewIndex + 1).getTop();
 
-        int halfItemHeight = mListView.getChildAt(viewIndex).getHeight() / 2;
+        int halfItemHeight = lv.getChildAt(viewIndex).getHeight() / 2;
         int moveTo = itemIndex;
         if (y < prevBottom)
             moveTo--;
@@ -202,11 +204,11 @@ public abstract class EntryListActivity extends ListerActivity implements EntryL
             moveTo++;
 
         //Log.d(TAG, "Compare " + y + " with " + prevBottom + " and " + nextTop + " moveTo " + moveTo);
-        if (moveTo != itemIndex && moveTo >= 0 && moveTo < ls.size()) {
-            Log.d(TAG, "Moved from " + itemIndex + " to " + moveTo);
-            ls.remove(mMovingItem, false);
-            ls.put(moveTo, mMovingItem);
-            ls.notifyChangeListeners();
+        if (moveTo != itemIndex && moveTo >= 0 && moveTo < list.size()) {
+            Log.d(TAG, "Moved " + mMovingItem.getText() + " from " + itemIndex + " to " + moveTo);
+            list.remove(mMovingItem, false);
+            list.put(moveTo, mMovingItem);
+            list.notifyChangeListeners();
             checkpoint();
         }
 
@@ -214,24 +216,24 @@ public abstract class EntryListActivity extends ListerActivity implements EntryL
             if (mMovingView == null) {
                 // Drag is starting
                 //Log.d(TAG, "dispatchTouchEvent adding moving view ");
-                mMovingView = makeMovingView(mMovingItem);
+                mMovingView = makeItemView(mMovingItem, true);
                 // addView is not supported in AdapterView, so can't add the movingView there.
                 // Instead have to add to the activity and adjust margins accordingly
-                mListLayout.addView(mMovingView);
+                listLayout.addView(mMovingView);
             }
 
             if (y < halfItemHeight)
-                mListView.smoothScrollToPosition(itemIndex - 1);
-            if (y > mListView.getHeight() - halfItemHeight)
-                mListView.smoothScrollToPosition(itemIndex + 1);
+                lv.smoothScrollToPosition(itemIndex - 1);
+            if (y > lv.getHeight() - halfItemHeight)
+                lv.smoothScrollToPosition(itemIndex + 1);
             // Layout params for the parent, not for this view
-            RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+            EntryListItemView.LayoutParams lp = new EntryListItemView.LayoutParams(EntryListItemView.LayoutParams.MATCH_PARENT, EntryListItemView.LayoutParams.WRAP_CONTENT);
             // Set the top margin to move the view to the right place relative to the Activity
             lp.setMargins(0, (listViewTop - activityTop) + y - halfItemHeight, 0, 0);
             mMovingView.setLayoutParams(lp);
         }
         if (motionEvent.getAction() == MotionEvent.ACTION_UP || motionEvent.getAction() == MotionEvent.ACTION_CANCEL) {
-            mListLayout.removeView(mMovingView);
+            listLayout.removeView(mMovingView);
             this.mMovingItem = null;
             notifyAdapter();
             mMovingView = null;
@@ -245,7 +247,10 @@ public abstract class EntryListActivity extends ListerActivity implements EntryL
         if (it == R.id.action_alpha_sort) {
             Log.d(TAG, "alpha sort option selected");
             EntryList ls = getList();
-            ls.setFlag(EntryList.displaySorted, !ls.getFlag(EntryList.displaySorted));
+            if (ls.getFlag(EntryList.displaySorted))
+                ls.clearFlag(EntryList.displaySorted);
+            else
+                ls.setFlag(EntryList.displaySorted);
             ls.notifyChangeListeners();
             invalidateOptionsMenu();
             checkpoint();
@@ -302,7 +307,7 @@ public abstract class EntryListActivity extends ListerActivity implements EntryL
             EntryListItem item = getDisplayOrder().get(i);
             EntryListItemView itemView = (EntryListItemView) convertView;
             if (itemView == null)
-                itemView = getList().makeItemView(item, EntryListActivity.this);
+                itemView = makeItemView(item, false);
             else
                 itemView.setItem(item);
             itemView.updateView();
