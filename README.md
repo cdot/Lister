@@ -4,7 +4,7 @@ or Google Drive, or anything else that supports the Android Content Resolver int
 
 Useful for shared shopping lists, and any other kind of checklist.
 
-<img src="Screenshot_1609182789.png" alt="drawing" width="250"/> <img src="Screenshot_1609182783.png" alt="drawing" width="250"/> <img src="Screenshot_1609182816.png" alt="drawing" width="250"/>
+<img src="screenshots/checklists.png" alt="drawing" width="30%"/> <img src="screenshot/checklist.png" alt="drawing" width="30%"/> <img src="screenshots/checklist_actions.png" alt="drawing" width="30%"/>
 
 # History
 The app was inspired by the ["rList" application](https://play.google.com/store/apps/details?id=com.rundgong.shoppinglist),
