@@ -28,7 +28,6 @@ import androidx.fragment.app.FragmentTransaction;
 import com.cdot.lists.Lister;
 import com.cdot.lists.ListerActivity;
 import com.cdot.lists.model.Checklist;
-import com.google.android.material.snackbar.Snackbar;
 
 /**
  * Activity used to host preference fragments
@@ -64,13 +63,8 @@ public class PreferencesActivity extends ListerActivity {
     }
 
     @Override // AppCompatActivity
-    public void onActivityResult(int requestCode, int resultCode, Intent resultData) {
-        if ((requestCode == REQUEST_CHANGE_STORE || requestCode == REQUEST_CREATE_STORE)
-                && resultCode == RESULT_OK && resultData != null) {
-            getLister().handleChangeStore(this, resultData,
-                lists -> ensureListsLoaded(),
-                code -> report(code, Snackbar.LENGTH_INDEFINITE));
-        } else
-            super.onActivityResult(requestCode, resultCode, resultData);
+    public void onActivityResult(int requestCode, int resultCode, Intent intent) {
+        handleStoreIntent(requestCode, intent);
+        super.onActivityResult(requestCode, resultCode, intent);
     }
 }

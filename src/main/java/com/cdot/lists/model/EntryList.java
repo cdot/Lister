@@ -20,6 +20,7 @@ package com.cdot.lists.model;
 
 import android.util.Log;
 
+import com.cdot.lists.Lister;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVWriter;
 import com.opencsv.exceptions.CsvException;
@@ -107,7 +108,7 @@ public abstract class EntryList extends EntryListItem {
         try {
             job.put("items", its);
         } catch (JSONException je) {
-            Log.e(TAG, "" + je);
+            Log.e(TAG, Lister.stringifyException(je));
         }
         return job;
     }

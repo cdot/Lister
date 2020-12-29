@@ -20,6 +20,7 @@ package com.cdot.lists;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.DocumentsContract;
@@ -190,5 +191,43 @@ public abstract class ListerActivity extends AppCompatActivity implements Shared
                     // Responds to click on the action
                 }).show());
         return true;
+    }
+
+    /**
+     * Handle an intent that is changing the store or creating a new store. This is called from
+     * onActivityResult in a ListerActivity after an OPEN_DOCUMENT.
+     * @param request the request, either REQUEST_CHANGE_STORE or REQUEST_CREATE_STORE
+     * @param intent the actual intent
+     */
+    protected void handleStoreIntent(int request, Intent intent) {
+        Uri newURI = intent.getData();
+        int flags = intent.getFlags();
+        if (newURI == null)
+            return;
+        final Lister lister = getLister();
+
+        if (request == ListerActivity.REQUEST_CHANGE_STORE) {
+            Uri oldURI = lister.getUri(Lister.PREF_URI);
+            if (!newURI.equals(oldURI)) {
+                lister.setUri(Lister.PREF_URI, newURI);
+                // Reload from the new store
+                lister.unloadLists();
+                lister.loadLists(this,
+                        lists -> {
+                            // Persist granted access across reboots
+                            int takeFlags = flags & (Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                            getContentResolver().takePersistableUriPermission(lister.getUri(Lister.PREF_URI), takeFlags);
+                            lister.saveCache(this);
+                            report(R.string.store_changed, Snackbar.LENGTH_INDEFINITE);
+                        },
+                        code -> report(code, Snackbar.LENGTH_INDEFINITE));
+            }
+        } else if (request == ListerActivity.REQUEST_CREATE_STORE){
+            lister.setUri(Lister.PREF_URI, newURI);
+            // Save whatever is currently in memory to the new URI
+            lister.saveLists(this,
+                    okdata -> report(R.string.store_created, Snackbar.LENGTH_INDEFINITE),
+                    code -> report(code, Snackbar.LENGTH_SHORT));
+        }
     }
 }

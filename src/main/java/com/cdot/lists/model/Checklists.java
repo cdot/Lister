@@ -20,6 +20,7 @@ package com.cdot.lists.model;
 
 import android.util.Log;
 
+import com.cdot.lists.Lister;
 import com.opencsv.CSVReader;
 
 import org.json.JSONArray;
@@ -67,7 +68,7 @@ public class Checklists extends EntryList {
             job.put("timestamp", mTimestamp);
             job.put("uri", mURI);
         } catch (JSONException je) {
-            Log.e(TAG, "" + je);
+            Log.e(TAG, Lister.stringifyException(je));
         }
         return job;
     }

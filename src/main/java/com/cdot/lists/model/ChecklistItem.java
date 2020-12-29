@@ -20,6 +20,7 @@ package com.cdot.lists.model;
 
 import android.util.Log;
 
+import com.cdot.lists.Lister;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVWriter;
 
@@ -100,7 +101,7 @@ public class ChecklistItem extends EntryListItem {
         try {
             iob.put("name", getText());
         } catch (JSONException je) {
-            Log.e(TAG, "" + je);
+            Log.e(TAG, Lister.stringifyException(je));
         }
         return iob;
     }

@@ -102,7 +102,7 @@ public abstract class EntryListActivity extends ListerActivity implements EntryL
 
     @Override // implement EntryListItem.ChangeListener
     public void onListChanged(EntryListItem item) {
-        notifyAdapter();
+        runOnUiThread(this::notifyAdapter);
     }
 
     /**

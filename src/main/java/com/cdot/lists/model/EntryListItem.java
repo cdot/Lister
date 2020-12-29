@@ -22,6 +22,7 @@ import android.util.Log;
 
 import androidx.annotation.CallSuper;
 
+import com.cdot.lists.Lister;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVWriter;
 
@@ -198,7 +199,7 @@ public abstract class EntryListItem {
      * Load from a JSON object. The base method imports all the flag settings.
      *
      * @param jo JSON object
-     * @throws JSONException if anything goes wrong
+     * @throws JSONException not thrown by this base method, but may be thrown by subclasses
      */
     @CallSuper
     void fromJSON(JSONObject jo) throws JSONException {
@@ -227,7 +228,7 @@ public abstract class EntryListItem {
             JSONObject job = new JSONObject(js);
             fromJSON(job);
         } catch (JSONException je) {
-            Log.e(TAG, "" + je);
+            Log.e(TAG, Lister.stringifyException(je));
         }
     }
 
@@ -250,7 +251,8 @@ public abstract class EntryListItem {
             try {
                 if (getFlag(k) != getFlagDefault(k))
                     job.put(k, getFlag(k));
-            } catch (JSONException ignore) {
+            } catch (JSONException je) {
+                Log.e(TAG, Lister.stringifyException(je));
             }
         }
         return job;

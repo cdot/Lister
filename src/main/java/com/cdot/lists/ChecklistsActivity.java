@@ -95,9 +95,11 @@ public class ChecklistsActivity extends EntryListActivity {
     @Override // EntryListActivity
     public void onListChanged(EntryListItem item) {
         super.onListChanged(item);
-        int sz = getList().size();
-        mBinding.listsMessage.setVisibility(sz == 0 ? View.VISIBLE : View.GONE);
-        mBinding.itemListView.setVisibility(sz == 0 ? View.GONE : View.VISIBLE);
+        runOnUiThread(() -> {
+            int sz = getList().size();
+            mBinding.listsMessage.setVisibility(sz == 0 ? View.VISIBLE : View.GONE);
+            mBinding.itemListView.setVisibility(sz == 0 ? View.GONE : View.VISIBLE);
+        });
     }
 
     @Override // EntryListActivity
@@ -178,17 +180,17 @@ public class ChecklistsActivity extends EntryListActivity {
     }
 
     @Override // AppCompatActivity
-    public void onActivityResult(int requestCode, int resultCode, Intent resultData) {
-        super.onActivityResult(requestCode, resultCode, resultData);
+    public void onActivityResult(int requestCode, int resultCode, Intent intent) {
+        super.onActivityResult(requestCode, resultCode, intent);
         //Log.d(TAG, "onActivityResult");
-        if (resultCode != Activity.RESULT_OK || resultData == null)
+        if (resultCode != Activity.RESULT_OK || intent == null)
             return;
 
         if (requestCode == Lister.REQUEST_IMPORT) {
             if (mArrayAdapter == null)
                 // need to create the adapter if lists are empty and there isn't one yet
                 makeAdapter();
-            getLister().importList(resultData.getData(), this,
+            getLister().importList(intent.getData(), this,
                     imports -> {
                         StringBuilder report = new StringBuilder();
                         for (EntryListItem eli : (List<EntryListItem>)imports) {
@@ -202,10 +204,8 @@ public class ChecklistsActivity extends EntryListActivity {
                         mMessageHandler.sendMessage(msg);
                     },
                     code -> report(code, Snackbar.LENGTH_LONG));
-        } else if (requestCode == ListerActivity.REQUEST_CHANGE_STORE || requestCode == ListerActivity.REQUEST_CREATE_STORE)
-            getLister().handleChangeStore(this, resultData,
-                    lists -> ensureListsLoaded(),
-                    code -> report(code, Snackbar.LENGTH_SHORT));
+        } else
+            handleStoreIntent(requestCode, intent);
     }
 
     /**
@@ -287,7 +287,7 @@ public class ChecklistsActivity extends EntryListActivity {
             startActivity(Intent.createChooser(intent, fileName));
 
         } catch (Exception e) {
-            Log.d(TAG, "Export failed " + e.getMessage());
+            Log.e(TAG, "Export failed " + Lister.stringifyException(e));
             report(R.string.failed_export, Snackbar.LENGTH_INDEFINITE);
         }
     }

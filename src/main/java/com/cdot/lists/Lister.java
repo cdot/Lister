@@ -6,7 +6,6 @@ package com.cdot.lists;
 import android.app.Application;
 import android.content.ContentResolver;
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.util.Log;
@@ -22,6 +21,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -77,6 +78,13 @@ public class Lister extends Application {
     public Lister() {
         // Always need a checklists instance, as a place to attach listeners
         mLists = new Checklists();
+    }
+
+    // Useful for debug
+    public static String stringifyException(Exception e) {
+        StringWriter sw = new StringWriter();
+        e.printStackTrace(new PrintWriter(sw));
+        return sw.toString();
     }
 
     public Checklists getLists() {
@@ -159,14 +167,14 @@ public class Lister extends Application {
             } catch (final SecurityException se) {
                 // openInputStream denied, pass back uri_acces_denied to reroute through picker
                 // to re-establish permissions
-                Log.e(TAG, "Security Exception loading " + uri + ": " + se);
+                Log.e(TAG, "Security Exception " + stringifyException(se));
                 mListsLoading = false;
                 onFail.failed(R.string.failed_access_denied);
             } catch (Exception e) {
                 if (uri == null) {
                     onFail.failed(R.string.failed_no_uri);
                 } else {
-                    Log.e(TAG, "Exception loading from " + uri + ": " + e);
+                    Log.e(TAG, "Exception loading " + Lister.stringifyException(e));
                     onFail.failed(R.string.failed_uri_load);
                 }
                 Log.d(TAG, "Loading " + mLists + " from cache");
@@ -202,9 +210,25 @@ public class Lister extends Application {
             Log.e(TAG, "FileNotFoundException loading cache " + CACHE_FILE + ": " + ce);
             onFail.failed(R.string.no_cache);
         } catch (Exception ce) {
-            Log.e(TAG, "Failed cache load " + CACHE_FILE + ": " + ce);
+            Log.e(TAG, "Failed cache load " + CACHE_FILE + ": " + stringifyException(ce));
             onFail.failed(R.string.failed_cache_load);
         }
+    }
+
+    boolean saveCache(Context cxt) {
+        try {
+            if (FORCE_CACHE_FAIL != 0) // unit testing only
+                throw new Exception("TEST CACHE SAVE FAIL");
+            String jsonString = mLists.toJSON().toString(1);
+            FileOutputStream stream = cxt.openFileOutput(CACHE_FILE, Context.MODE_PRIVATE);
+            stream.write(jsonString.getBytes());
+            stream.close();
+            Log.d(TAG, "Saved " + mLists.size() + " lists to cache");
+            return true;
+        } catch (Exception e) {
+            Log.e(TAG, "Exception saving to cache: " + stringifyException(e));
+        }
+        return false;
     }
 
     /**
@@ -218,22 +242,10 @@ public class Lister extends Application {
     public void saveLists(Context cxt, SuccessCallback onSuccess, FailCallback onFail) {
 
         // Always save to the cache.
-        Log.d(TAG, "Saving to cache");
-        boolean coke = false;
-        try {
-            if (FORCE_CACHE_FAIL != 0)
-                throw new Exception("TEST CACHE SAVE FAIL");
-            String jsonString = mLists.toJSON().toString(1);
-            FileOutputStream stream = cxt.openFileOutput(CACHE_FILE, Context.MODE_PRIVATE);
-            stream.write(jsonString.getBytes());
-            stream.close();
-            coke = true;
-        } catch (Exception e) {
-            Log.e(TAG, "Exception saving to cache: " + e);
+        final boolean cacheOK = saveCache(cxt);
+        if (!cacheOK)
             onFail.failed(R.string.failed_save_to_cache);
-        }
 
-        final boolean cacheOK = coke;
         final Uri uri = getUri(PREF_URI);
         if (uri == null) {
             if (cacheOK)
@@ -248,7 +260,6 @@ public class Lister extends Application {
             String jsonString = mLists.toJSON().toString(1);
 
             // Launch a thread to do this save, so we don't block the ui thread
-            Log.d(TAG, "Saving to " + uri);
             data = jsonString.getBytes();
 
             new Thread(() -> {
@@ -266,11 +277,11 @@ public class Lister extends Application {
                         throw new IOException("Stream open failed");
                     stream.write(data);
                     stream.close();
-                    Log.d(TAG, "Saved to " + uri);
                     setBool(PREF_LAST_STORE_FAILED, false);
+                    Log.d(TAG, "Saved " + mLists.size() + " lists to " + uri);
                     onSuccess.succeeded(null);
                 } catch (IOException ioe) {
-                    Log.e(TAG, "Exception while saving to Uri " + ioe.getMessage());
+                    Log.e(TAG, "Exception while saving " + stringifyException(ioe));
                     setBool(PREF_LAST_STORE_FAILED, true);
                     onFail.failed(R.string.failed_save_to_uri);
                     if (cacheOK)
@@ -278,7 +289,7 @@ public class Lister extends Application {
                 }
             }).start();
         } catch (Exception e) {
-            Log.e(TAG, "" + e);
+            Log.e(TAG, stringifyException(e));
             onFail.failed(R.string.failed_save_to_uri);
         }
     }
@@ -318,38 +329,23 @@ public class Lister extends Application {
             List<EntryListItem> ret = newLists.cloneItemList();
             for (EntryListItem eli : ret)
                 mLists.addChild(eli); // depopulates newLists, but not ret
+            Log.d(TAG, "Imported " + ret.size() + " lists, now have " + mLists.size() + " lists, saving");
             saveLists(cxt, d -> {
                 Log.d(TAG, "Saved imported lists");
                 onOK.succeeded(ret);
             }, onFail);
         } catch (Exception e) {
-            Log.e(TAG, "import failed " + e.getMessage());
+            Log.e(TAG, "import failed " + Lister.stringifyException(e));
             onFail.failed(R.string.failed_import);
         }
     }
 
-    public void handleChangeStore(Context cxt, Intent intent, SuccessCallback onOK, FailCallback onFail) {
-        Uri newURI = intent.getData();
-        if (newURI == null)
-            return;
+    void unloadLists() {
+        mListsLoaded = false;
+        mLists.getData().clear();
+   }
 
-        Uri oldURI = getUri(PREF_URI);
-        if (!newURI.equals(oldURI)) {
-            setUri(PREF_URI, newURI);
-
-            mListsLoaded = false;
-            loadLists(this, lists -> {
-                // Persist granted access across reboots
-                int takeFlags = intent.getFlags() & (Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-                cxt.getContentResolver().takePersistableUriPermission(getUri(PREF_URI), takeFlags);
-                onOK.succeeded(lists);
-            }, onFail);
-        }
-    }
-
-    public void notifyListsListeners() {
-        mLists.notifyChangeListeners();
-    }
+    // Shared Preferences
 
     public int getInt(String name) {
         Integer deflt = sIntDefaults.get(name);

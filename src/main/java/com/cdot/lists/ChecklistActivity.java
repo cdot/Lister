@@ -220,7 +220,7 @@ public class ChecklistActivity extends EntryListActivity {
             builder.setPositiveButton(R.string.ok, (dialogInterface, i) -> {
                 Log.d(TAG, "list renamed");
                 getList().setText(editText.getText().toString());
-                getLister().notifyListsListeners();
+                getLister().getLists().notifyChangeListeners();
                 checkpoint();
                 //Objects.requireNonNull(getSupportActionBar()).setTitle(mChecklist.getText());
             });
@@ -415,7 +415,8 @@ public class ChecklistActivity extends EntryListActivity {
                         Checklist copy = new Checklist();
                         try {
                             copy.fromJSON(listJob);
-                        } catch (JSONException ignore) {
+                        } catch (JSONException je) {
+                            Log.e(TAG, Lister.stringifyException(je));
                         }
                         container.addChild(copy);
                         w.write(container.toJSON().toString());
@@ -441,7 +442,7 @@ public class ChecklistActivity extends EntryListActivity {
                 startActivity(Intent.createChooser(intent, fileName));
 
             } catch (Exception e) {
-                Log.d(TAG, "Export failed " + e.getMessage());
+                Log.e(TAG, "Export failed " + Lister.stringifyException(e));
                 report(R.string.failed_export, Snackbar.LENGTH_SHORT);
             }
         });
