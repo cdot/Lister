@@ -58,6 +58,7 @@ import java.util.List;
  */
 public class ChecklistsActivity extends EntryListActivity {
     private static final String TAG = ChecklistsActivity.class.getSimpleName();
+    private static final int LISTS_CHANGED_MESSAGE = 0xC04EFE;
 
     private ChecklistsActivityBinding mBinding;
 
@@ -162,12 +163,10 @@ public class ChecklistsActivity extends EntryListActivity {
         return true;
     }
 
-    private static final int LISTS_CHANGED = 0xC04EFE;
-
     private final Handler mMessageHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
-            if (msg.what == LISTS_CHANGED) {
+            if (msg.what == LISTS_CHANGED_MESSAGE) {
                 invalidateOptionsMenu(); // update menu items
                 getList().notifyChangeListeners();
             }
@@ -200,7 +199,7 @@ public class ChecklistsActivity extends EntryListActivity {
                             report.append("'").append(eli.getText()).append("'");
                         }
                         report(getString(R.string.import_report, report), Snackbar.LENGTH_INDEFINITE);
-                        Message msg = mMessageHandler.obtainMessage(LISTS_CHANGED);
+                        Message msg = mMessageHandler.obtainMessage(LISTS_CHANGED_MESSAGE);
                         mMessageHandler.sendMessage(msg);
                     },
                     code -> report(code, Snackbar.LENGTH_LONG));
