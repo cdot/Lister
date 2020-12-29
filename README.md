@@ -12,11 +12,11 @@ which I had been using for shopping lists. I wanted a slightly different data mo
 me to store lists on Google Drive and share them across a number of different devices.
 
 # Usage
-Click on the (Releases)[https://github.com/cdot/Mr-Lister/releases] link on the right of the screen
+Click on the [Releases](https://github.com/cdot/Mr-Lister/releases) link on the right of the screen
 to see the binary releases. Download Mr Lister-release.apk to your device and open it to install. Android
 must be configured to allow installation from Unknown Sources.
 
-(Read this to find out more about what Google considers as 'Unknown')[https://www.androidcentral.com/unknown-sources]
+[Read this to find out more about what Google considers as 'Unknown'](https://www.androidcentral.com/unknown-sources)
 
 All the help you should need is available from inside the application - it's pretty simple!
 
