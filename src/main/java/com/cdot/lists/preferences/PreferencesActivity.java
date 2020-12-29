@@ -27,14 +27,21 @@ import androidx.fragment.app.FragmentTransaction;
 
 import com.cdot.lists.Lister;
 import com.cdot.lists.ListerActivity;
+import com.cdot.lists.R;
 import com.cdot.lists.model.Checklist;
+import com.google.android.material.snackbar.Snackbar;
 
 /**
  * Activity used to host preference fragments
  * Use startActivityForResult to know when the back is pressed
  */
 public class PreferencesActivity extends ListerActivity {
+    private static final String TAG = PreferencesActivity.class.getSimpleName();
+
     PreferencesFragment mFragment;
+    // Flag that suppresses reporting during activity onResume/onCreate, so we don't get spammed
+    // by startup warnings repeated from the ChecklistsActivity
+    boolean mIssueReports = false;
 
     @Override // AppCompatActivity
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,5 +73,16 @@ public class PreferencesActivity extends ListerActivity {
     public void onActivityResult(int requestCode, int resultCode, Intent intent) {
         handleStoreIntent(requestCode, intent);
         super.onActivityResult(requestCode, resultCode, intent);
+    }
+
+    @Override // ListerActivity
+    public boolean report(int code, int duration) {
+        if (mIssueReports) {
+            runOnUiThread(() -> Snackbar.make(getRootView(), code, duration)
+                    .setAction(R.string.close, x -> {
+                        // Responds to click on the action
+                    }).show());
+        }
+        return true;
     }
 }

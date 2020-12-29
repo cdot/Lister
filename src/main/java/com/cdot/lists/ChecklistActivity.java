@@ -112,7 +112,6 @@ public class ChecklistActivity extends EntryListActivity {
         Log.d(TAG, "onCreate list " + mChecklist);
 
         mBinding = ChecklistActivityBinding.inflate(getLayoutInflater());
-
         makeAdapter();
 
         mBinding.addItemET.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_AUTO_COMPLETE | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
@@ -198,7 +197,7 @@ public class ChecklistActivity extends EntryListActivity {
                 mChecklist.notifyChangeListeners();
                 Log.d(TAG, "checked deleted");
                 checkpoint();
-                report(getString(R.string.items_deleted, deleted), Snackbar.LENGTH_SHORT);
+                report(getString(R.string.snack_deleted, deleted), Snackbar.LENGTH_SHORT);
                 if (getList().size() == 0) {
                     enableEditMode(true);
                     mChecklist.notifyChangeListeners();
@@ -237,12 +236,12 @@ public class ChecklistActivity extends EntryListActivity {
         } else if (it == R.id.action_undo_delete) {
             int undone = mChecklist.undoRemove();
             if (undone == 0)
-                report(R.string.no_deleted_items, Snackbar.LENGTH_SHORT);
+                report(R.string.snack_no_deleted_items, Snackbar.LENGTH_SHORT);
             else {
                 mChecklist.notifyChangeListeners();
                 Log.d(TAG, "delete undone");
                 checkpoint();
-                report(getString(R.string.items_restored, undone), Snackbar.LENGTH_SHORT);
+                report(getString(R.string.snack_restored, undone), Snackbar.LENGTH_SHORT);
             }
 
         } else if (it == R.id.action_export_list)

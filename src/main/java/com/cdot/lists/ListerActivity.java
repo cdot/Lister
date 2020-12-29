@@ -107,7 +107,9 @@ public abstract class ListerActivity extends AppCompatActivity implements Shared
     @Override // Activity
     public void onResume() {
         super.onResume();
-        ensureListsLoaded();
+        ensureListsLoaded(
+                x -> {},
+                code -> report(code, Snackbar.LENGTH_INDEFINITE));
         setStayAwake(); // re-acquire wakelock if necessary
         getLister().getPrefs().registerOnSharedPreferenceChangeListener(this);
     }
@@ -122,19 +124,29 @@ public abstract class ListerActivity extends AppCompatActivity implements Shared
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
-        ensureListsLoaded();
+        ensureListsLoaded(
+                x -> {},
+                code -> report(code, Snackbar.LENGTH_INDEFINITE));
     }
 
-    public synchronized void ensureListsLoaded() {
+    /**
+     *
+     * @param onOK actions on load success
+     * @param onFail actions on load failed
+     */
+    public synchronized void ensureListsLoaded(Lister.SuccessCallback onOK, Lister.FailCallback onFail) {
         getLister().loadLists(this,
-                lists -> runOnUiThread(this::onListsLoaded),
+                lists -> {
+                    runOnUiThread(this::onListsLoaded);
+                    onOK.succeeded(lists);
+                },
                 code -> {
                     if (code == R.string.failed_access_denied) {
                         // In a thread, have to use the UI thread to request access
                         runOnUiThread(() -> {
                             AlertDialog.Builder builder = new AlertDialog.Builder(this);
                             builder.setTitle(R.string.failed_access_denied);
-                            builder.setMessage(R.string.failed_uri_access);
+                            builder.setMessage(R.string.failed_file_access);
                             builder.setPositiveButton(R.string.ok, (dialogInterface, i) -> {
                                 Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
                                 // Callers must include CATEGORY_OPENABLE in the Intent to obtain URIs that can be opened with ContentResolver#openFileDescriptor(Uri, String)
@@ -142,7 +154,7 @@ public abstract class ListerActivity extends AppCompatActivity implements Shared
                                 // Indicate the permissions should be persistable across device reboots
                                 intent.setFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
                                 if (Build.VERSION.SDK_INT >= 26)
-                                    intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, getLister().getUri(Lister.PREF_URI));
+                                    intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, getLister().getUri(Lister.PREF_FILE_URI));
                                 intent.setType("application/json");
                                 startActivityForResult(intent, REQUEST_CHANGE_STORE);
                                 // onActivityResult will re-load the list in response to a successful
@@ -152,7 +164,7 @@ public abstract class ListerActivity extends AppCompatActivity implements Shared
                         });
                         return true;
                     }
-                    return report(code, Snackbar.LENGTH_INDEFINITE);
+                    return onFail.failed(code);
                 });
     }
 
@@ -194,39 +206,42 @@ public abstract class ListerActivity extends AppCompatActivity implements Shared
     }
 
     /**
-     * Handle an intent that is changing the store or creating a new store. This is called from
+     * Handle an intent that is changing the file or creating a new file. This is called from
      * onActivityResult in a ListerActivity after an OPEN_DOCUMENT.
+     *
      * @param request the request, either REQUEST_CHANGE_STORE or REQUEST_CREATE_STORE
-     * @param intent the actual intent
+     * @param intent  the actual intent
      */
     protected void handleStoreIntent(int request, Intent intent) {
-        Uri newURI = intent.getData();
-        int flags = intent.getFlags();
+        final Uri newURI = intent.getData();
         if (newURI == null)
             return;
+        final int flags = intent.getFlags();
         final Lister lister = getLister();
 
         if (request == ListerActivity.REQUEST_CHANGE_STORE) {
-            Uri oldURI = lister.getUri(Lister.PREF_URI);
+            Uri oldURI = lister.getUri(Lister.PREF_FILE_URI);
             if (!newURI.equals(oldURI)) {
-                lister.setUri(Lister.PREF_URI, newURI);
-                // Reload from the new store
+                lister.setUri(Lister.PREF_FILE_URI, newURI);
+                // Reload from the new store. Note that the listener for the Checklists activity
+                // was removed when the Settings activity was invoked.
                 lister.unloadLists();
-                lister.loadLists(this,
+                ensureListsLoaded(
                         lists -> {
                             // Persist granted access across reboots
                             int takeFlags = flags & (Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-                            getContentResolver().takePersistableUriPermission(lister.getUri(Lister.PREF_URI), takeFlags);
+                            getContentResolver().takePersistableUriPermission(lister.getUri(Lister.PREF_FILE_URI), takeFlags);
                             lister.saveCache(this);
-                            report(R.string.store_changed, Snackbar.LENGTH_INDEFINITE);
+                            lister.getLists().notifyChangeListeners();
+                            report(R.string.snack_file_changed, Snackbar.LENGTH_LONG);
                         },
                         code -> report(code, Snackbar.LENGTH_INDEFINITE));
             }
-        } else if (request == ListerActivity.REQUEST_CREATE_STORE){
-            lister.setUri(Lister.PREF_URI, newURI);
+        } else if (request == ListerActivity.REQUEST_CREATE_STORE) {
+            lister.setUri(Lister.PREF_FILE_URI, newURI);
             // Save whatever is currently in memory to the new URI
             lister.saveLists(this,
-                    okdata -> report(R.string.store_created, Snackbar.LENGTH_INDEFINITE),
+                    okdata -> report(R.string.snack_file_created, Snackbar.LENGTH_LONG),
                     code -> report(code, Snackbar.LENGTH_SHORT));
         }
     }

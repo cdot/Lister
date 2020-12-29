@@ -41,7 +41,7 @@ public class Lister extends Application {
     public static final String PREF_STAY_AWAKE = "stayAwake";
     public static final String PREF_STRIKE_CHECKED = "strikeThroughCheckedItems";
     public static final String PREF_TEXT_SIZE_INDEX = "textSizeIndex";
-    public static final String PREF_URI = "backingStore";
+    public static final String PREF_FILE_URI = "backingStore";
     public static final String PREF_WARN_DUPLICATE = "warnDuplicates";
     public static final String CACHE_FILE = "checklists.json";
     // Must match res/values/strings.xml/text_size_list
@@ -65,7 +65,7 @@ public class Lister extends Application {
         put(PREF_TEXT_SIZE_INDEX, TEXT_SIZE_DEFAULT);
     }};
     private final static Map<String, String> sStringDefaults = new HashMap<String, String>() {{
-        put(PREF_URI, null);
+        put(PREF_FILE_URI, null);
     }};
     // TESTING ONLY
     public static int FORCE_CACHE_FAIL = 0;
@@ -114,7 +114,7 @@ public class Lister extends Application {
 
         // Asynchronously load the URI. If the load fails, try the cache
         mLoadThread = new Thread(() -> {
-            final Uri uri = getUri(PREF_URI);
+            final Uri uri = getUri(PREF_FILE_URI);
 
             Log.d(TAG, "Starting load thread to load from " + uri);
             try {
@@ -172,10 +172,10 @@ public class Lister extends Application {
                 onFail.failed(R.string.failed_access_denied);
             } catch (Exception e) {
                 if (uri == null) {
-                    onFail.failed(R.string.failed_no_uri);
+                    onFail.failed(R.string.failed_no_file);
                 } else {
                     Log.e(TAG, "Exception loading " + Lister.stringifyException(e));
-                    onFail.failed(R.string.failed_uri_load);
+                    onFail.failed(R.string.failed_file_load);
                 }
                 Log.d(TAG, "Loading " + mLists + " from cache");
                 loadCache(mLists, cxt,
@@ -208,7 +208,7 @@ public class Lister extends Application {
             }
         } catch (FileNotFoundException ce) {
             Log.e(TAG, "FileNotFoundException loading cache " + CACHE_FILE + ": " + ce);
-            onFail.failed(R.string.no_cache);
+            onFail.failed(R.string.snack_no_cache);
         } catch (Exception ce) {
             Log.e(TAG, "Failed cache load " + CACHE_FILE + ": " + stringifyException(ce));
             onFail.failed(R.string.failed_cache_load);
@@ -246,12 +246,12 @@ public class Lister extends Application {
         if (!cacheOK)
             onFail.failed(R.string.failed_save_to_cache);
 
-        final Uri uri = getUri(PREF_URI);
+        final Uri uri = getUri(PREF_FILE_URI);
         if (uri == null) {
             if (cacheOK)
                 onSuccess.succeeded(null);
             else
-                onFail.failed(R.string.failed_save_to_cache_and_uri);
+                onFail.failed(R.string.failed_save_to_cache_and_file);
             return;
         }
 

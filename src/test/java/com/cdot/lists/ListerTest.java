@@ -68,7 +68,7 @@ public class ListerTest {
         }
 
         public void waitForSave(Lister lister, Runnable runner) {
-            lister.setUri(Lister.PREF_URI, getFileUri());
+            lister.setUri(Lister.PREF_FILE_URI, getFileUri());
             lister.saveLists(lister,
                     o -> {
                         runner.run();
@@ -140,7 +140,7 @@ public class ListerTest {
     @Test
     public void saveCacheOKStoreNull() {
         Lister lister = makeApp();
-        lister.setUri(Lister.PREF_URI, null);
+        lister.setUri(Lister.PREF_FILE_URI, null);
         final Waiter waiter = new Waiter("saveCacheOKStoreNull");
         lister.saveLists(lister,
                 o -> {
@@ -158,7 +158,7 @@ public class ListerTest {
     public void saveCacheOKStoreOK() {
         Lister lister = makeApp();
         final Waiter waiter = new Waiter("saveCacheOKStoreOK");
-        lister.setUri(Lister.PREF_URI, waiter.getFileUri());
+        lister.setUri(Lister.PREF_FILE_URI, waiter.getFileUri());
         lister.saveLists(lister,
                 o -> {
                     assertNull(o);
@@ -174,7 +174,7 @@ public class ListerTest {
     @Test
     public void saveCacheOKStoreFail() {
         Lister lister = makeApp();
-        lister.setUri(Lister.PREF_URI, Uri.parse(BAD_URI));
+        lister.setUri(Lister.PREF_FILE_URI, Uri.parse(BAD_URI));
         final Waiter wait = new Waiter("saveCacheOKStoreFail");
         lister.saveLists(lister,
                 o -> {
@@ -193,9 +193,9 @@ public class ListerTest {
     @Test
     public void saveCacheNoneStoreNull() {
         Lister lister = makeApp();
-        lister.setUri(Lister.PREF_URI, null);
+        lister.setUri(Lister.PREF_FILE_URI, null);
         final Waiter waiter = new Waiter("saveCacheNoneStoreNull");
-        Lister.FORCE_CACHE_FAIL = R.string.no_cache;
+        Lister.FORCE_CACHE_FAIL = R.string.snack_no_cache;
         lister.saveLists(lister,
                 o -> {
                     assertNull(o);
@@ -206,7 +206,7 @@ public class ListerTest {
                     if (waiter.atStep() == 0)
                         assertEquals(R.string.failed_save_to_cache, code);
                     else if (waiter.atStep() == 1)
-                        assertEquals(R.string.failed_save_to_cache_and_uri, code);
+                        assertEquals(R.string.failed_save_to_cache_and_file, code);
                     else
                         fail();
                     waiter.nextStep();
@@ -219,9 +219,9 @@ public class ListerTest {
     public void saveCacheFailStoreFail() {
         Lister lister = makeApp();
         // Both failed
-        lister.setUri(Lister.PREF_URI, Uri.parse(BAD_URI));
+        lister.setUri(Lister.PREF_FILE_URI, Uri.parse(BAD_URI));
         final Waiter waiter = new Waiter("saveCacheFailStoreFail");
-        Lister.FORCE_CACHE_FAIL = R.string.no_cache;
+        Lister.FORCE_CACHE_FAIL = R.string.snack_no_cache;
         lister.saveLists(lister,
                 o -> {
                     fail();
@@ -245,8 +245,8 @@ public class ListerTest {
         Lister lister = makeApp();
         // Both failed
         final Waiter waiter = new Waiter("saveCacheFailStoreOK");
-        lister.setUri(Lister.PREF_URI, waiter.getFileUri());
-        Lister.FORCE_CACHE_FAIL = R.string.no_cache;
+        lister.setUri(Lister.PREF_FILE_URI, waiter.getFileUri());
+        Lister.FORCE_CACHE_FAIL = R.string.snack_no_cache;
         lister.saveLists(lister,
                 o -> {
                     assertNull(o);
@@ -268,7 +268,7 @@ public class ListerTest {
     public void saveCacheOKStoreFile() {
         Lister lister = makeApp();
         final Waiter waiter = new Waiter("saveCacheOKStoreFile");
-        lister.setUri(Lister.PREF_URI, waiter.getFileUri());
+        lister.setUri(Lister.PREF_FILE_URI, waiter.getFileUri());
         lister.saveLists(lister,
                 o -> {
                     assertNull(o);
@@ -286,14 +286,14 @@ public class ListerTest {
         Lister lister = makeApp();
         final Waiter waiter = new Waiter("loadCacheOKStoreNull");
         waiter.waitForSave(lister, () -> {
-            lister.setUri(Lister.PREF_URI, null);
+            lister.setUri(Lister.PREF_FILE_URI, null);
             lister.loadLists(lister,
                     o -> {
                         assertSame(o, lister.getLists());
                         waiter.nextStep();
                     },
                     code -> {
-                        assertEquals(R.string.failed_no_uri, code);
+                        assertEquals(R.string.failed_no_file, code);
                         waiter.nextStep();
                         return true;
                     });
@@ -306,7 +306,7 @@ public class ListerTest {
         Lister lister = makeApp();
         final Waiter waiter = new Waiter("loadCacheOKStoreOK");
         waiter.waitForSave(lister, () -> {
-            lister.setUri(Lister.PREF_URI, waiter.getFileUri());
+            lister.setUri(Lister.PREF_FILE_URI, waiter.getFileUri());
             lister.loadLists(lister,
                     o -> {
                         assertSame(o, lister.getLists());
@@ -325,14 +325,14 @@ public class ListerTest {
         Lister lister = makeApp();
         final Waiter waiter = new Waiter("loadCacheOKStoreFail");
         waiter.waitForSave(lister, () -> {
-            lister.setUri(Lister.PREF_URI, Uri.parse(BAD_URI + "loadCacheOKStoreFail"));
+            lister.setUri(Lister.PREF_FILE_URI, Uri.parse(BAD_URI + "loadCacheOKStoreFail"));
             lister.loadLists(lister,
                     o -> {
                         assertSame(o, lister.getLists());
                         waiter.nextStep();
                     },
                     code -> {
-                        assertEquals(R.string.failed_uri_load, code);
+                        assertEquals(R.string.failed_file_load, code);
                         waiter.nextStep();
                         return true;
                     });
@@ -347,7 +347,7 @@ public class ListerTest {
         final Waiter waiter = new Waiter("loadCacheFailStoreNull");
         waiter.waitForSave(lister, () -> {
             Lister.FORCE_CACHE_FAIL = R.string.failed_cache_load;
-            lister.setUri(Lister.PREF_URI, null);
+            lister.setUri(Lister.PREF_FILE_URI, null);
             lister.loadLists(lister,
                     o -> {
                         fail();
@@ -355,7 +355,7 @@ public class ListerTest {
                     code -> {
                         // this ought to be called!
                         if (waiter.atStep() == 0)
-                            assertEquals(R.string.failed_no_uri, code);
+                            assertEquals(R.string.failed_no_file, code);
                         else if (waiter.atStep() == 1)
                             assertEquals(R.string.failed_cache_load, code);
                         waiter.nextStep();
@@ -371,7 +371,7 @@ public class ListerTest {
         final Waiter waiter = new Waiter("loadCacheFailStoreFail");
         waiter.waitForSave(lister, () -> {
             Lister.FORCE_CACHE_FAIL = R.string.failed_cache_load;
-            lister.setUri(Lister.PREF_URI, Uri.parse(BAD_URI));
+            lister.setUri(Lister.PREF_FILE_URI, Uri.parse(BAD_URI));
             lister.loadLists(lister,
                     o -> {
                         assertSame(o, lister.getLists());
@@ -379,7 +379,7 @@ public class ListerTest {
                     },
                     code -> {
                         if (waiter.atStep() == 0)
-                            assertEquals(R.string.failed_uri_load, code);
+                            assertEquals(R.string.failed_file_load, code);
                         else if (waiter.atStep() == 1)
                             assertEquals(R.string.failed_cache_load, code);
                         else

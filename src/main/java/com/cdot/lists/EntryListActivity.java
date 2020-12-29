@@ -58,11 +58,10 @@ public abstract class EntryListActivity extends ListerActivity implements EntryL
     abstract ListView getListView();
 
     // Set the common bindings, obtained from the ViewBinding, and create the array adapter
+    // MUST be called from subclass onCreate immediately the view binding has been established
     protected void makeAdapter() {
-        if (mArrayAdapter == null) {
-            mArrayAdapter = new EntryListAdapter(this);
-            getListView().setAdapter(mArrayAdapter);
-        }
+        mArrayAdapter = new EntryListAdapter(this);
+        getListView().setAdapter(mArrayAdapter);
     }
 
     @Override // ListerActivity
@@ -81,8 +80,7 @@ public abstract class EntryListActivity extends ListerActivity implements EntryL
      * List contents have changed; notify the adapter
      */
     protected void notifyAdapter() {
-        if (mArrayAdapter != null)
-            mArrayAdapter.notifyDataSetChanged();
+        mArrayAdapter.notifyDataSetChanged();
     }
 
     @Override

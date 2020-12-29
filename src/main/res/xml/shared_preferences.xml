@@ -45,12 +45,12 @@
 
     <Preference
         android:key="action_change_uri"
-        android:title="@string/action_change_uri"
-        android:summary="@string/help_change_uri"/>
+        android:title="@string/action_file_change"
+        android:summary="@string/help_file_change"/>
 
     <Preference
         android:key="action_create_uri"
-        android:title="@string/action_create_uri"
-        android:summary="@string/help_create_uri" />
+        android:title="@string/action_file_create"
+        android:summary="@string/help_create_file" />
 
 </PreferenceScreen>

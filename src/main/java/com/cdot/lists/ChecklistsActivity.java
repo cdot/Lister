@@ -80,6 +80,7 @@ public class ChecklistsActivity extends EntryListActivity {
         Log.d(TAG, "onCreate");
         super.onCreate(savedInstanceState);
         mBinding = ChecklistsActivityBinding.inflate(getLayoutInflater());
+        makeAdapter();
         setContentView(mBinding.getRoot());
     }
 
@@ -101,12 +102,6 @@ public class ChecklistsActivity extends EntryListActivity {
             mBinding.listsMessage.setVisibility(sz == 0 ? View.VISIBLE : View.GONE);
             mBinding.itemListView.setVisibility(sz == 0 ? View.GONE : View.VISIBLE);
         });
-    }
-
-    @Override // EntryListActivity
-    public void onListsLoaded() {
-        makeAdapter();
-        super.onListsLoaded();
     }
 
     @Override // AppCompatActivity
@@ -186,9 +181,6 @@ public class ChecklistsActivity extends EntryListActivity {
             return;
 
         if (requestCode == Lister.REQUEST_IMPORT) {
-            if (mArrayAdapter == null)
-                // need to create the adapter if lists are empty and there isn't one yet
-                makeAdapter();
             getLister().importList(intent.getData(), this,
                     imports -> {
                         StringBuilder report = new StringBuilder();
@@ -198,7 +190,7 @@ public class ChecklistsActivity extends EntryListActivity {
                                 report.append(", ");
                             report.append("'").append(eli.getText()).append("'");
                         }
-                        report(getString(R.string.import_report, report), Snackbar.LENGTH_INDEFINITE);
+                        report(getString(R.string.snack_imported, report), Snackbar.LENGTH_INDEFINITE);
                         Message msg = mMessageHandler.obtainMessage(LISTS_CHANGED_MESSAGE);
                         mMessageHandler.sendMessage(msg);
                     },

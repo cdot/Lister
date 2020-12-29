@@ -2,10 +2,10 @@
 <resources>
     <string name="action_alpha_sort_off">Tri inactif</string>
     <string name="action_alpha_sort_on">Tri actif</string>
-    <string name="action_change_uri">Changer fichier</string>
+    <string name="action_file_change">Changer fichier</string>
     <string name="action_check_all">Vérifier tous articles</string>
     <string name="action_copy">Créer une copie</string>
-    <string name="action_create_uri">Créer un nouveau fichier</string>
+    <string name="action_file_create">Créer un nouveau fichier</string>
     <string name="action_delete">Effacer</string>
     <string name="action_delete_checked">Effacer tous éléments cochés</string>
     <string name="action_device_settings">Préférences</string>
@@ -40,18 +40,17 @@
     <string name="failed_cache_load">Impossible de charger le cache</string>
     <string name="failed_export">Échec de l\'exportation</string>
     <string name="failed_import">L\'importation a échoué</string>
-    <string name="failed_no_uri">Veuillez créer une boutique dans les préférences</string>
+    <string name="failed_no_file">Veuillez créer une boutique dans les préférences</string>
     <string name="failed_save_to_cache">L\'enregistrement dans le cache a échoué. Les modifications récentes peuvent être perdues!</string>
-    <string name="failed_save_to_cache_and_uri">Le stockage et le cache ont tous deux échoué</string>
+    <string name="failed_save_to_cache_and_file">Le stockage et le cache ont tous deux échoué</string>
     <string name="failed_save_to_uri">L\'enregistrement dans le fichier a échoué. Les modifications récentes ont été enregistrées dans le cache, mais peuvent être perdues!</string>
-    <string name="failed_uri_access">Accès au fichier refusé. Veuillez reconfirmer l\'emplacement du fichier</string>
-    <string name="failed_uri_load">Impossible de charger à partir du fichier, en fonction du cache</string>
+    <string name="failed_file_access">Accès au fichier refusé. Veuillez reconfirmer l\'emplacement du fichier</string>
+    <string name="failed_file_load">Impossible de charger à partir du fichier, en fonction du cache</string>
 
-    <string name="general_settings">réglages généraux</string>
-
-    <string name="help_change_uri">Choisissez un autre fichier de listes existant</string>
+    <string name="help_file_change">Choisissez un autre fichier de listes</string>
+    <string name="help_file_open">Ouvrir un fichier de listes</string>
     <string name="help_checked_at_end">Afficher les éléments cochés à la fin de la liste</string>
-    <string name="help_create_uri">Créer un nouvel emplacement pour stocker les listes</string>
+    <string name="help_create_file">Créer un nouvel emplacement pour stocker les listes</string>
     <string name="help_delete_checked">Effacer les éléments cochés. La suppression peut être annulée</string>
     <string name="help_grey_checked">Griser les éléments cochés pour les rendre plus évidents</string>
     <string name="help_left_hand">Retourner les éléments de la liste pour faciliter l\'utilisation par les gauchers</string>
@@ -62,19 +61,13 @@
     <string name="help_warn_duplicate_item">Avertir lorsqu\'un élément en double est sur le point d\'être ajouté à la liste</string>
     <string name="help_warn_duplicate_list">Avertir des noms de liste en double</string>
 
-    <string name="import_report">Importé %1$s</string>
-    <string name="items_deleted">%d entrées supprimées</string>
-    <string name="items_restored">%d entrées restaurées</string>
-
-    <string name="locale_prefix">défaut</string>
-
-    <string name="message_no_lists_yet">Aucune liste pour le moment…</string>
-    <string name="move_the_item">Déplacer l\'élément</string>
-
-    <string name="no_cache">Aucun cache trouvé sur cet appareil. Un sera créé la prochaine fois que vous apporterez un changement.</string>
-    <string name="no_deleted_items">Aucun élément supprimé</string>
+    <string name="snack_imported">Importé %1$s</string>
+    <string name="snack_deleted">%d entrées supprimées</string>
+    <string name="snack_restored">%d entrées restaurées</string>
+    <string name="no_lists_yet">Aucune liste pour le moment…</string>
+    <string name="snack_no_cache">Aucun cache trouvé sur cet appareil. Un sera créé la prochaine fois que vous apporterez un changement.</string>
+    <string name="snack_no_deleted_items">Aucun élément supprimé</string>
     <string name="new_item_hint">Nouvel élément de liste</string>
-
     <string name="ok">OK</string>
     <string name="option_checked_at_end">Vérifié en bas</string>
     <string name="option_delete_checked">Effacer coché</string>
@@ -92,6 +85,9 @@
 
     <string name="similar_item_already_in_list">Entrée similaire trouvée</string>
     <string name="similar_item_x_already_in_list">Entrée similaire \'%1$s\' déjà présente. Ajouter un autre \'%2$s\'?</string>
+    <string name="snack_file_created">Nouveau fichier créé</string>
+    <string name="snack_file_changed">Fichier changé</string>
+    <string name="action_file_open">Ouvrir fichier</string>
 
     <!-- Arrays -->
     <string-array name="text_size_options">

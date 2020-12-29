@@ -79,7 +79,8 @@ public class SharedPreferencesFragment extends PreferencesFragment {
 
         Preference pref = findPreference("action_change_uri");
         pref.setOnPreferenceClickListener(v -> handleStoreClick(Intent.ACTION_OPEN_DOCUMENT, ListerActivity.REQUEST_CHANGE_STORE));
-        pref.setVisible(mLister.getUri(Lister.PREF_URI) != null);
+        pref.setTitle((mLister.getUri(Lister.PREF_FILE_URI) != null) ? R.string.action_file_change : R.string.action_file_open);
+        pref.setSummary((mLister.getUri(Lister.PREF_FILE_URI) != null) ? R.string.help_file_change : R.string.help_file_open);
 
         pref = findPreference("action_create_uri");
         pref.setOnPreferenceClickListener(v -> handleStoreClick(Intent.ACTION_CREATE_DOCUMENT, ListerActivity.REQUEST_CREATE_STORE));
@@ -89,11 +90,14 @@ public class SharedPreferencesFragment extends PreferencesFragment {
         Intent intent = new Intent(action);
         intent.setFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
         if (Build.VERSION.SDK_INT >= 26) {
-            Uri bs = mLister.getUri(Lister.PREF_URI);
+            Uri bs = mLister.getUri(Lister.PREF_FILE_URI);
             if (bs != null)
                 intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, bs);
         }
         intent.setType("application/json");
+        // The setting of mIssueReports will stay true from now on, but that's OK, it's only purpose
+        // is to suppress repeated store alarms during initialisation
+        ((PreferencesActivity)getActivity()).mIssueReports = true;
         getActivity().startActivityForResult(intent, request);
         return true;
     }
