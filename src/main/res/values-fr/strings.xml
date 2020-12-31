@@ -22,7 +22,6 @@
     <string name="action_save">sauver</string>
     <string name="action_uncheck_all">Décocher tous éléments</string>
     <string name="action_undo_delete">Annuler la dernière effacement</string>
-    <string name="app_name">Mr Lister</string>
 
     <string name="cache_is_newer">Le cache local est plus récent que les listes enregistrées</string>
     <string name="cancel">Annuler</string>
@@ -88,32 +87,15 @@
     <string name="snack_file_created">Nouveau fichier créé</string>
     <string name="snack_file_changed">Fichier changé</string>
     <string name="action_file_open">Ouvrir fichier</string>
+    <string name="json_format">JSON</string>
 
     <!-- Arrays -->
-    <string-array name="text_size_options">
-        <item>Défaut</item>
-        <item>Petit</item>
-        <item>Moyen</item>
-        <item>Grand</item>
-    </string-array>
+    <string name="text_size_default">Défaut</string>
+    <string name="text_size_small">Petit</string>
+    <string name="text_size_medium">Moyen</string>
+    <string name="text_size_large">Grand</string>
 
-    <string-array name="text_size_values">
-        <item>0</item>
-        <item>1</item>
-        <item>2</item>
-        <item>3</item>
-    </string-array>
+    <string name="csv_format">>Valeurs séparées par des virgules</string>
 
-    <string-array name="share_format_description">
-        <item>Texte brut</item>
-        <item>Données JSON</item>
-        <item>Valeurs séparées par des virgules</item>
-    </string-array>
-
-    <string-array name="share_format_mimetype">
-        <item>text/plain</item>
-        <item>application/json</item>
-        <item>text/csv</item>
-    </string-array>
 </resources>
 

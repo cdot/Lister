@@ -2,37 +2,71 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.cdot.lists">
 
+    <!-- Without this, an intent from a file manager would be ignored -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+
+    <!-- announce we can handle these types of launch intent -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="content"
+                android:mimeType="application/json"
+                android:host="*" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="file"
+                android:mimeType="application/json"
+                android:host="*" />
+        </intent>
+    </queries>
+
     <application
-        android:name="com.cdot.lists.Lister"
+        android:name=".Lister"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher_round"
         android:label="@string/app_name"
         android:theme="@style/AppTheme">
 
         <activity
-            android:name="com.cdot.lists.ChecklistsActivity"
+            android:name=".ChecklistsActivity"
             android:theme="@style/Theme.AppCompat.Light.DarkActionBar"
+            android:launchMode="singleTop"
             android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:scheme="file"
+                    android:mimeType="application/json"
+                    android:host="*" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:scheme="content"
+                    android:mimeType="application/json"
+                    android:host="*" />
+            </intent-filter>
         </activity>
 
         <activity
-            android:name="com.cdot.lists.ChecklistActivity"
+            android:name=".ChecklistActivity"
             android:theme="@style/Theme.AppCompat.Light.DarkActionBar"
             android:label="@string/app_name">
         </activity>
 
         <activity
-            android:name="com.cdot.lists.preferences.PreferencesActivity"
+            android:name=".preferences.PreferencesActivity"
             android:theme="@style/Theme.AppCompat.Light.DarkActionBar"
             android:label="@string/app_name">
         </activity>
 
         <activity
-            android:name="com.cdot.lists.HelpActivity"
+            android:name=".HelpActivity"
             android:theme="@style/Theme.AppCompat.Light.DarkActionBar"
             android:label="@string/app_name">
         </activity>

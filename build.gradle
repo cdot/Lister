@@ -1,18 +1,23 @@
 buildscript {
+    ext.kotlin_version = '1.4.30-M1'
     repositories {
         google()
         jcenter()
+        maven { url 'https://dl.bintray.com/kotlin/kotlin-eap' }
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:4.1.1'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
 apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
 
 repositories {
     google()
     mavenCentral()
     jcenter()
+    maven { url 'https://dl.bintray.com/kotlin/kotlin-eap' }
 }
 
 def localProperties = new Properties()
@@ -36,7 +41,7 @@ android {
         minSdkVersion 23
         targetSdkVersion 30
         versionCode 1
-        versionName "1.0"
+        versionName "Eas"
     }
 
     lintOptions {
@@ -87,6 +92,8 @@ dependencies {
     testImplementation "org.hamcrest:hamcrest-junit:2.0.0.0"
     testImplementation "uk.co.datumedge:hamcrest-json:0.1"
     testImplementation "org.skyscreamer:jsonassert:1.5.0"
+    implementation "androidx.core:core-ktx:+"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 }
 
 allprojects {

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- must align with text_size_values -->
+    <string-array name="text_size_options">
+        <item>@string/text_size_default</item>
+        <item>@string/text_size_small</item>
+        <item>@string/text_size_medium</item>
+        <item>@string/text_size_large</item>
+    </string-array>
+
+    <!-- must align with text_size_options -->
+    <string-array name="text_size_values">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+    </string-array>
+
+    <!-- must align with share_format_mimetype -->
+    <string-array name="share_format_description">
+        <item>@string/json_format</item>
+        <item>@string/csv_format</item>
+    </string-array>
+
+    <!-- must align with share_format_description -->
+    <string-array name="share_format_mimetype">
+        <item>application/json</item>
+        <item>text/csv</item>
+    </string-array>
+</resources>

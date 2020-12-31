@@ -16,28 +16,23 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package com.cdot.lists.preferences;
+package com.cdot.lists.preferences
 
-import android.os.Bundle;
-import android.view.View;
-
-import androidx.preference.PreferenceFragmentCompat;
+import android.os.Bundle
+import android.view.View
+import androidx.preference.PreferenceFragmentCompat
 
 /**
  * Intermediate simply to allow us access to the root view of a Preference screen so we can
  * Snackbar on it.
  */
-public abstract class PreferencesFragment extends PreferenceFragmentCompat {
+abstract class PreferencesFragment : PreferenceFragmentCompat() {
+    var rootView: View? = null
+        private set
 
-    private View mRootView;
-
-    @Override // PreferenceFragmentCompat
-    public void onViewCreated (View view, Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
-        mRootView = view;
-    }
-
-    public View getRootView() {
-        return mRootView;
+    // PreferenceFragmentCompat
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        rootView = view
     }
 }
