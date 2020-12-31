@@ -323,7 +323,7 @@ abstract class ListerActivity : AppCompatActivity(), OnSharedPreferenceChangeLis
         const val REQUEST_CREATE_STORE = 2
         const val REQUEST_PREFERENCES = 3
         const val MESSAGE_UPDATE_DISPLAY = 0xC04EFE
-        private val TAG = ListerActivity::class.java.simpleName
+        private val TAG = ListerActivity::class.simpleName
         private val CLASS_NAME = ListerActivity::class.java.canonicalName
 
         // Extras used for comms in intents between activities and saved instance states

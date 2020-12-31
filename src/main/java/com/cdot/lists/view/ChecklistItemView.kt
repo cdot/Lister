@@ -49,7 +49,7 @@ class ChecklistItemView(it: EntryListItem, // item we're moving
 
         // Transparency
         var f = TRANSPARENCY_OPAQUE // Completely opague
-        if (item.getFlag(ChecklistItem.isDone) && lister.getBool(Lister.PREF_GREY_CHECKED)) // Greyed out
+        if (item.getFlag(ChecklistItem.IS_DONE) && lister.getBool(Lister.PREF_GREY_CHECKED)) // Greyed out
             f = TRANSPARENCY_GREYED else if (!mIsMoving && item === activity.mMovingItem) {
             // Item being moved (but NOT the moving view)
             f = TRANSPARENCY_FAINT
@@ -59,7 +59,7 @@ class ChecklistItemView(it: EntryListItem, // item we're moving
         it.alpha = f
 
         // Strike through
-        if (!item.getFlag(ChecklistItem.isDone) || !lister.getBool(Lister.PREF_STRIKE_CHECKED)) it.paintFlags = it.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv() else it.paintFlags = it.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
+        if (!item.getFlag(ChecklistItem.IS_DONE) || !lister.getBool(Lister.PREF_STRIKE_CHECKED)) it.paintFlags = it.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv() else it.paintFlags = it.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
     }
 
     // EntryListItemView
@@ -84,34 +84,38 @@ class ChecklistItemView(it: EntryListItem, // item we're moving
             left.addView(moveButton)
             mCheckboxOnRight = true
         }
-        checkBox.isChecked = item.getFlag(ChecklistItem.isDone)
+        checkBox.isChecked = item.getFlag(ChecklistItem.IS_DONE)
     }
 
     // EntryListItemView
-    override fun onPopupMenuAction(act: Int): Boolean {
-        if (act == R.id.action_delete) {
-            val list = item.parent
-            list!!.newUndoSet()
-            list.remove(item, true)
-            Log.d(TAG, "item deleted")
-            list.notifyChangeListeners()
-            checkpoint()
-        } else if (act == R.id.action_rename) {
-            val builder = AlertDialog.Builder(context)
-            builder.setTitle(R.string.edit_list_item)
-            val editText = EditText(context)
-            editText.isSingleLine = true
-            editText.setText(item.text)
-            builder.setView(editText)
-            builder.setPositiveButton(R.string.ok) { dialogInterface: DialogInterface?, i: Int ->
-                item.text = editText.text.toString()
-                Log.d(TAG, "item renamed")
-                item.notifyChangeListeners()
+    override fun onPopupMenuAction(action: Int): Boolean {
+        when(action) {
+            R.id.action_delete -> {
+                val list = item.parent
+                list!!.newUndoSet()
+                list.remove(item, true)
+                Log.d(TAG, "item deleted")
+                list.notifyChangeListeners()
                 checkpoint()
             }
-            builder.setNegativeButton(R.string.cancel, null)
-            builder.show()
-        } else return false
+            R.id.action_rename -> {
+                val builder = AlertDialog.Builder(context)
+                builder.setTitle(R.string.edit_list_item)
+                val editText = EditText(context)
+                editText.isSingleLine = true
+                editText.setText(item.text)
+                builder.setView(editText)
+                builder.setPositiveButton(R.string.ok) { dialogInterface: DialogInterface?, i: Int ->
+                    item.text = editText.text.toString()
+                    Log.d(TAG, "item renamed")
+                    item.notifyChangeListeners()
+                    checkpoint()
+                }
+                builder.setNegativeButton(R.string.cancel, null)
+                builder.show()
+            }
+            else -> return false
+        }
         return true
     }
 
@@ -122,7 +126,7 @@ class ChecklistItemView(it: EntryListItem, // item we're moving
      */
     private fun setChecked(isChecked: Boolean): Boolean {
         val list = item.parent as Checklist?
-        if (list!!.getFlag(Checklist.autoDeleteChecked) && isChecked) {
+        if (list!!.getFlag(Checklist.DELETE_CHECKED) && isChecked) {
             val el = item.parent
             el!!.newUndoSet()
             el.remove(item, true)
@@ -130,8 +134,8 @@ class ChecklistItemView(it: EntryListItem, // item we're moving
             return true
         }
         mBinding.checklistCheckbox.isChecked = isChecked
-        if (item.getFlag(ChecklistItem.isDone) != isChecked) {
-            if (isChecked) item.setFlag(ChecklistItem.isDone) else item.clearFlag(ChecklistItem.isDone)
+        if (item.getFlag(ChecklistItem.IS_DONE) != isChecked) {
+            if (isChecked) item.setFlag(ChecklistItem.IS_DONE) else item.clearFlag(ChecklistItem.IS_DONE)
             item.notifyChangeListeners()
             return true
         }
@@ -139,7 +143,7 @@ class ChecklistItemView(it: EntryListItem, // item we're moving
     }
 
     companion object {
-        private val TAG = ChecklistItemView::class.java.simpleName
+        private val TAG = ChecklistItemView::class.simpleName
         private const val TRANSPARENCY_OPAQUE = 1f
         private const val TRANSPARENCY_GREYED = 0.5f
         private const val TRANSPARENCY_FAINT = 0.2f
@@ -153,7 +157,7 @@ class ChecklistItemView(it: EntryListItem, // item we're moving
             mBinding.checklistCheckbox.setOnClickListener { view: View? ->
                 if (setChecked(mBinding.checklistCheckbox.isChecked)) {
                     Log.d(TAG, "item checked")
-                    if (mBinding.checklistCheckbox.isChecked) item.setFlag(ChecklistItem.isDone) else item.clearFlag(ChecklistItem.isDone)
+                    if (mBinding.checklistCheckbox.isChecked) item.setFlag(ChecklistItem.IS_DONE) else item.clearFlag(ChecklistItem.IS_DONE)
                     checkpoint()
                 }
             }

@@ -45,38 +45,40 @@ class ChecklistItem : EntryListItem {
         }
     }
 
-    // EntryListItem
+    // override EntryListItem
     override val flagNames: Set<String>
-        get() = super.flagNames.plus(isDone)
+        get() = super.flagNames.plus(IS_DONE)
 
     // implement EntryListItem
     override val isMoveable: Boolean
         get() = parent == null || parent!!.itemsAreMoveable
 
-    // implement EntryListItem
+    // override EntryListItem
     override fun equals(other: Any?): Boolean {
         if (other is ChecklistItem)
-            if (getFlag(isDone) != (other as ChecklistItem).getFlag(isDone))
+            if (getFlag(IS_DONE) != (other as ChecklistItem).getFlag(IS_DONE))
                 return false;
         return super.equals(other);
     }
 
-    @Throws(JSONException::class)  // implement EntryListItem
+    // override EntryListItem
+    @Throws(JSONException::class)
     override fun fromJSON(jo: JSONObject) {
         super.fromJSON(jo)
         text = jo.getString("name")
     }
 
-    @Throws(Exception::class)  // implement EntryListItem
+    // implement EntryListItem
+    @Throws(Exception::class)
     override fun fromCSV(r: CSVReader): Boolean {
         val row = r.readNext() ?: return false
         text = row[1]
         // "f", "false", "0", and "" are read as false. Any other value is read as true
-        if (row[2].isEmpty() || row[2].matches(Regex("[Ff]([Aa][Ll][Ss][Ee])?|0"))) clearFlag(isDone) else setFlag(isDone)
+        if (row[2].isEmpty() || row[2].matches(Regex("[Ff]([Aa][Ll][Ss][Ee])?|0"))) clearFlag(IS_DONE) else setFlag(IS_DONE)
         return true
     }
 
-    // implement EntryListItem
+    // override EntryListItem
     override fun toJSON(): JSONObject {
         val iob = super.toJSON()
         try {
@@ -92,7 +94,7 @@ class ChecklistItem : EntryListItem {
         val a = arrayOfNulls<String>(3)
         if (parent == null) a[0] = "" else a[0] = parent!!.text
         a[1] = text
-        a[2] = if (getFlag(isDone)) "T" else "F"
+        a[2] = if (getFlag(IS_DONE)) "T" else "F"
         w.writeNext(a)
     }
 
@@ -100,12 +102,12 @@ class ChecklistItem : EntryListItem {
     override fun toPlainString(tab: String): String {
         val sb = StringBuilder()
         sb.append(tab).append(text)
-        if (getFlag(isDone)) sb.append(" *")
+        if (getFlag(IS_DONE)) sb.append(" *")
         return sb.toString()
     }
 
     companion object {
-        const val isDone = "done"
-        private val TAG = ChecklistItem::class.java.simpleName
+        const val IS_DONE = "done"
+        private val TAG = ChecklistItem::class.simpleName
     }
 }

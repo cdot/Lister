@@ -66,6 +66,6 @@ class PreferencesActivity : ListerActivity() {
     }
 
     companion object {
-        private val TAG = PreferencesActivity::class.java.simpleName
+        private val TAG = PreferencesActivity::class.simpleName
     }
 }

@@ -67,6 +67,6 @@ class ChecklistPreferencesFragment : PreferencesFragment {
     }
 
     companion object {
-        private val TAG = ChecklistPreferencesFragment::class.java.simpleName
+        private val TAG = ChecklistPreferencesFragment::class.simpleName
     }
 }

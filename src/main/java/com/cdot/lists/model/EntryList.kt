@@ -33,7 +33,8 @@ import java.io.StringReader
 import java.util.*
 
 /**
- * Base class for lists of items
+ * Base class for lists of items. A list can itself be an item in an EntryList, so it inherits from
+ * EntryListItem
  */
 abstract class EntryList : EntryListItem {
     // The basic list
@@ -68,7 +69,7 @@ abstract class EntryList : EntryListItem {
      * @return a set of flag names
      */
     override val flagNames: Set<String>
-        get() = super.flagNames.plus(displaySorted).plus(warnAboutDuplicates)
+        get() = super.flagNames.plus(DISPLAY_SORTED).plus(WARN_ABOUT_DUPLICATES)
 
     /**
      * Get the default value for this flag
@@ -77,7 +78,7 @@ abstract class EntryList : EntryListItem {
      * @return flag value
      */
     override fun getFlagDefault(key: String): Boolean {
-        return if (warnAboutDuplicates == key) true else super.getFlagDefault(key)
+        return if (WARN_ABOUT_DUPLICATES == key) true else super.getFlagDefault(key)
     }
 
     // implements EntryListItem
@@ -133,7 +134,8 @@ abstract class EntryList : EntryListItem {
      * @return a copy of the list of entry items.
      */
     fun cloneItemList(): List<EntryListItem> {
-        return mData.clone() as List<EntryListItem>
+        val i: Any = mData.clone()
+        return i as List<EntryListItem>
     }
 
     /**
@@ -231,6 +233,54 @@ abstract class EntryList : EntryListItem {
         return items.size
     }
 
+
+    /**
+     * Get the number of checked items
+     *
+     * @return the number of checked items
+     */
+    fun countFlaggedEntries(flag: String): Int {
+        var i = 0
+        for (item in data) {
+            if (item.getFlag(flag)) i++
+        }
+        return i
+    }
+
+    /**
+     * Make a global change to the "checked" status of all items in the list
+     *
+     * @param check true to set items as checked, false to set as unchecked
+     */
+    fun setFlagOnAll(flag: String, check: Boolean): Boolean {
+        var changed = false
+        for (item in data) {
+            val ci = item as ChecklistItem
+            if (ci.getFlag(ChecklistItem.IS_DONE) != check) {
+                if (check) ci.setFlag(flag) else ci.clearFlag(ChecklistItem.IS_DONE)
+                changed = true
+            }
+        }
+        return changed
+    }
+
+    /**
+     * Delete all the items in the list that have the flag
+     *
+     * @return number of items deleted
+     */
+    fun deleteAllFlagged(flag: String): Int {
+        val kill = ArrayList<EntryListItem>()
+        for (it in data) {
+            if (it.getFlag(flag)) kill.add(it)
+        }
+        newUndoSet()
+        for (dead in kill) {
+            remove(dead, true)
+        }
+        return kill.size
+    }
+
     /**
      * Find an item in the list by text string
      *
@@ -245,7 +295,7 @@ abstract class EntryList : EntryListItem {
         if (matchCase) return null
         for (item in mData) {
             val t = item.text
-            if (t != null && t.toLowerCase().contains(str.toLowerCase())) return item
+            if (t != null && t.toLowerCase(Locale.getDefault()).contains(str.toLowerCase(Locale.getDefault()))) return item
         }
         return null
     }
@@ -327,8 +377,8 @@ abstract class EntryList : EntryListItem {
     private class Remove internal constructor(var index: Int, var item: EntryListItem)
 
     companion object {
-        const val displaySorted = "sort"
-        const val warnAboutDuplicates = "warndup"
-        private val TAG = EntryList::class.java.simpleName
+        const val DISPLAY_SORTED = "sort"
+        const val WARN_ABOUT_DUPLICATES = "warndup"
+        private val TAG = EntryList::class.simpleName
     }
 }

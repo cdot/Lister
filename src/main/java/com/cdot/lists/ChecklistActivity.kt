@@ -81,9 +81,9 @@ class ChecklistActivity : EntryListActivity() {
         mBinding.addItemET.setOnEditorActionListener { textView: TextView?, i: Int, keyEvent: KeyEvent? ->
             if (i == EditorInfo.IME_ACTION_DONE) {
                 val text = mBinding.addItemET.text.toString()
-                if (!text.trim { it <= ' ' }.isEmpty()) {
+                if (text.trim { it <= ' ' }.isNotEmpty()) {
                     val find = list.findByText(text, false)
-                    if (find == null || !list.getFlag(EntryList.warnAboutDuplicates)) addItem(text) else promptSimilarItem(text, find.text)
+                    if (find == null || !list.getFlag(EntryList.WARN_ABOUT_DUPLICATES)) addItem(text) else promptSimilarItem(text, find.text)
                 }
                 return@setOnEditorActionListener true
             }
@@ -130,10 +130,10 @@ class ChecklistActivity : EntryListActivity() {
             it.setTitle(R.string.action_item_add_on)
         }
         menu.findItem(R.id.action_settings).isEnabled = !mInEditMode
-        menu.findItem(R.id.action_check_all).isEnabled = (list as Checklist).checkedCount < list.size()
-        menu.findItem(R.id.action_uncheck_all).isEnabled = (list as Checklist).checkedCount > 0
+        menu.findItem(R.id.action_check_all).isEnabled = (list as Checklist).countFlaggedEntries(ChecklistItem.IS_DONE) < list.size()
+        menu.findItem(R.id.action_uncheck_all).isEnabled = (list as Checklist).countFlaggedEntries(ChecklistItem.IS_DONE) > 0
         menu.findItem(R.id.action_undo_delete).isEnabled = list.removeCount > 0
-        menu.findItem(R.id.action_delete_checked).isEnabled = (list as Checklist).checkedCount > 0
+        menu.findItem(R.id.action_delete_checked).isEnabled = (list as Checklist).countFlaggedEntries(ChecklistItem.IS_DONE) > 0
         return true
     }
 
@@ -145,13 +145,13 @@ class ChecklistActivity : EntryListActivity() {
         val it = menuItem.itemId
         val checklist = list as Checklist
         if (it == R.id.action_check_all) {
-            if (checklist.checkAll(true)) {
+            if (checklist.setFlagOnAll(ChecklistItem.IS_DONE, true)) {
                 list.notifyChangeListeners()
                 Log.d(TAG, "check all")
                 checkpoint()
             }
         } else if (it == R.id.action_delete_checked) {
-            val deleted = checklist.deleteAllChecked()
+            val deleted = checklist.deleteAllFlagged(ChecklistItem.IS_DONE)
             if (deleted > 0) {
                 list.notifyChangeListeners()
                 Log.d(TAG, "checked deleted")
@@ -180,7 +180,7 @@ class ChecklistActivity : EntryListActivity() {
             builder.setNegativeButton(R.string.cancel, null)
             builder.show()
         } else if (it == R.id.action_uncheck_all) {
-            if (checklist.checkAll(false)) {
+            if (checklist.setFlagOnAll(ChecklistItem.IS_DONE, false)) {
                 Log.d(TAG, "uncheck all")
                 list.notifyChangeListeners()
                 checkpoint()
@@ -203,7 +203,7 @@ class ChecklistActivity : EntryListActivity() {
 
     // EntryListActivity
     override fun canManualSort(): Boolean {
-        return !list.getFlag(Checklist.moveCheckedItemsToEnd) && super.canManualSort()
+        return !list.getFlag(Checklist.CHECKED_AT_END) && super.canManualSort()
     }
 
     // EntryListActivity
@@ -211,12 +211,12 @@ class ChecklistActivity : EntryListActivity() {
         get() {
             if (mInEditMode) return ArrayList(list.data) // unsorted list
             val dl = super.displayOrder // get sorted list
-            if (list.getFlag(Checklist.moveCheckedItemsToEnd)) {
+            if (list.getFlag(Checklist.CHECKED_AT_END)) {
                 var top = dl.size
                 var i = 0
                 while (i < top) {
                     val item = dl[i] as ChecklistItem
-                    if (item.getFlag(ChecklistItem.isDone)) {
+                    if (item.getFlag(ChecklistItem.IS_DONE)) {
                         dl.add(dl.removeAt(i))
                         top--
                     } else i++
@@ -347,6 +347,6 @@ class ChecklistActivity : EntryListActivity() {
     }
 
     companion object {
-        private val TAG = ChecklistActivity::class.java.simpleName
+        private val TAG = ChecklistActivity::class.simpleName
     }
 }

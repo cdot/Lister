@@ -24,7 +24,9 @@ import com.cdot.lists.model.EntryListItem
 abstract class EntryListItemView
 internal constructor(var it : EntryListItem, protected var activity: EntryListActivity) : RelativeLayout(activity), View.OnClickListener {
 
-    private val TAG = EntryListItemView::class.java.simpleName
+    companion object {
+        private val TAG = EntryListItemView::class.simpleName
+    }
 
     // Get the item that this is a view of
     internal var item : EntryListItem = it
@@ -95,10 +97,4 @@ internal constructor(var it : EntryListItem, protected var activity: EntryListAc
     protected open fun onPopupMenuAction(action: Int): Boolean {
         return false
     }
-
-    /**
-     * Constructor
-     * @param item     the item this is a view of
-     * @param cxt      the context for the view
-     */
 }

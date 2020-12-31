@@ -105,7 +105,7 @@ abstract class EntryListActivity : ListerActivity(), EntryListItem.ChangeListene
         get() {
             val dl: MutableList<EntryListItem> = ArrayList<EntryListItem>()
             dl.addAll(list.data)
-            if (list.getFlag(EntryList.displaySorted)) {
+            if (list.getFlag(EntryList.DISPLAY_SORTED)) {
                 dl.sortWith(object : Comparator<EntryListItem> {
                     override fun compare(o1: EntryListItem, o2: EntryListItem): Int {
                         return o1.text!!.compareTo(o2.text!!, ignoreCase = true)
@@ -138,7 +138,7 @@ abstract class EntryListActivity : ListerActivity(), EntryListItem.ChangeListene
      * @return true if the list can be manually sorted
      */
     open fun canManualSort(): Boolean {
-        return !list.getFlag(EntryList.displaySorted) && !list.getFlag("moveCheckedToEnd")
+        return !list.getFlag(EntryList.DISPLAY_SORTED) && !list.getFlag("moveCheckedToEnd")
     }
 
     /**
@@ -237,7 +237,7 @@ abstract class EntryListActivity : ListerActivity(), EntryListItem.ChangeListene
         when (it) {
             R.id.action_alpha_sort -> {
                 Log.d(TAG, "alpha sort option selected")
-                if (list.getFlag(EntryList.displaySorted)) list.clearFlag(EntryList.displaySorted) else list.setFlag(EntryList.displaySorted)
+                if (list.getFlag(EntryList.DISPLAY_SORTED)) list.clearFlag(EntryList.DISPLAY_SORTED) else list.setFlag(EntryList.DISPLAY_SORTED)
                 mMessageHandler.sendMessage(mMessageHandler.obtainMessage(MESSAGE_UPDATE_DISPLAY))
                 checkpoint()
             }
@@ -255,7 +255,7 @@ abstract class EntryListActivity : ListerActivity(), EntryListItem.ChangeListene
     override fun onPrepareOptionsMenu(menu: Menu): Boolean {
         super.onPrepareOptionsMenu(menu)
         var menuItem = menu.findItem(R.id.action_alpha_sort)
-        if (list.getFlag(EntryList.displaySorted)) {
+        if (list.getFlag(EntryList.DISPLAY_SORTED)) {
             menuItem.setIcon(R.drawable.ic_action_alpha_sort_off)
             menuItem.setTitle(R.string.action_alpha_sort_off)
         } else {
@@ -286,6 +286,6 @@ abstract class EntryListActivity : ListerActivity(), EntryListItem.ChangeListene
     }
 
     companion object {
-        private val TAG = EntryListActivity::class.java.simpleName
+        private val TAG = EntryListActivity::class.simpleName
     }
 }

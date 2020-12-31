@@ -28,20 +28,15 @@ import org.json.JSONObject
 import java.util.*
 
 /**
- * Interface to items in an EntryList
+ * Interface to items in an EntryList. These are either ChecklistItem or Checklist
  */
-abstract class EntryListItem internal constructor() {
-    /**
-     * Get the list that contains this item
-     *
-     * @return the containing list, or null for the root
-     */
-    /**
-     * Set the list that contains this item. The item is neither removed from the previous parent,
-     * nor added to the new parent.
-     */
+abstract class EntryListItem
+internal constructor() {
+
     // The list that contains this list.
     var parent: EntryList? = null
+
+    // Listeners to changes made to this list
     private val mListeners: MutableList<ChangeListener> = ArrayList()
 
     /**
@@ -50,7 +45,9 @@ abstract class EntryListItem internal constructor() {
     var sessionUID: Int
         protected set
 
-    // Label, or list name, or null
+    /**
+     * Label, or list name, or null
+     */
     open var text: String? = null
 
     // Boolean flags
@@ -223,7 +220,7 @@ abstract class EntryListItem internal constructor() {
     override fun equals(other: Any?): Boolean {
         if (other is EntryListItem )
             return text == other.text
-        return super.equals(other);
+        return super.equals(other)
     }
 
     /**
@@ -234,11 +231,11 @@ abstract class EntryListItem internal constructor() {
     }
 
     override fun toString(): String {
-        return javaClass.simpleName + ":" + sessionUID + "(" + text + ")"
+        return TAG + ":" + sessionUID + "(" + text + ")"
     }
 
     companion object {
-        private val TAG = EntryListItem::class.java.simpleName
+        private val TAG = EntryListItem::class.simpleName
 
         // UID's are assigned when an item is created. They allow us to track list entries
         // across activities (list item text need not be unique). UIDs are not serialised.

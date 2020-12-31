@@ -36,10 +36,10 @@ class ChecklistsItemView @SuppressLint("ClickableViewAccessibility") constructor
     }
 
     // EntryListItemView
-    override fun onPopupMenuAction(act: Int): Boolean {
+    override fun onPopupMenuAction(action: Int): Boolean {
         val checklists = item.parent as Checklists?
         val builder: AlertDialog.Builder
-        if (act == R.id.action_delete) {
+        if (action == R.id.action_delete) {
             builder = AlertDialog.Builder(context)
             builder.setTitle(R.string.confirm_delete)
             builder.setMessage(context.getString(R.string.confirm_delete_list, item.text))
@@ -52,7 +52,7 @@ class ChecklistsItemView @SuppressLint("ClickableViewAccessibility") constructor
             }
             builder.setNegativeButton(R.string.cancel, null)
             builder.show()
-        } else if (act == R.id.action_rename) {
+        } else if (action == R.id.action_rename) {
             builder = AlertDialog.Builder(context)
             builder.setTitle(R.string.rename_list)
             builder.setMessage(R.string.enter_new_name_of_list)
@@ -68,7 +68,7 @@ class ChecklistsItemView @SuppressLint("ClickableViewAccessibility") constructor
             }
             builder.setNegativeButton(R.string.cancel, null)
             builder.show()
-        } else if (act == R.id.action_copy) {
+        } else if (action == R.id.action_copy) {
             val checklist = Checklist((item as Checklist))
             val newname = checklist.text + " (copy)"
             checklist.text = newname
@@ -81,7 +81,7 @@ class ChecklistsItemView @SuppressLint("ClickableViewAccessibility") constructor
     }
 
     companion object {
-        private val TAG = ChecklistsItemView::class.java.simpleName
+        private val TAG = ChecklistsItemView::class.simpleName
     }
 
     init {

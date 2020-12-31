@@ -93,6 +93,6 @@ class SharedPreferencesFragment(private val mLister: Lister) : PreferencesFragme
     }
 
     companion object {
-        private val TAG = SharedPreferencesFragment::class.java.simpleName
+        private val TAG = SharedPreferencesFragment::class.simpleName
     }
 }

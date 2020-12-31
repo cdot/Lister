@@ -31,14 +31,10 @@ import org.json.JSONObject
 class Checklists : EntryList() {
     private var mTimestamp // time it was last changed
             : Long = 0
-    /**
-     * Get the store URI this was loaded from (may be null)
-     */
-    /**
-     * Record the store URI this was loaded from
-     */
-    var uRI // URI it was loaded from (or is a cache for)
-            : String? = null
+
+    // URI it was loaded from (or is a cache for). Kept here so it gets serialised with the cache,
+    // and thereby detect when the cache doesn't correspond to the loaded URI
+    var forUri : String? = null
 
     // implement EntryListItem
     override val isMoveable: Boolean
@@ -55,7 +51,7 @@ class Checklists : EntryList() {
         val job = super.toJSON()
         try {
             job.put("timestamp", mTimestamp)
-            job.put("uri", uRI)
+            job.put("uri", forUri)
         } catch (je: JSONException) {
             Log.e(TAG, Lister.stringifyException(je))
         }
@@ -67,7 +63,7 @@ class Checklists : EntryList() {
         try {
             super.fromJSON(jo)
             mTimestamp = if (jo.has("timestamp")) jo.getLong("timestamp") else 0 // 0=unknown
-            uRI = if (jo.has("uri")) jo.getString("uri") else ""
+            forUri = if (jo.has("uri")) jo.getString("uri") else ""
             val lists = jo.getJSONArray("items")
             for (i in 0 until lists.length()) addChild(Checklist(lists.getJSONObject(i)))
             Log.d(TAG, "Extracted " + lists.length() + " lists from JSON")
@@ -105,10 +101,10 @@ class Checklists : EntryList() {
      * time stamp is more recent than this list.
      */
     fun isMoreRecentVersionOf(other: Checklists): Boolean {
-        return other.uRI == uRI && mTimestamp > other.mTimestamp
+        return other.forUri == forUri && mTimestamp > other.mTimestamp
     }
 
     companion object {
-        private val TAG = Checklists::class.java.simpleName
+        private val TAG = Checklists::class.simpleName
     }
 }

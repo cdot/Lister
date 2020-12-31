@@ -99,42 +99,47 @@ class ChecklistsActivity : EntryListActivity() {
     override fun onOptionsItemSelected(menuItem: MenuItem): Boolean {
         //Log.d(TAG, "onOptionsItemSelected");
         if (super.onOptionsItemSelected(menuItem)) return true
-        val it = menuItem.itemId
-        if (it == R.id.action_import_lists) {
-            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
-            intent.addCategory(Intent.CATEGORY_OPENABLE)
-            intent.type = "*/*" // see https://developer.android.com/guide/components/intents-common
-            intent.putExtra(EXTRA_MIME_TYPES, resources.getStringArray(R.array.share_format_mimetype))
-            startActivityForResult(intent, Lister.REQUEST_IMPORT)
-        } else if (it == R.id.action_new_list) {
-            val builder = AlertDialog.Builder(this)
-            builder.setTitle(R.string.create_new_list)
-            builder.setMessage(R.string.enter_name_of_new_list)
-            val editText = EditText(this)
-            editText.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_AUTO_COMPLETE or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
-            editText.isSingleLine = true
-            builder.setView(editText)
-            builder.setPositiveButton(R.string.ok) { dialogInterface: DialogInterface?, i: Int ->
-                var text = editText.text.toString()
-                if (!text.trim { it <= ' ' }.isEmpty()) {
-                    val find = list.findByText(text, false)
-                    if (find == null || !lister.getBool(Lister.PREF_WARN_DUPLICATE)) addItem(text) else promptSimilarItem(text, find.text)
+        when(menuItem.itemId) {
+            R.id.action_import_lists -> {
+                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
+                intent.addCategory(Intent.CATEGORY_OPENABLE)
+                intent.type = "*/*" // see https://developer.android.com/guide/components/intents-common
+                intent.putExtra(EXTRA_MIME_TYPES, resources.getStringArray(R.array.share_format_mimetype))
+                startActivityForResult(intent, Lister.REQUEST_IMPORT)
+            }
+            R.id.action_new_list -> {
+                val builder = AlertDialog.Builder(this)
+                builder.setTitle(R.string.create_new_list)
+                builder.setMessage(R.string.enter_name_of_new_list)
+                val editText = EditText(this)
+                editText.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_AUTO_COMPLETE or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+                editText.isSingleLine = true
+                builder.setView(editText)
+                builder.setPositiveButton(R.string.ok) { dialogInterface: DialogInterface?, i: Int ->
+                    var text = editText.text.toString()
+                    if (!text.trim { it <= ' ' }.isEmpty()) {
+                        val find = list.findByText(text, false)
+                        if (find == null || !lister.getBool(Lister.PREF_WARN_DUPLICATE)) addItem(text) else promptSimilarItem(text, find.text)
+                    }
+                }
+                builder.setNegativeButton(R.string.cancel, null)
+                builder.show()
+                editText.post {
+                    editText.isFocusable = true
+                    editText.isFocusableInTouchMode = true
+                    editText.requestFocus()
+                    (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager).showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT)
                 }
             }
-            builder.setNegativeButton(R.string.cancel, null)
-            builder.show()
-            editText.post {
-                editText.isFocusable = true
-                editText.isFocusableInTouchMode = true
-                editText.requestFocus()
-                (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager).showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT)
+            R.id.action_export_all_lists -> {
+                shareChecklists()
             }
-        } else if (it == R.id.action_export_all_lists) {
-            shareChecklists()
-        } else if (it == R.id.action_settings) {
-            val sint = Intent(this, PreferencesActivity::class.java)
-            startActivityForResult(sint, REQUEST_PREFERENCES)
-        } else return super.onOptionsItemSelected(menuItem)
+            R.id.action_settings -> {
+                val sint = Intent(this, PreferencesActivity::class.java)
+                startActivityForResult(sint, REQUEST_PREFERENCES)
+            }
+            else -> return super.onOptionsItemSelected(menuItem)
+        }
         return true
     }
 
@@ -196,6 +201,6 @@ class ChecklistsActivity : EntryListActivity() {
     }
 
     companion object {
-        private val TAG = ChecklistsActivity::class.java.simpleName
+        private val TAG = ChecklistsActivity::class.simpleName
     }
 }

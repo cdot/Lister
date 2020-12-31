@@ -24,20 +24,13 @@ import com.opencsv.CSVReader
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
-import java.util.*
 
 /**
- * A checklist of checkable items. Can also be an item in a Checklists
+ * A checklist of checkable items. An item in a Checklists, so it has behaviours from
+ * EntryListItem, inherited via EntryList
  */
 class Checklist : EntryList {
-    /**
-     * Constructor
-     */
     constructor()
-
-    /**
-     * Constructor
-     */
     constructor(name: String?) {
         text = name
     }
@@ -61,17 +54,16 @@ class Checklist : EntryList {
         for (item in copy.data) addChild(ChecklistItem(item as ChecklistItem))
     }
 
-    // EntryList
+    // override EntryListItem
     override val flagNames: Set<String>
-        get() = super.flagNames.plus(moveCheckedItemsToEnd).plus(autoDeleteChecked)
-
+        get() = super.flagNames.plus(CHECKED_AT_END).plus(DELETE_CHECKED)
 
     // implement EntryListItem
     override val isMoveable: Boolean
         get() = true
 
     override val itemsAreMoveable: Boolean
-        get() = !getFlag(moveCheckedItemsToEnd)
+        get() = !getFlag(CHECKED_AT_END)
 
     @Throws(JSONException::class)
     override fun fromJSON(jo: JSONObject) {
@@ -119,57 +111,9 @@ class Checklist : EntryList {
         return job
     }
 
-    /**
-     * Get the number of checked items
-     *
-     * @return the number of checked items
-     */
-    val checkedCount: Int
-        get() {
-            var i = 0
-            for (item in data) {
-                if (item.getFlag(ChecklistItem.isDone)) i++
-            }
-            return i
-        }
-
-    /**
-     * Make a global change to the "checked" status of all items in the list
-     *
-     * @param check true to set items as checked, false to set as unchecked
-     */
-    fun checkAll(check: Boolean): Boolean {
-        var changed = false
-        for (item in data) {
-            val ci = item as ChecklistItem
-            if (ci.getFlag(ChecklistItem.isDone) != check) {
-                if (check) ci.setFlag(ChecklistItem.isDone) else ci.clearFlag(ChecklistItem.isDone)
-                changed = true
-            }
-        }
-        return changed
-    }
-
-    /**
-     * Delete all the checked items in the list
-     *
-     * @return number of items deleted
-     */
-    fun deleteAllChecked(): Int {
-        val kill = ArrayList<ChecklistItem>()
-        for (it in data) {
-            if (it.getFlag(ChecklistItem.isDone)) kill.add(it as ChecklistItem)
-        }
-        newUndoSet()
-        for (dead in kill) {
-            remove(dead, true)
-        }
-        return kill.size
-    }
-
     companion object {
-        private val TAG = Checklist::class.java.simpleName
-        const val moveCheckedItemsToEnd = "movend"
-        const val autoDeleteChecked = "autodel"
+        private val TAG = Checklist::class.simpleName
+        const val CHECKED_AT_END = "movend"
+        const val DELETE_CHECKED = "autodel"
     }
 }

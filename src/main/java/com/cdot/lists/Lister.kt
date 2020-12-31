@@ -58,13 +58,13 @@ class Lister : Application() {
                     throw IOException("Failed to load lists. Unknown uri scheme: " + uri.scheme)
                 }
                 lists.fromStream(stream)
-                lists.uRI = uri.toString()
+                lists.forUri = uri.toString()
                 // Check against the cache
                 loadCache(Checklists(), cxt,
                         object : SuccessCallback {
                             override fun succeeded(data: Any?) {
                                 val cachedLists = data as Checklists
-                                Log.d(TAG, "Cache remembers URI " + cachedLists.uRI)
+                                Log.d(TAG, "Cache remembers URI " + cachedLists.forUri)
                                 if (cachedLists.isMoreRecentVersionOf(lists)) {
                                     Log.d(TAG, "Cache is more recent")
                                     loadCache(lists, cxt,
@@ -117,7 +117,7 @@ class Lister : Application() {
                 loadCache(lists, cxt,
                         object : SuccessCallback {
                             override fun succeeded(data: Any?) {
-                                if (uri != null && lists.uRI != uri.toString()) lists.clear()
+                                if (uri != null && lists.forUri != uri.toString()) lists.clear()
                                 Log.d(TAG, lists.size().toString() + " lists loaded to " + lists + " from cache")
                                 mListsLoaded = true
                                 mListsLoading = false
@@ -324,7 +324,7 @@ class Lister : Application() {
         const val TEXT_SIZE_MEDIUM = 2
         const val TEXT_SIZE_LARGE = 3
         const val REQUEST_IMPORT = 3
-        private val TAG = Lister::class.java.simpleName
+        private val TAG = Lister::class.simpleName
         private val sBoolDefaults: Map<String, Boolean> = object : HashMap<String, Boolean>() {
             init {
                 put(PREF_ALWAYS_SHOW, false)
