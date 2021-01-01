@@ -16,9 +16,8 @@ class ModelTest {
     @Test
     @Throws(Exception::class)
     fun testChecklistItem() {
-        val ci = ChecklistItem()
-        ci.text = "Item"
-        Assert.assertTrue(ci.equals(ci))
+        val ci = ChecklistItem("Item")
+        Assert.assertTrue(ci.sameAs(ci))
         for (fl in ci.flagNames) {
             Assert.assertEquals(ChecklistItem.IS_DONE, fl)
         }

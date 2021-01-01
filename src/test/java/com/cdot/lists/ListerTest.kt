@@ -49,7 +49,7 @@ class ListerTest {
                         }
                     },
                     object : FailCallback {
-                        override fun failed(code: Int): Boolean {
+                        override fun failed(code: Int, vararg args: Any): Boolean {
                             Assert.fail()
                             return false
                         }
@@ -119,7 +119,7 @@ class ListerTest {
                     }
                 },
                 object : FailCallback {
-                    override fun failed(code: Int): Boolean {
+                    override fun failed(code: Int, vararg args : Any): Boolean {
                         Assert.fail()
                         return false
                     }
@@ -140,7 +140,7 @@ class ListerTest {
                     }
                 },
                 object : FailCallback {
-                    override fun failed(code: Int): Boolean {
+                    override fun failed(code: Int, vararg args : Any): Boolean {
                         Assert.fail()
                         return false
                     }
@@ -161,7 +161,7 @@ class ListerTest {
                     }
                 },
                 object : FailCallback {
-                    override fun failed(code: Int): Boolean {
+                    override fun failed(code: Int, vararg args : Any): Boolean {
                         Assert.assertEquals(R.string.failed_save_to_uri.toLong(), code.toLong())
                         wait.nextStep()
                         return true
@@ -184,7 +184,7 @@ class ListerTest {
                     }
                 },
                 object : FailCallback {
-                    override fun failed(code: Int): Boolean {
+                    override fun failed(code: Int, vararg args : Any): Boolean {
                         // this ought to be called!
                         if (waiter.atStep() == 0) Assert.assertEquals(R.string.failed_save_to_cache.toLong(), code.toLong())
                         else if (waiter.atStep() == 1) Assert.assertEquals(R.string.failed_save_to_cache_and_file.toLong(), code.toLong())
@@ -210,7 +210,7 @@ class ListerTest {
                     }
                 },
                 object : FailCallback {
-                    override fun failed(code: Int): Boolean {
+                    override fun failed(code: Int, vararg args : Any): Boolean {
                         // this ought to be called!
                         if (waiter.atStep() == 0) Assert.assertEquals(R.string.failed_save_to_cache.toLong(), code.toLong()) else if (waiter.atStep() == 1) Assert.assertEquals(R.string.failed_save_to_uri.toLong(), code.toLong()) else Assert.fail()
                         waiter.nextStep()
@@ -235,7 +235,7 @@ class ListerTest {
                     }
                 },
                 object : FailCallback {
-                    override fun failed(code: Int): Boolean {
+                    override fun failed(code: Int, vararg args : Any): Boolean {
                         // this ought to be called!
                         if (waiter.atStep() == 0) Assert.assertEquals(R.string.failed_save_to_cache.toLong(), code.toLong()) else Assert.fail()
                         waiter.nextStep()
@@ -258,7 +258,7 @@ class ListerTest {
                     }
                 },
                 object : FailCallback {
-                    override fun failed(code: Int): Boolean {
+                    override fun failed(code: Int, vararg args : Any): Boolean {
                         Assert.fail()
                         return false
                     }
@@ -280,7 +280,7 @@ class ListerTest {
                         }
                     },
                     object : FailCallback {
-                        override fun failed(code: Int): Boolean {
+                        override fun failed(code: Int, vararg args : Any): Boolean {
                             Assert.assertEquals(R.string.failed_no_file.toLong(), code.toLong())
                             waiter.nextStep()
                             return true
@@ -304,7 +304,7 @@ class ListerTest {
                         }
                     },
                     object : FailCallback {
-                        override fun failed(code: Int): Boolean {
+                        override fun failed(code: Int, vararg args : Any): Boolean {
                             Assert.fail()
                             return false
                         }
@@ -327,7 +327,7 @@ class ListerTest {
                         }
                     },
                     object : FailCallback {
-                        override fun failed(code: Int): Boolean {
+                        override fun failed(code: Int, vararg args : Any): Boolean {
                             Assert.assertEquals(R.string.failed_file_load.toLong(), code.toLong())
                             waiter.nextStep()
                             return true
@@ -351,7 +351,7 @@ class ListerTest {
                         }
                     },
                     object : FailCallback {
-                        override fun failed(code: Int): Boolean {
+                        override fun failed(code: Int, vararg args : Any): Boolean {
                             // this ought to be called!
                             if (waiter.atStep() == 0) Assert.assertEquals(R.string.failed_no_file.toLong(), code.toLong()) else if (waiter.atStep() == 1) Assert.assertEquals(R.string.failed_cache_load.toLong(), code.toLong())
                             waiter.nextStep()
@@ -377,7 +377,7 @@ class ListerTest {
                         }
                     },
                     object : FailCallback {
-                        override fun failed(code: Int): Boolean {
+                        override fun failed(code: Int, vararg args : Any): Boolean {
                             if (waiter.atStep() == 0) Assert.assertEquals(R.string.failed_file_load.toLong(), code.toLong()) else if (waiter.atStep() == 1) Assert.assertEquals(R.string.failed_cache_load.toLong(), code.toLong()) else Assert.fail()
                             waiter.nextStep()
                             return true
@@ -401,7 +401,7 @@ class ListerTest {
                         }
                     },
                     object : FailCallback {
-                        override fun failed(code: Int): Boolean {
+                        override fun failed(code: Int, vararg args : Any): Boolean {
                             Assert.assertEquals(0, waiter.atStep().toLong())
                             Assert.assertEquals(R.string.failed_cache_load.toLong(), code.toLong())
                             waiter.nextStep()
@@ -431,7 +431,7 @@ class ListerTest {
                                         }
                                     },
                                     object : FailCallback {
-                                        override fun failed(code: Int): Boolean {
+                                        override fun failed(code: Int, vararg args : Any): Boolean {
                                             Assert.fail()
                                             return false
                                         }
@@ -439,7 +439,7 @@ class ListerTest {
                         }
                     },
                     object : FailCallback {
-                        override fun failed(code: Int): Boolean {
+                        override fun failed(code: Int, vararg args : Any): Boolean {
                             Assert.fail()
                             return false
                         }

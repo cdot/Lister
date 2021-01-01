@@ -19,6 +19,7 @@
 package com.cdot.lists.preferences
 
 import android.content.Intent
+import android.content.Intent.EXTRA_MIME_TYPES
 import android.os.Build
 import android.os.Bundle
 import android.provider.DocumentsContract
@@ -78,13 +79,17 @@ class SharedPreferencesFragment(private val mLister: Lister) : PreferencesFragme
 
     private fun handleStoreClick(action: String, request: Int): Boolean {
         val intent = Intent(action)
+        intent.addCategory(Intent.CATEGORY_OPENABLE)
         intent.flags = Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION or Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
         if (Build.VERSION.SDK_INT >= 26) {
             val bs = mLister.getUri(Lister.PREF_FILE_URI)
             if (bs != null) intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, bs)
         }
+        // You would have thought to use intent.type = "application/json", but files saved using this
+        // app are not then visible to ACTION_OPEN_DOCUMENT. I assume the mime type is not recorded.
         intent.type = "*/*" // see https://developer.android.com/guide/components/intents-common
-        intent.putExtra(Intent.EXTRA_MIME_TYPES, resources.getStringArray(R.array.share_format_mimetype))
+        intent.putExtra(EXTRA_MIME_TYPES, resources.getStringArray(R.array.file_format_mimetype))
+
         // The setting of mIssueReports will stay true from now on, but that's OK, it's only purpose
         // is to suppress repeated store alarms during initialisation
         (activity as PreferencesActivity?)!!.mIssueReports = true

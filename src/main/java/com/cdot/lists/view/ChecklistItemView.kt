@@ -91,8 +91,8 @@ class ChecklistItemView(it: EntryListItem, // item we're moving
     override fun onPopupMenuAction(action: Int): Boolean {
         when(action) {
             R.id.action_delete -> {
-                val list = item.parent
-                list!!.newUndoSet()
+                val list = item.parent!!
+                list.newUndoSet()
                 list.remove(item, true)
                 Log.d(TAG, "item deleted")
                 list.notifyChangeListeners()
@@ -127,8 +127,8 @@ class ChecklistItemView(it: EntryListItem, // item we're moving
     private fun setChecked(isChecked: Boolean): Boolean {
         val list = item.parent as Checklist?
         if (list!!.getFlag(Checklist.DELETE_CHECKED) && isChecked) {
-            val el = item.parent
-            el!!.newUndoSet()
+            val el = item.parent!!
+            el.newUndoSet()
             el.remove(item, true)
             el.notifyChangeListeners()
             return true

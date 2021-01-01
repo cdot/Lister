@@ -26,9 +26,9 @@ import org.json.JSONObject
 
 /**
  * A list of Checklist.
- * Constructed by reading a JSON file.
  */
-class Checklists : EntryList() {
+class Checklists : EntryList(NO_NAME) {
+
     private var mTimestamp // time it was last changed
             : Long = 0
 
@@ -59,29 +59,27 @@ class Checklists : EntryList() {
     }
 
     @Throws(JSONException::class)  // EntryList
-    override fun fromJSON(jo: JSONObject) {
+    override fun fromJSON(jo: JSONObject) : EntryListItem {
         try {
-            super.fromJSON(jo)
             mTimestamp = if (jo.has("timestamp")) jo.getLong("timestamp") else 0 // 0=unknown
             forUri = if (jo.has("uri")) jo.getString("uri") else ""
             val lists = jo.getJSONArray("items")
-            for (i in 0 until lists.length()) addChild(Checklist(lists.getJSONObject(i)))
+            for (i in 0 until lists.length())
+                addChild(Checklist().fromJSON(lists.getJSONObject(i)))
             Log.d(TAG, "Extracted " + lists.length() + " lists from JSON")
         } catch (je: JSONException) {
             // Only one list
             Log.d(TAG, "Could not get lists from JSON, assume one list only")
-            addChild(Checklist(jo))
+            addChild(Checklist().fromJSON(jo))
         }
+        return super.fromJSON(jo)
     }
 
     @Throws(Exception::class)  // EntryListItem
-    override fun fromCSV(r: CSVReader): Boolean {
-        while (r.peek() != null) {
-            val list = Checklist()
-            list.fromCSV(r)
-            addChild(list)
-        }
-        return true
+    override fun fromCSV(r: CSVReader): EntryListItem {
+        while (r.peek() != null)
+            addChild(Checklist().fromCSV(r))
+        return this
     }
 
     // EntryList

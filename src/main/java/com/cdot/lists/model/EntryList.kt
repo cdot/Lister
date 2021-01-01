@@ -33,20 +33,17 @@ import java.io.StringReader
 import java.util.*
 
 /**
- * Base class for lists of items. A list can itself be an item in an EntryList, so it inherits from
+ * Base class for lists of items. An EntryList can itself be an item in an EntryList, so it inherits from
  * EntryListItem
  */
 abstract class EntryList : EntryListItem {
+    internal constructor(t: String) : super(t)
+
     // The basic list
     private var mData = ArrayList<EntryListItem>()
 
     // Undo stack
     private var mRemoves = Stack<ArrayList<Remove>>()
-
-    /**
-     * Construct new list
-     */
-    internal constructor()
 
     /**
      * Copy constructor
@@ -55,12 +52,6 @@ abstract class EntryList : EntryListItem {
      */
     internal constructor(copy: EntryList) : super(copy) {
         mRemoves = Stack()
-    }
-
-    @Throws(JSONException::class)
-    override fun fromJSON(jo: JSONObject) {
-        clear()
-        super.fromJSON(jo)
     }
 
     /**
@@ -87,7 +78,7 @@ abstract class EntryList : EntryListItem {
         val its = JSONArray()
         for (cl in mData) its.put(cl.toJSON())
         try {
-                job.put("items", its)
+            job.put("items", its)
         } catch (je: JSONException) {
             Log.e(TAG, Lister.stringifyException(je))
         }
@@ -112,16 +103,16 @@ abstract class EntryList : EntryListItem {
     }
 
     // implement EntryListItem
-    override fun equals(other: Any?): Boolean {
+    override fun sameAs(other: EntryListItem?): Boolean {
         if (other is EntryList) {
-            if (!super.equals(other) || other.size() != size()) return false
+            if (!super.sameAs(other) || other.size() != size()) return false
             for (oit in other.mData) {
-                val i = oit.text?.let { findByText(it, true) }
-                if (i == null || oit != i) return false
+                val found = findByText(oit.text, true)
+                if (found == null || !oit.sameAs(found)) return false
             }
             return true
         } else
-            return super.equals(other)
+            return super.sameAs(other)
     }
 
     val data: List<EntryListItem>
@@ -206,7 +197,7 @@ abstract class EntryList : EntryListItem {
      * Say if items in this list should be interactively moveable
      */
     open val itemsAreMoveable: Boolean
-            get() = false
+        get() = false
 
     /**
      * Call to start a new undo set. An undo will undo all the delete operations in the most
@@ -293,10 +284,8 @@ abstract class EntryList : EntryListItem {
             if (item.text.equals(str, ignoreCase = true)) return item
         }
         if (matchCase) return null
-        for (item in mData) {
-            val t = item.text
-            if (t != null && t.toLowerCase(Locale.getDefault()).contains(str.toLowerCase(Locale.getDefault()))) return item
-        }
+        for (item in mData)
+            if (item.text.toLowerCase(Locale.getDefault()).contains(str.toLowerCase(Locale.getDefault()))) return item
         return null
     }
 
@@ -325,50 +314,29 @@ abstract class EntryList : EntryListItem {
     }
 
     /**
-     * Load the object from the given mime type read from the stream
+     * Load the object from the stream. A first attempt will be made to parse JSON, and if that
+     * fails it will try to load it as CSV
      *
      * @param stream   source of the JSON or CSV
      * @param mimeType data type to expect (or null if unknown)
      * @throws Exception if something goes wrong
      */
-    @JvmOverloads
     @Throws(Exception::class)
-    fun fromStream(stream: InputStream?, mimeType: String = "application/json") {
+    fun fromStream(stream: InputStream) {
         val br = BufferedReader(InputStreamReader(stream))
         val sb = StringBuilder()
-        var line : String?
+        var line: String?
         while (br.readLine().also { line = it } != null) sb.append(line!!).append("\n")
         val data = sb.toString()
-        when (mimeType) {
-            "application/json" -> {
-                try {
-                    // See if it's JSON
-                    fromJSON(JSONObject(data))
-                } catch (je: JSONException) {
-                    Log.d(TAG, "" + je)
-                    throw Exception("Format error, could not read JSON")
-                }
-            }
-            "text/csv" -> {
-                try {
-                    fromCSV(CSVReader(StringReader(data)))
-                } catch (csve: CsvException) {
-                    Log.d(TAG, "" + csve)
-                    throw Exception("Format error, could not read CSV")
-                }
-            }
-            else -> {
-                try {
-                    // See if it's JSON
-                    fromJSON(JSONObject(data))
-                } catch (je: JSONException) {
-                    // See if it's CSV...
-                    try {
-                        fromCSV(CSVReader(StringReader(data)))
-                    } catch (csve: CsvException) {
-                        throw Exception("Format error, could not read JSON or CSV")
-                    }
-                }
+        try {
+            // Try and read
+            fromJSON(JSONObject(data))
+        } catch (je: JSONException) {
+            // See if it's CSV...
+            try {
+                fromCSV(CSVReader(StringReader(data)))
+            } catch (csve: CsvException) {
+                throw Exception("Format error, could not read JSON or CSV")
             }
         }
     }

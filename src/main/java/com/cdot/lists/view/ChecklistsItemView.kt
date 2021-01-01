@@ -18,6 +18,7 @@ import com.cdot.lists.R
 import com.cdot.lists.databinding.ChecklistsItemViewBinding
 import com.cdot.lists.model.Checklist
 import com.cdot.lists.model.Checklists
+import com.cdot.lists.model.EntryList
 import com.cdot.lists.model.EntryListItem
 
 /**
@@ -37,15 +38,15 @@ class ChecklistsItemView @SuppressLint("ClickableViewAccessibility") constructor
 
     // EntryListItemView
     override fun onPopupMenuAction(action: Int): Boolean {
-        val checklists = item.parent as Checklists?
+        val checklists = item.parent as Checklists
         val builder: AlertDialog.Builder
         if (action == R.id.action_delete) {
             builder = AlertDialog.Builder(context)
             builder.setTitle(R.string.confirm_delete)
             builder.setMessage(context.getString(R.string.confirm_delete_list, item.text))
             builder.setPositiveButton(R.string.ok) { dialogInterface: DialogInterface?, which_button: Int ->
-                val el = item.parent
-                el!!.remove(item, true)
+                val el = item.parent!!
+                el.remove(item, true)
                 Log.d(TAG, "list deleted")
                 el.notifyChangeListeners()
                 checkpoint()
@@ -63,16 +64,16 @@ class ChecklistsItemView @SuppressLint("ClickableViewAccessibility") constructor
             builder.setPositiveButton(R.string.ok) { dialogInterface: DialogInterface?, i: Int ->
                 item.text = editText.text.toString()
                 Log.d(TAG, "list renamed")
-                item.parent!!.notifyChangeListeners()
+                item.parent?.notifyChangeListeners()
                 checkpoint()
             }
             builder.setNegativeButton(R.string.cancel, null)
             builder.show()
         } else if (action == R.id.action_copy) {
-            val checklist = Checklist((item as Checklist))
+            val checklist = Checklist(item as EntryList)
             val newname = checklist.text + " (copy)"
             checklist.text = newname
-            checklists!!.addChild(checklist)
+            checklists.addChild(checklist)
             checklists.notifyChangeListeners()
             Log.d(TAG, "list copied")
             checkpoint()

@@ -31,7 +31,12 @@ import java.util.*
  * Interface to items in an EntryList. These are either ChecklistItem or Checklist
  */
 abstract class EntryListItem
-internal constructor() {
+internal constructor(t : String) {
+
+    /**
+     * Label, or list name, or empty string for root
+     */
+    open var text: String = t
 
     // The list that contains this list.
     var parent: EntryList? = null
@@ -45,11 +50,6 @@ internal constructor() {
     var sessionUID: Int
         protected set
 
-    /**
-     * Label, or list name, or null
-     */
-    open var text: String? = null
-
     // Boolean flags
     private val mFlags: MutableMap<String, Boolean?> = HashMap()
 
@@ -58,9 +58,8 @@ internal constructor() {
      *
      * @param copy the item to copy from
      */
-    internal constructor(copy: EntryListItem) : this() {
+    internal constructor(copy: EntryListItem) : this(copy.text) {
         mFlags.putAll(copy.mFlags)
-        text = copy.text
     }
 
     /**
@@ -146,11 +145,12 @@ internal constructor() {
      * Load from a JSON object. The base method imports all the flag settings.
      *
      * @param jo JSON object
+     * @return this
      * @throws JSONException not thrown by this base method, but may be thrown by subclasses
      */
     @CallSuper
     @Throws(JSONException::class)
-    open fun fromJSON(jo: JSONObject) {
+    open fun fromJSON(jo: JSONObject) : EntryListItem {
         for (k in flagNames) {
             try {
                 if (jo.getBoolean(k)) setFlag(k) else clearFlag(k)
@@ -158,20 +158,23 @@ internal constructor() {
                 if (getFlagDefault(k)) setFlag(k) else clearFlag(k)
             }
         }
+        return this
     }
 
     /**
      * Load from a JSON string
      *
      * @param js JSON string
+     * @return this
      */
-    fun fromJSON(js: String) {
+    fun fromJSON(js: String) : EntryListItem {
         try {
             val job = JSONObject(js)
             fromJSON(job)
         } catch (je: JSONException) {
             Log.e(TAG, Lister.stringifyException(je))
         }
+        return this
     }
 
     /**
@@ -180,7 +183,7 @@ internal constructor() {
      * @param r a reader
      */
     @Throws(Exception::class)
-    abstract fun fromCSV(r: CSVReader): Boolean
+    abstract fun fromCSV(r: CSVReader) : EntryListItem
 
     /**
      * Get the JSON object that represents the content of this object
@@ -213,14 +216,12 @@ internal constructor() {
     abstract fun toPlainString(tab: String): String
 
     /**
-     * Deep equality test. This should be is a comparison of text only; UIDs should be ignored
+     * Deep equality test. This should be is a comparison of content only; UIDs should be ignored
      *
      * @param other the other item
      */
-    override fun equals(other: Any?): Boolean {
-        if (other is EntryListItem )
-            return text == other.text
-        return super.equals(other)
+    open fun sameAs(other: EntryListItem?): Boolean {
+        return text == other?.text
     }
 
     /**
@@ -236,6 +237,8 @@ internal constructor() {
 
     companion object {
         private val TAG = EntryListItem::class.simpleName
+
+        val NO_NAME = ""
 
         // UID's are assigned when an item is created. They allow us to track list entries
         // across activities (list item text need not be unique). UIDs are not serialised.

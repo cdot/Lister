@@ -21,7 +21,6 @@ package com.cdot.lists
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
-import android.content.Intent.EXTRA_MIME_TYPES
 import android.os.Bundle
 import android.text.InputType
 import android.util.Log
@@ -103,9 +102,10 @@ class ChecklistsActivity : EntryListActivity() {
             R.id.action_import_lists -> {
                 val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
                 intent.addCategory(Intent.CATEGORY_OPENABLE)
+                // import from any file type - we can either parse it, or we can't
                 intent.type = "*/*" // see https://developer.android.com/guide/components/intents-common
-                intent.putExtra(EXTRA_MIME_TYPES, resources.getStringArray(R.array.share_format_mimetype))
-                startActivityForResult(intent, Lister.REQUEST_IMPORT)
+                //intent.putExtra(EXTRA_MIME_TYPES, resources.getStringArray(R.array.share_format_mimetype))
+                startActivityForResult(intent, REQUEST_IMPORT)
             }
             R.id.action_new_list -> {
                 val builder = AlertDialog.Builder(this)
@@ -118,8 +118,14 @@ class ChecklistsActivity : EntryListActivity() {
                 builder.setPositiveButton(R.string.ok) { dialogInterface: DialogInterface?, i: Int ->
                     var text = editText.text.toString()
                     if (!text.trim { it <= ' ' }.isEmpty()) {
-                        val find = list.findByText(text, false)
-                        if (find == null || !lister.getBool(Lister.PREF_WARN_DUPLICATE)) addItem(text) else promptSimilarItem(text, find.text)
+                        if (!lister.getBool(Lister.PREF_WARN_DUPLICATE)) {
+                            val find = list.findByText(text, false)
+                            if (find == null)
+                                addItem(text)
+                            else
+                                promptSimilarItem(text, find.text)
+                        } else
+                            addItem(text)
                     }
                 }
                 builder.setNegativeButton(R.string.cancel, null)
@@ -131,10 +137,10 @@ class ChecklistsActivity : EntryListActivity() {
                     (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager).showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT)
                 }
             }
-            R.id.action_export_all_lists -> {
+            R.id.action_share_lists -> {
                 shareChecklists()
             }
-            R.id.action_settings -> {
+            R.id.action_preferences -> {
                 val sint = Intent(this, PreferencesActivity::class.java)
                 startActivityForResult(sint, REQUEST_PREFERENCES)
             }
@@ -167,14 +173,11 @@ class ChecklistsActivity : EntryListActivity() {
         val listName = list.text
         val intent = Intent(Intent.ACTION_SEND)
         intent.putExtra(Intent.EXTRA_TITLE, listName) // Dialog title
-        intent.type = "application/json"
-        val fileName: String
+        intent.type = "*/*"
+        intent.putExtra(Intent.EXTRA_MIME_TYPES, resources.getStringArray(R.array.file_format_mimetype))
         // WTF! The EXTRA_SUBJECT is used as the document title for Drive saves!
-        if (list.text != null) {
-            fileName = list.text!!.replace("[/\u0000]".toRegex(), "_")
-            intent.putExtra(Intent.EXTRA_SUBJECT, list.text)
-        } else
-            fileName = resources.getString(R.string.default_export_filename)
+        val fileName = "Lists.json"
+        intent.putExtra(Intent.EXTRA_SUBJECT, fileName)
 
         // text body e.g. for email
         val text = list.toPlainString("")
@@ -195,7 +198,7 @@ class ChecklistsActivity : EntryListActivity() {
             // Fire off the intent
             startActivity(Intent.createChooser(intent, fileName))
         } catch (e: Exception) {
-            Log.e(TAG, "Export failed " + stringifyException(e))
+            Log.e(TAG, "Share failed " + stringifyException(e))
             reportIndefinite(R.string.failed_export)
         }
     }

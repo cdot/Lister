@@ -20,7 +20,6 @@ package com.cdot.lists
 
 import android.content.DialogInterface
 import android.content.Intent
-import android.content.Intent.EXTRA_MIME_TYPES
 import android.content.SharedPreferences
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener
 import android.net.Uri
@@ -36,7 +35,6 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.cdot.lists.Lister.FailCallback
 import com.cdot.lists.Lister.SuccessCallback
-import com.cdot.lists.model.EntryListItem
 import com.google.android.material.snackbar.Snackbar
 
 abstract class ListerActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
@@ -67,9 +65,9 @@ abstract class ListerActivity : AppCompatActivity(), OnSharedPreferenceChangeLis
      * Override in subclasses that have preference screens
      * @return resource id for a raw html asset
      */
-    open protected val helpAsset: Int = 0
+    protected open val helpAsset: Int = 0
 
-    fun setShowOverLockScreen() {
+    private fun setShowOverLockScreen() {
         val show = lister.getBool(Lister.PREF_ALWAYS_SHOW)
 
         // None of this achieves anything on my Moto G8 Plus with Android 10, but works fine on a
@@ -84,7 +82,7 @@ abstract class ListerActivity : AppCompatActivity(), OnSharedPreferenceChangeLis
         }
     }
 
-    fun setStayAwake() {
+    private fun setStayAwake() {
         val stay = lister.getBool(Lister.PREF_STAY_AWAKE)
         if (stay) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
@@ -135,8 +133,8 @@ abstract class ListerActivity : AppCompatActivity(), OnSharedPreferenceChangeLis
         ensureListsLoaded(
                 null,
                 object : FailCallback {
-                    override fun failed(code: Int): Boolean {
-                        return reportIndefinite(code)
+                    override fun failed(code: Int, vararg args : Any): Boolean {
+                        return reportIndefinite(code, *args)
                     }
                 })
         setStayAwake() // re-acquire wakelock if necessary
@@ -155,16 +153,16 @@ abstract class ListerActivity : AppCompatActivity(), OnSharedPreferenceChangeLis
      */
     @Synchronized
     fun ensureListsLoaded(onOK: SuccessCallback?, onFail: FailCallback) {
-        val act = this;
+        val act = this
         lister.loadLists(this,
                 object : SuccessCallback {
                     override fun succeeded(data: Any?) {
                         runOnUiThread { onListsLoaded() }
-                        if (onOK != null) onOK.succeeded(data)
+                        onOK?.succeeded(data)
                     }
                 },
                 object : FailCallback {
-                    override fun failed(code: Int): Boolean {
+                    override fun failed(code: Int, vararg args : Any): Boolean {
                         if (code == R.string.failed_access_denied) {
                             // In a thread, have to use the UI thread to request access
                             runOnUiThread {
@@ -178,17 +176,16 @@ abstract class ListerActivity : AppCompatActivity(), OnSharedPreferenceChangeLis
                                     // Indicate the permissions should be persistable across device reboots
                                     intent.flags = Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION or Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
                                     if (Build.VERSION.SDK_INT >= 26) intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, lister.getUri(Lister.PREF_FILE_URI))
-                                    intent.type = "text/plain"
-                                    intent.putExtra(EXTRA_MIME_TYPES, resources.getStringArray(R.array.share_format_mimetype))
+                                    intent.type = "application/json"
                                     startActivityForResult(intent, REQUEST_CHANGE_STORE)
                                 }
                                 builder.show()
                             }
                             return true
                         }
-                        return onFail.failed(code)
+                        return onFail.failed(code, *args)
                     }
-                });
+                })
     }
 
     /**
@@ -202,8 +199,8 @@ abstract class ListerActivity : AppCompatActivity(), OnSharedPreferenceChangeLis
                     }
                 },
                 object : FailCallback {
-                    override fun failed(code: Int): Boolean {
-                        return reportShort(code)
+                    override fun failed(code: Int, vararg args : Any): Boolean {
+                        return reportShort(code, *args)
                     }
                 })
     }
@@ -219,7 +216,7 @@ abstract class ListerActivity : AppCompatActivity(), OnSharedPreferenceChangeLis
 
     open fun report(code: Int, duration: Int, vararg ps: Any): Boolean {
         runOnUiThread {
-            if (ps.size > 0) {
+            if (ps.isNotEmpty()) {
                 // Note use of spread (*) operator to pass varargs array as varargs
                 Snackbar.make(rootView!!, resources.getString(code, *ps), duration)
                         .setAction(R.string.close) { x: View? -> }.show()
@@ -230,9 +227,18 @@ abstract class ListerActivity : AppCompatActivity(), OnSharedPreferenceChangeLis
         }
         return true
     }
-    fun reportShort(code: Int, vararg ps: Any) : Boolean { return report(code, Snackbar.LENGTH_SHORT, *ps) }
-    fun reportLong(code: Int, vararg ps: Any) : Boolean { return report(code, Snackbar.LENGTH_SHORT, *ps) }
-    fun reportIndefinite(code: Int, vararg ps: Any) : Boolean { return report(code, Snackbar.LENGTH_SHORT, *ps) }
+
+    fun reportShort(code: Int, vararg ps: Any): Boolean {
+        return report(code, Snackbar.LENGTH_SHORT, *ps)
+    }
+
+    fun reportLong(code: Int, vararg ps: Any): Boolean {
+        return report(code, Snackbar.LENGTH_LONG, *ps)
+    }
+
+    fun reportIndefinite(code: Int, vararg ps: Any): Boolean {
+        return report(code, Snackbar.LENGTH_INDEFINITE, *ps)
+    }
 
     fun report(mess: String, duration: Int): Boolean {
         runOnUiThread {
@@ -247,74 +253,84 @@ abstract class ListerActivity : AppCompatActivity(), OnSharedPreferenceChangeLis
             // Result of a PreferenceActivity invocation; preferences may have changed, we need
             // to redraw
             mMessageHandler.sendMessage(mMessageHandler.obtainMessage(MESSAGE_UPDATE_DISPLAY))
-            return;
+            return
         }
-
         val lister = lister
-        val act = this;
+        val act = this
         val uri: Uri? = intent?.data
-        if (requestCode == Lister.REQUEST_IMPORT && uri != null && resultCode == RESULT_OK) {
-            lister.importList(uri, this,
-                    object : SuccessCallback {
-                        override fun succeeded(data: Any?) {
-                            val report = StringBuilder()
-                            for (i in data as List<*>) {
-                                val eli : EntryListItem = i as EntryListItem;
-                                Log.d(TAG, "Imported list: " + eli.text)
-                                if (report.isNotEmpty()) report.append(", ")
-                                report.append("'").append(eli.text).append("'")
-                            }
-                            reportIndefinite(R.string.snack_imported, report)
-                            val msg = mMessageHandler.obtainMessage(MESSAGE_UPDATE_DISPLAY)
-                            mMessageHandler.sendMessage(msg)
-                        }
-                    },
-                    object : FailCallback {
-                        override fun failed(code: Int): Boolean {
-                            return reportLong(code)
-                        }
-                    })
-        } else if (requestCode == REQUEST_CHANGE_STORE && uri != null && resultCode == RESULT_OK) {
-            if (uri != lister.getUri(Lister.PREF_FILE_URI)) {
-                val flags = intent.flags
-                lister.unloadLists()
-                // Reload from the new store. Note that the listener for the Checklists activity
-                // was removed when the Settings activity was invoked.
-                lister.setUri(Lister.PREF_FILE_URI, uri)
-                ensureListsLoaded(
+        if (resultCode != RESULT_OK || uri == null) {
+            super.onActivityResult(requestCode, resultCode, intent)
+            return
+        }
+        when (requestCode) {
+            REQUEST_IMPORT ->
+                lister.importList(uri, this,
                         object : SuccessCallback {
                             override fun succeeded(data: Any?) {
-                                // Persist granted access across reboots
-                                val takeFlags = flags and (Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
-                                lister.getUri(Lister.PREF_FILE_URI)?.let { contentResolver.takePersistableUriPermission(it, takeFlags) }
-                                lister.saveCache(act)
+                                val list = data as List<*>?
+                                if (list == null)
+                                    reportIndefinite(R.string.snack_imported_nothing)
+                                else {
+                                    val report = StringBuilder()
+                                    for (i in list) {
+                                        val name = i as String
+                                        Log.d(TAG, "Imported list: $name")
+                                        if (report.isNotEmpty()) report.append(", ")
+                                        report.append("'").append(name).append("'")
+                                        reportShort(R.string.snack_imported, report)
+                                    }
+                                }
                                 val msg = mMessageHandler.obtainMessage(MESSAGE_UPDATE_DISPLAY)
                                 mMessageHandler.sendMessage(msg)
-                                reportLong(R.string.snack_file_changed)
                             }
                         },
                         object : FailCallback {
-                            override fun failed(code: Int): Boolean {
-                                return reportIndefinite(code)
+                            override fun failed(code: Int, vararg args: Any): Boolean {
+                                return reportIndefinite(code, *args)
+                            }
+                        })
+            REQUEST_CHANGE_STORE ->
+                if (uri != lister.getUri(Lister.PREF_FILE_URI)) {
+                    val flags = intent.flags
+                    lister.unloadLists()
+                    // Reload from the new store. Note that the listener for the Checklists activity
+                    // was removed when the Settings activity was invoked.
+                    lister.setUri(Lister.PREF_FILE_URI, uri)
+                    ensureListsLoaded(
+                            object : SuccessCallback {
+                                override fun succeeded(data: Any?) {
+                                    // Persist granted access across reboots
+                                    val takeFlags = flags and (Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+                                    lister.getUri(Lister.PREF_FILE_URI)?.let { contentResolver.takePersistableUriPermission(it, takeFlags) }
+                                    lister.saveCache(act)
+                                    val msg = mMessageHandler.obtainMessage(MESSAGE_UPDATE_DISPLAY)
+                                    mMessageHandler.sendMessage(msg)
+                                    reportLong(R.string.snack_file_changed)
+                                }
+                            },
+                            object : FailCallback {
+                                override fun failed(code: Int, vararg args: Any): Boolean {
+                                    return reportIndefinite(code, *args)
+                                }
+                            })
+                }
+            REQUEST_CREATE_STORE -> {
+                lister.setUri(Lister.PREF_FILE_URI, uri)
+                // Save whatever is currently in memory to the new URI
+                lister.saveLists(this,
+                        object : SuccessCallback {
+                            override fun succeeded(data: Any?) {
+                                reportLong(R.string.snack_file_created)
+                            }
+                        },
+                        object : FailCallback {
+                            override fun failed(code: Int, vararg args: Any): Boolean {
+                                return reportShort(code, *args)
                             }
                         })
             }
-        } else if (requestCode == REQUEST_CREATE_STORE && intent != null && resultCode == RESULT_OK) {
-            lister.setUri(Lister.PREF_FILE_URI, uri)
-            // Save whatever is currently in memory to the new URI
-            lister.saveLists(this,
-                    object : SuccessCallback {
-                        override fun succeeded(data: Any?) {
-                            reportLong(R.string.snack_file_created)
-                        }
-                    },
-                    object : FailCallback {
-                        override fun failed(code: Int): Boolean {
-                            return reportShort(code)
-                        }
-                    });
-        } else
-            super.onActivityResult(requestCode, resultCode, intent)
+            else -> super.onActivityResult(requestCode, resultCode, intent)
+        }
     }
 
     companion object {
@@ -322,6 +338,8 @@ abstract class ListerActivity : AppCompatActivity(), OnSharedPreferenceChangeLis
         const val REQUEST_CHANGE_STORE = 1
         const val REQUEST_CREATE_STORE = 2
         const val REQUEST_PREFERENCES = 3
+        const val REQUEST_IMPORT = 4
+
         const val MESSAGE_UPDATE_DISPLAY = 0xC04EFE
         private val TAG = ListerActivity::class.simpleName
         private val CLASS_NAME = ListerActivity::class.java.canonicalName

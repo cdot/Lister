@@ -8,18 +8,18 @@
     <string name="action_file_create">Créer un nouveau fichier</string>
     <string name="action_delete">Effacer</string>
     <string name="action_delete_checked">Effacer tous éléments cochés</string>
-    <string name="action_device_settings">Préférences</string>
+    <string name="action_preferences">Préférences</string>
     <string name="action_edit_list">Modifier liste</string>
-    <string name="action_export_all_lists">Exporter toutes listes</string>
-    <string name="action_export_list">Exporter liste</string>
+    <string name="action_share_lists">Exporter toutes listes</string>
+    <string name="action_share_list">Exporter liste</string>
     <string name="action_help">Aidez-moi</string>
     <string name="action_item_add_off">Ajouter inactif</string>
     <string name="action_item_add_on">Ajouter actif</string>
     <string name="action_import_lists">Importer listes</string>
     <string name="action_list_settings">Paramètres de liste</string>
     <string name="action_new_list">Nouvelle liste</string>
-    <string name="action_rename_list">Renommer</string>
-    <string name="action_save">sauver</string>
+    <string name="action_rename">Renommer</string>
+    <string name="action_save">Sauver</string>
     <string name="action_uncheck_all">Décocher tous éléments</string>
     <string name="action_undo_delete">Annuler la dernière effacement</string>
 
@@ -38,10 +38,10 @@
     <string name="failed_access_denied">Accès au fichier refusé</string>
     <string name="failed_cache_load">Impossible de charger le cache</string>
     <string name="failed_export">Échec de l\'exportation</string>
-    <string name="failed_import">L\'importation a échoué</string>
-    <string name="failed_no_file">Veuillez créer une boutique dans les préférences</string>
+    <string name="failed_import">L\'importation a échoué: %1$s</string>
+    <string name="failed_no_file">Veuillez créer une fichier dans les préférences</string>
     <string name="failed_save_to_cache">L\'enregistrement dans le cache a échoué. Les modifications récentes peuvent être perdues!</string>
-    <string name="failed_save_to_cache_and_file">Le stockage et le cache ont tous deux échoué</string>
+    <string name="failed_save_to_cache_and_file">Fichier et cache ont tous deux échoué</string>
     <string name="failed_save_to_uri">L\'enregistrement dans le fichier a échoué. Les modifications récentes ont été enregistrées dans le cache, mais peuvent être perdues!</string>
     <string name="failed_file_access">Accès au fichier refusé. Veuillez reconfirmer l\'emplacement du fichier</string>
     <string name="failed_file_load">Impossible de charger à partir du fichier, en fonction du cache</string>
@@ -49,7 +49,7 @@
     <string name="help_file_change">Choisissez un autre fichier de listes</string>
     <string name="help_file_open">Ouvrir un fichier de listes</string>
     <string name="help_checked_at_end">Afficher les éléments cochés à la fin de la liste</string>
-    <string name="help_create_file">Créer un nouvel emplacement pour stocker les listes</string>
+    <string name="help_create_file">Créer un nouvel fichier pour stocker les listes</string>
     <string name="help_delete_checked">Effacer les éléments cochés. La suppression peut être annulée</string>
     <string name="help_grey_checked">Griser les éléments cochés pour les rendre plus évidents</string>
     <string name="help_left_hand">Retourner les éléments de la liste pour faciliter l\'utilisation par les gauchers</string>
@@ -61,6 +61,7 @@
     <string name="help_warn_duplicate_list">Avertir des noms de liste en double</string>
 
     <string name="snack_imported">Importé %1$s</string>
+    <string name="snack_imported_nothing">Importé rien</string>
     <string name="snack_deleted">%d entrées supprimées</string>
     <string name="snack_restored">%d entrées restaurées</string>
     <string name="no_lists_yet">Aucune liste pour le moment…</string>
@@ -95,7 +96,8 @@
     <string name="text_size_medium">Moyen</string>
     <string name="text_size_large">Grand</string>
 
-    <string name="csv_format">>Valeurs séparées par des virgules</string>
+    <string name="csv_format">Valeurs séparées par des virgules</string>
+    <string name="failed_duplicate_list">L\'importation a échoué. Déjà voir %1$s</string>
 
 </resources>
 

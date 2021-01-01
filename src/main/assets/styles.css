@@ -1,4 +1,6 @@
-dt { font-weight: bold }
+.action { font-weight: bold; color: #00008B }
+.error { font-weight: bold; color: red; }
 img { display:inline; width: 20px; height: 20px; vertical-align: middle; }
 th,td { border:1px solid #69899F; }
+.empty_row { border: none; }
 table{ border-collapse: collapse; }

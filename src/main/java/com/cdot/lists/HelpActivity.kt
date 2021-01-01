@@ -26,7 +26,9 @@ import java.io.IOException
 import java.io.InputStreamReader
 
 /**
- * View help information stored in an html file
+ * View help information stored in an html file. @<resource_name> in the file will be expanded
+ * to the resource value, wrapped in a span with class "action" (or error if the resource can't
+ * be found.
  */
 class HelpActivity : AppCompatActivity() {
     public override fun onCreate(savedInstanceState: Bundle?) {
@@ -42,8 +44,17 @@ class HelpActivity : AppCompatActivity() {
             var data: String?
             val sb = StringBuilder()
             while (br.readLine().also { data = it } != null) sb.append(data).append("\n")
-            data = sb.toString()
-            binding.webview.loadDataWithBaseURL("file:///android_asset/", data!!, "text/html", "utf-8", null)
+            // Expand resource identifiers
+            val regex = Regex("@([a-z_]*)")
+            val r = resources
+            val pack = getPackageName()
+            val html = regex.replace(sb.toString()) { m ->
+                val resName = m.groups[1]!!.value;
+                val id = r.getIdentifier(resName,"string", pack)
+                if (id == 0) "<span class='error'>" + resName + "</span>"
+                else "<span class='action'>" + r.getString(id) + "</span>"
+            }
+            binding.webview.loadDataWithBaseURL("file:///android_asset/", html, "text/html", "utf-8", null)
         } catch (ieo: IOException) {
         }
         setContentView(binding.root)
@@ -51,6 +62,6 @@ class HelpActivity : AppCompatActivity() {
 
     companion object {
         @JvmField
-        val ASSET_EXTRA = HelpActivity::class.java.canonicalName + ".asset"
+        val ASSET_EXTRA = HelpActivity::class.qualifiedName + ".asset"
     }
 }

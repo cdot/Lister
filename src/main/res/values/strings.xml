@@ -2,21 +2,21 @@
 <resources>
     <string name="action_alpha_sort_off">Sorting Off</string>
     <string name="action_alpha_sort_on">Sorting On</string>
-    <string name="action_check_all">Check all Items</string>
-    <string name="action_copy">Create Copy</string>
+    <string name="action_check_all">Check All Items</string>
+    <string name="action_copy">Create A Copy</string>
     <string name="action_delete">Delete</string>
     <string name="action_delete_checked">Delete All Checked Items</string>
-    <string name="action_device_settings">Preferences</string>
+    <string name="action_preferences">Preferences</string>
     <string name="action_edit_list">Edit List</string>
-    <string name="action_export_all_lists">Share</string>
-    <string name="action_export_list">Export List</string>
+    <string name="action_share_lists">Share</string>
+    <string name="action_share_list">Share</string>
     <string name="action_help">Help</string>
     <string name="action_item_add_off">Add Off</string>
     <string name="action_item_add_on">Add On</string>
     <string name="action_import_lists">Import Lists</string>
-    <string name="action_list_settings">List settings</string>
+    <string name="action_list_settings">List Settings</string>
     <string name="action_new_list">New List</string>
-    <string name="action_rename_list">Rename</string>
+    <string name="action_rename">Rename</string>
     <string name="action_save">Save</string>
     <string name="action_uncheck_all">Uncheck All Items</string>
     <string name="action_undo_delete">Undo Last Delete</string>
@@ -42,8 +42,9 @@
 
     <string name="failed_access_denied">File access denied</string>
     <string name="failed_cache_load">Could not load cache</string>
+    <string name="failed_duplicate_list">Import failed. Already have %1$s</string>
     <string name="failed_export">Export Failed</string>
-    <string name="failed_import">Import failed</string>
+    <string name="failed_import">Import failed: %1$s</string>
     <string name="failed_no_file">Please open or create a file in Preferences</string>
     <string name="failed_save_to_cache">Save to cache failed. Recent changes may be lost!</string>
     <string name="failed_save_to_cache_and_file">File and Cache saves both failed</string>
@@ -90,6 +91,7 @@
     <string name="similar_item_x_already_in_list">Similar entry \'%1$s\' already there. Add another \'%2$s\'?</string>
     <string name="snack_deleted">%d entries deleted</string>
     <string name="snack_imported">Imported %1$s</string>
+    <string name="snack_imported_nothing">Nothing imported</string>
     <string name="snack_no_cache">No cache found. One will be created when you make a change.</string>
     <string name="snack_no_deleted_items">No deleted items</string>
     <string name="snack_restored">%d entries restored</string>

@@ -30,27 +30,16 @@ import org.json.JSONObject
  * EntryListItem, inherited via EntryList
  */
 class Checklist : EntryList {
-    constructor()
-    constructor(name: String?) {
-        text = name
-    }
 
-    /**
-     * Process the JSON given and load from it
-     *
-     * @param job    the JSON object
-     * @throws JSONException if something goes wrong
-     */
-    constructor(job: JSONObject) {
-        fromJSON(job)
-    }
+    constructor() : super(NO_NAME)
+    constructor(name: String) : super(name)
 
     /**
      * Construct by copying an existing list and saving it to a new list
      *
      * @param copy   list to clone
      */
-    constructor(copy: Checklist) : super(copy) {
+    constructor(copy: EntryList) : super(copy) {
         for (item in copy.data) addChild(ChecklistItem(item as ChecklistItem))
     }
 
@@ -65,34 +54,31 @@ class Checklist : EntryList {
     override val itemsAreMoveable: Boolean
         get() = !getFlag(CHECKED_AT_END)
 
+    /**
+     * Load from JSON
+     *
+     * @param jo    the JSON object
+     * @throws JSONException if something goes wrong
+     */
     @Throws(JSONException::class)
-    override fun fromJSON(jo: JSONObject) {
-        clear()
-        super.fromJSON(jo)
+    override fun fromJSON(jo: JSONObject) : EntryListItem {
         text = jo.getString("name")
         val items = jo.getJSONArray("items")
-        for (i in 0 until items.length()) {
-            val ci = ChecklistItem(null as String?)
-            ci.fromJSON(items.getJSONObject(i))
-            addChild(ci)
-        }
+        for (i in 0 until items.length())
+            addChild(ChecklistItem().fromJSON(items.getJSONObject(i)))
+        return super.fromJSON(jo)
     }
 
     // CSV lists continue of a set of rows, each with the list name in the first column,
     // the item name in the second column, and the done status in the third column
     @Throws(Exception::class)  // EntryListItem
-    override fun fromCSV(r: CSVReader): Boolean {
-        if (r.peek() == null) return false
-        if (text == null || text.equals(r.peek()[0])) {
+    override fun fromCSV(r: CSVReader): EntryListItem {
+        if (text == r.peek()[0]) {
             // recognised header row
-            if (text == null) text = r.peek()[0]
-            while (r.peek() != null && r.peek()[0] == text) {
-                val ci = ChecklistItem()
-                if (!ci.fromCSV(r)) break
-                addChild(ci)
-            }
+            while (r.peek() != null && r.peek()[0] == text)
+                addChild(ChecklistItem().fromCSV(r))
         }
-        return true
+        return this
     }
 
     // EntryListItem

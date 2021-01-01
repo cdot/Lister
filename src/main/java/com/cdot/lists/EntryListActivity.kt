@@ -29,6 +29,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.cdot.lists.model.EntryList
 import com.cdot.lists.model.EntryListItem
+import com.cdot.lists.model.EntryListItem.Companion.NO_NAME
 import com.cdot.lists.view.EntryListItemView
 import java.util.*
 
@@ -47,7 +48,7 @@ abstract class EntryListActivity : ListerActivity(), EntryListItem.ChangeListene
     private var mMovingView: EntryListItemView? = null
 
     // The list we're viewing
-    open abstract val list: EntryList
+    abstract val list: EntryList
     abstract val listView: ListView
 
     // Set the common bindings, obtained from the ViewBinding, and create the array adapter
@@ -63,7 +64,7 @@ abstract class EntryListActivity : ListerActivity(), EntryListItem.ChangeListene
         Log.d(TAG, "onListsLoaded list $list")
         list.notifyChangeListeners()
         var t = list.text
-        if (t == null) t = getString(R.string.app_name)
+        if (t == NO_NAME) t = getString(R.string.app_name)
         supportActionBar!!.title = t
     }
 
@@ -108,7 +109,7 @@ abstract class EntryListActivity : ListerActivity(), EntryListItem.ChangeListene
             if (list.getFlag(EntryList.DISPLAY_SORTED)) {
                 dl.sortWith(object : Comparator<EntryListItem> {
                     override fun compare(o1: EntryListItem, o2: EntryListItem): Int {
-                        return o1.text!!.compareTo(o2.text!!, ignoreCase = true)
+                        return o1.text.compareTo(o2.text, ignoreCase = true)
                     }
                 })
             }
@@ -160,7 +161,9 @@ abstract class EntryListActivity : ListerActivity(), EntryListItem.ChangeListene
     @Synchronized
     override fun dispatchTouchEvent(motionEvent: MotionEvent): Boolean {
         // Check the item can be moved
-        if (mMovingItem == null || !mMovingItem!!.isMoveable) return super.dispatchTouchEvent(motionEvent)
+        if (mMovingItem == null) return super.dispatchTouchEvent(motionEvent)
+        val movingItem = mMovingItem!!
+        if (!movingItem.isMoveable) return super.dispatchTouchEvent(motionEvent)
 
         // get screen position of the ListView and the Activity
         val iArr = IntArray(2)
@@ -176,16 +179,16 @@ abstract class EntryListActivity : ListerActivity(), EntryListItem.ChangeListene
         val list = list
 
         // Get the index of the item being moved in the items list
-        val itemIndex = list.indexOf(mMovingItem)
+        val itemIndex = list.indexOf(movingItem)
 
         // Get the index of the moving view in the list of views. It will stay there until
         // the drag is released.
         var viewIndex = listView.childCount - 1
         while (viewIndex >= 0) {
-            if ((listView.getChildAt(viewIndex) as EntryListItemView).item === mMovingItem) break
+            if ((listView.getChildAt(viewIndex) as EntryListItemView).item === movingItem) break
             viewIndex--
         }
-        if (viewIndex < 0) throw RuntimeException("Can't find view for item: $mMovingItem")
+        if (viewIndex < 0) throw RuntimeException("Can't find view for item: $movingItem")
         //Log.d(TAG, "Moving item at " + itemIndex + " viewIndex " + viewIndex);
         var prevBottom = Int.MIN_VALUE
         if (viewIndex > 0) // Not first view
@@ -199,9 +202,9 @@ abstract class EntryListActivity : ListerActivity(), EntryListItem.ChangeListene
 
         //Log.d(TAG, "Compare " + y + " with " + prevBottom + " and " + nextTop + " moveTo " + moveTo);
         if (moveTo != itemIndex && moveTo >= 0 && moveTo < list.size()) {
-            Log.d(TAG, "Moved " + mMovingItem!!.text + " from " + itemIndex + " to " + moveTo)
-            list.remove(mMovingItem!!, false)
-            list.put(moveTo, mMovingItem!!)
+            Log.d(TAG, "Moved " + movingItem.text + " from " + itemIndex + " to " + moveTo)
+            list.remove(movingItem, false)
+            list.put(moveTo, movingItem)
             list.notifyChangeListeners()
             checkpoint()
         }
@@ -209,7 +212,7 @@ abstract class EntryListActivity : ListerActivity(), EntryListItem.ChangeListene
             if (mMovingView == null) {
                 // Drag is starting
                 //Log.d(TAG, "dispatchTouchEvent adding moving view ");
-                mMovingView = makeItemView(mMovingItem!!, true)
+                mMovingView = makeItemView(movingItem, true)
                 // addView is not supported in AdapterView, so can't add the movingView there.
                 // Instead have to add to the activity and adjust margins accordingly
                 listLayout.addView(mMovingView)
@@ -273,11 +276,18 @@ abstract class EntryListActivity : ListerActivity(), EntryListItem.ChangeListene
     inner class EntryListAdapter internal constructor(act: AppCompatActivity?) : ArrayAdapter<EntryListItem?>(act!!, 0) {
         // ArrayAdapter
         override fun getView(i: Int, convertView: View?, viewGroup: ViewGroup): View {
-            val item = displayOrder[i]
-            val itemView = if (convertView == null) makeItemView(item, false) else convertView as EntryListItemView
-            itemView.item = item
-            itemView.updateView()
-            return itemView
+            val dl = displayOrder // get sorted list
+            if (i < dl.size) {
+                val itemView = if (convertView == null) makeItemView(dl[i], false) else convertView as EntryListItemView
+                itemView.item = dl[i]
+                itemView.updateView()
+                return itemView
+            } else if (convertView != null)
+                return convertView;
+            else {
+                // Sometimes on startup we get here, with list size 0 and item index 1. Why?
+                throw Error("Empty display order")
+            }
         }
 
         override fun getCount(): Int {

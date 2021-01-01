@@ -28,11 +28,9 @@ import org.json.JSONObject
 /**
  * An item in a Checklist
  */
-class ChecklistItem : EntryListItem {
-    constructor()
-    constructor(str: String?) {
-        text = str
-    }
+class ChecklistItem(t:String) : EntryListItem(t) {
+
+    constructor() : this(NO_NAME)
 
     /**
      * Construct by copying the given item into the given checklist
@@ -40,9 +38,8 @@ class ChecklistItem : EntryListItem {
      * @param copy      item to copy
      */
     constructor(copy: ChecklistItem) : this(copy.text) {
-        for (f in flagNames) {
+        for (f in flagNames)
             if (copy.getFlag(f)) setFlag(f) else clearFlag(f)
-        }
     }
 
     // override EntryListItem
@@ -54,28 +51,28 @@ class ChecklistItem : EntryListItem {
         get() = parent == null || parent!!.itemsAreMoveable
 
     // override EntryListItem
-    override fun equals(other: Any?): Boolean {
+    override fun sameAs(other: EntryListItem?): Boolean {
         if (other is ChecklistItem)
-            if (getFlag(IS_DONE) != (other as ChecklistItem).getFlag(IS_DONE))
-                return false;
-        return super.equals(other);
+            if (getFlag(IS_DONE) != other.getFlag(IS_DONE))
+                return false
+        return super.sameAs(other)
     }
 
     // override EntryListItem
     @Throws(JSONException::class)
-    override fun fromJSON(jo: JSONObject) {
-        super.fromJSON(jo)
+    override fun fromJSON(jo: JSONObject) : EntryListItem {
         text = jo.getString("name")
+        return super.fromJSON(jo)
     }
 
     // implement EntryListItem
     @Throws(Exception::class)
-    override fun fromCSV(r: CSVReader): Boolean {
-        val row = r.readNext() ?: return false
+    override fun fromCSV(r: CSVReader): EntryListItem {
+        val row = r.readNext()!!
         text = row[1]
         // "f", "false", "0", and "" are read as false. Any other value is read as true
         if (row[2].isEmpty() || row[2].matches(Regex("[Ff]([Aa][Ll][Ss][Ee])?|0"))) clearFlag(IS_DONE) else setFlag(IS_DONE)
-        return true
+        return this
     }
 
     // override EntryListItem

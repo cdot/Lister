@@ -7,68 +7,68 @@
     <body>
         Items are checked by touching the check box (or by a touch anywhere on the row, if enabled).
         Check boxes can be placed on either side of the display.
-        <p>A long touch on an item lets you rename it or delete it.</p>
+        <p>A long touch on an item lets you <strong>@action_rename</strong> or <strong>@action_delete</strong> it.</p>
         Unless sorting is enabled, a handle on each item
         <img src="img/ic_action_move.svg">
-        lets you move the item to another position in the list.
-        Touch and hold to drag the item.
+        lets you move the item to another position in the list. Touch and hold to drag the item.
         <h2>Actions</h2>
         <dl>
             <dt>
-                <img src="img/ic_action_alpha_sort_on.svg">
-                Sort on/off
+                <img src="img/ic_action_alpha_sort_on.svg"> @action_alpha_sort_on /
+                <img src="img/ic_action_alpha_sort_off.svg"> @action_alpha_sort_off
             </dt>
             <dd>Toggle alphabetic sorting. This only shows the list as sorted, it doesn't affect the
                 underlying ordering. When this is enabled, you can't manually sort the items
             </dd>
             <dt>
                 <img src="img/ic_action_save.svg">
-                Save
+                @action_save
             </dt>
             <dd>This action will appear if the list has to be saved because a previous save failed
             </dd>
             <dt>
-                <img src="img/ic_action_item_add_on.svg">
-                Add on/off
+                <img src="img/ic_action_item_add_on.svg"> @action_item_add_on /
+                <img src="img/ic_action_item_add_off.svg"> @action_item_add_off
             </dt>
             <dd>While adding is on you can add many items
             </dd>
             <dt>
-                <td><img src="img/ic_action_uncheck_all.svg">Uncheck All Items
+                <td><img src="img/ic_action_uncheck_all.svg">
+                @action_uncheck_all
             </dt>
             <dt>
                 <img src="img/ic_action_check_all.svg">
-                Check All Items
+                @action_check_all
             </dt>
             <dt>
                 <img src="img/ic_action_delete.svg">
-                Delete All Checked Items
+                @action_delete_checked
             </dt>
             <dd></dd>
             <dt>
                 <img src="img/ic_action_undo.svg">
-                Undo Delete
+                @action_undo_delete
             </dt>
             <dd>Reverts the last delete, for as long as the list is open.
                 When you exit the list view, the undo history is lost.
             </dd>
             <dt>
                 <img src="img/ic_action_rename.svg">
-                Rename List
+                @action_rename
             </dt>
             <dt>
                 <img src="img/ic_action_export.svg">
-                Export List
+                @action_share_list
             </dt>
-            <dd>Export this list to any content provider that your phone supports
-                e.g. the SD card, or email, or Google Drive if the Drive app is installed,
+            <dd>Share this list with any content provider that your phone supports
+                e.g. the SD card, or Gmail, or Google Drive if the Drive app is installed,
                 in a number of different formats. When exporting to JSON, this will create a file
                 with one list in it that can then be imported using the
-                "Import Lists" option on the first screen.
+                @action_import_lists action on the first screen.
             </dd>
             <dt>
                 <img src="img/ic_action_settings.svg">
-                List settings
+                @action_list_settings
             </dt>
             <dd>Change settings that are specific to this list.</dd>
         </dl>

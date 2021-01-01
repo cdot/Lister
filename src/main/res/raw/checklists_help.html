@@ -6,14 +6,10 @@
     </head>
     <body>
         <p>Open a list by touching its name.</p>
-        <p>A long touch on the list name will bring up a context menu that lets you:
-        <ul>
-            <li>Rename List</li>
-            <li>Delete</li>
-            <li>Create Copy</li>
-        </ul>
+        <p>A long touch on the list name will bring up a context menu that lets you <strong>@action_rename</strong> or <strong>@action_delete</strong>
+            the list, or <strong>@action_copy</strong>.
         </p>
-        <p>Create copy will make an identical copy of the list. You can use this to create template
+        <p><strong>@action_copy</strong> will make an identical copy of the list. You can use this to create template
             list with e.g. the basic groceries that you always buy.
         </p>
         <p>Unless alphabetic sorting is on, a handle on each list
@@ -25,28 +21,28 @@
         <dl>
             <dt>
                 <img src="img/ic_action_save.svg" />
-                Save
+                @action_save
             </dt>
             <dd>
                 This action will appear if the list has to be saved because a previous save failed.
             </dd>
             <dt>
-                <img src="img/ic_action_alpha_sort_on.svg" />
-                Sort on/off
+                <img src="img/ic_action_alpha_sort_on.svg" /> @action_alpha_sort_on /
+                <img src="img/ic_action_alpha_sort_off.svg" /> @action_alpha_sort_off
             </dt>
-            <dd>Toggle alphabetic sorting. This only shows the lists as sorted, it doesn't affect
-                the underlying ordering. When this is enabled, you can't manually sort the lists.
+            <dd>This only <em>shows</em> the lists as sorted, it doesn't affect
+                the underlying ordering. When sorting is on, you can't manually sort the lists.
             </dd>
             <dt>
                 <img src="img/ic_action_item_add_on.svg" />
-                New list
+                @action_new_list
             </dt>
-            <dd>Create a new list</dd>
+            <dd>You will be prompted for the list name</dd>
             <dt>
                 <img src="img/ic_action_import.svg" />
-                Import List
+                @action_import_lists
             </dt>
-            <dd>Import lists. The lists can come from any
+            <dd>The lists can come from any
                 content provider that your device supports e.g. the SD card, or Google Drive if the
                 Drive app is installed. Two formats are supported, JSON as previously exported from
                 Lister, or CSV (comma-separated value) format with columns:
@@ -54,11 +50,9 @@
                     <tr>
                         <th>List name</th>
                         <th>Item</th>
-                        <th>checked ("F" or "T")</th>
+                        <th>Checked ("F" or "T")</th>
                     </tr>
-                </table>
-                e.g.
-                <table>
+                    <tr><td colspan="3" class="empty_row">e.g.</td></tr>
                     <tr>
                         <td>Shopping</td>
                         <td>Bread</td>
@@ -84,12 +78,12 @@
             </dd>
             <dt>
                 <img src="img/ic_action_settings.svg" />
-                Preferences
+                @action_preferences
             </dt>
             <dd>Change settings that are specific to this device.</dd>
         </dl>
         <hr />
-        Mr Lister is free of charge and free of ads.
+        @app_name is free of charge and free of ads.
         Source code is available from
         <a href="https://github.com/cdot/Lister">https://github.com/cdot/Lister</a>
     </body>

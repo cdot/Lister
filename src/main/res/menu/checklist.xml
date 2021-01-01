@@ -53,10 +53,10 @@
         android:id="@+id/action_export_list"
         android:icon="@drawable/ic_action_export"
         android:orderInCategory="90"
-        android:title="@string/action_export_list"
+        android:title="@string/action_share_list"
         app:showAsAction="never" />
     <item
-        android:id="@+id/action_settings"
+        android:id="@+id/action_preferences"
         android:icon="@drawable/ic_action_settings"
         android:orderInCategory="100"
         android:title="@string/action_list_settings"

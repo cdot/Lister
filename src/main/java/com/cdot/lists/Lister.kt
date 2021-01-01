@@ -4,12 +4,10 @@
 package com.cdot.lists
 
 import android.app.Application
-import android.content.ContentResolver
 import android.content.Context
 import android.content.SharedPreferences
 import android.net.Uri
 import android.util.Log
-import android.webkit.MimeTypeMap
 import com.cdot.lists.model.Checklists
 import java.io.*
 import java.util.*
@@ -49,14 +47,13 @@ class Lister : Application() {
             Log.d(TAG, "Starting load thread to load from $uri")
             try {
                 if (uri == null) throw Exception("Null URI (this is OK)")
-                val stream: InputStream?
-                stream = if (uri.scheme == ContentResolver.SCHEME_FILE) {
-                    FileInputStream(File(uri.path!!))
-                } else if (uri.scheme == ContentResolver.SCHEME_CONTENT) {
-                    cxt.contentResolver.openInputStream(uri)
-                } else {
-                    throw IOException("Failed to load lists. Unknown uri scheme: " + uri.scheme)
-                }
+                /*val stream: InputStream =
+                        when (uri.scheme) {
+                            ContentResolver.SCHEME_FILE -> FileInputStream(File(uri.path!!))
+                            ContentResolver.SCHEME_CONTENT -> cxt.contentResolver.openInputStream(uri)!!
+                            else -> throw IOException("Failed to load lists. Unknown uri scheme: " + uri.scheme)
+                        }*/
+                val stream = cxt.contentResolver.openInputStream(uri)!!
                 lists.fromStream(stream)
                 lists.forUri = uri.toString()
                 // Check against the cache
@@ -67,22 +64,9 @@ class Lister : Application() {
                                 Log.d(TAG, "Cache remembers URI " + cachedLists.forUri)
                                 if (cachedLists.isMoreRecentVersionOf(lists)) {
                                     Log.d(TAG, "Cache is more recent")
-                                    loadCache(lists, cxt,
-                                            object : SuccessCallback {
-                                                override fun succeeded(data: Any?) {
-                                                    Log.d(TAG, lists.size().toString() + " lists loaded from cache")
-                                                    mListsLoading = false
-                                                    mListsLoaded = true
-                                                    onOK.succeeded(lists)
-                                                }
-                                            },
-                                            object : FailCallback {
-                                                override fun failed(code: Int): Boolean {
-                                                    // Could not load from cache, even though we already loaded from cache!
-                                                    mListsLoading = false
-                                                    return onFail.failed(code)
-                                                }
-                                            })
+                                    unloadLists()
+                                    for (i in cachedLists.cloneItemList())
+                                        lists.addChild(i);
                                 } else {
                                     mListsLoaded = true
                                     mListsLoading = false
@@ -91,8 +75,8 @@ class Lister : Application() {
                             }
                         },
                         object : FailCallback {
-                            override fun failed(code: Int): Boolean {
-                                onFail.failed(code)
+                            override fun failed(code: Int, vararg args : Any): Boolean {
+                                onFail.failed(code, *args)
                                 mListsLoading = false
                                 // Backing store loaded OK but cache failed. That's OK.
                                 mListsLoaded = true
@@ -125,9 +109,9 @@ class Lister : Application() {
                             }
                         },
                         object : FailCallback {
-                            override fun failed(code: Int): Boolean {
+                            override fun failed(code: Int, vararg args : Any): Boolean {
                                 mListsLoading = false
-                                return onFail.failed(code)
+                                return onFail.failed(code, *args)
                             }
                         })
             }
@@ -141,8 +125,7 @@ class Lister : Application() {
                 // TESTING ONLY
                 onFail.failed(FORCE_CACHE_FAIL)
             } else {
-                val fis = cxt.openFileInput(CACHE_FILE)
-                cacheLists.fromStream(fis)
+                cacheLists.fromStream(cxt.openFileInput(CACHE_FILE))
                 onOK.succeeded(cacheLists)
             }
         } catch (ce: FileNotFoundException) {
@@ -193,15 +176,14 @@ class Lister : Application() {
 
             // Launch a thread to do this save, so we don't block the ui thread
             data = jsonString.toByteArray()
-            Thread(Runnable {
-                val stream: OutputStream?
+            Thread {
                 try {
-                    val scheme = uri.scheme
-                    stream = if (scheme == ContentResolver.SCHEME_FILE) {
-                        val path = uri.path
-                        FileOutputStream(File(path!!))
-                    } else if (scheme == ContentResolver.SCHEME_CONTENT) cxt.contentResolver.openOutputStream(uri) else throw IOException("Unknown uri scheme: " + uri.scheme)
-                    if (stream == null) throw IOException("Stream open failed")
+                    val stream : OutputStream = /*when (uri.scheme) {
+                        ContentResolver.SCHEME_FILE -> FileOutputStream(File(uri.path!!))
+                        ContentResolver.SCHEME_CONTENT -> cxt.contentResolver.openOutputStream(uri)
+                        else -> throw IOException("Unknown uri scheme: " + uri.scheme)
+                    } ?: throw IOException("Stream open failed")
+                        ContentResolver.SCHEME_CONTENT -> */cxt.contentResolver.openOutputStream(uri)!!
                     stream.write(data)
                     stream.close()
                     setBool(PREF_LAST_STORE_FAILED, false)
@@ -213,7 +195,7 @@ class Lister : Application() {
                     onFail.failed(R.string.failed_save_to_uri)
                     if (cacheOK) onSuccess.succeeded(null)
                 }
-            }).start()
+            }.start()
         } catch (e: Exception) {
             Log.e(TAG, stringifyException(e))
             onFail.failed(R.string.failed_save_to_uri)
@@ -223,30 +205,35 @@ class Lister : Application() {
     fun importList(uri: Uri, cxt: Context, onOK: SuccessCallback, onFail: FailCallback) {
         try {
             Log.d(TAG, "Importing from $uri")
-            val stream: InputStream?
-            // Work out the mime type
-            var type: String? = null
-            val extension = MimeTypeMap.getFileExtensionFromUrl(uri.toString())
-            if ("json" == extension) type = "application/json" else if ("csv" == extension) type = "text.csv" else if (extension != null) // getting desperate
-                type = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
-            if (type == null) // last ditch
-                type = cxt.contentResolver.getType(uri)
-            stream = if (uri.scheme == "file") FileInputStream(File(uri.path!!)) else if (uri.scheme == "content") cxt.contentResolver.openInputStream(uri) else throw IOException("Failed to load lists. Unknown uri scheme: " + uri.scheme)
-            val newLists = Checklists()
-            newLists.fromStream(stream, type!!)
-            val ret = newLists.cloneItemList()
-            for (eli in ret) lists.addChild(eli) // depopulates newLists, but not ret
-            Log.d(TAG, "Imported " + ret.size + " lists, now have " + lists.size() + " lists, saving")
-            saveLists(cxt,
-                    object : SuccessCallback {
-                        override fun succeeded(data: Any?) {
-                            Log.d(TAG, "Saved imported lists")
-                            onOK.succeeded(ret)
-                        }
-                    }, onFail)
+            val stream = cxt.contentResolver.openInputStream(uri)!!;
+            val importedLists = Checklists()
+            importedLists.fromStream(stream)
+            val ret = importedLists.cloneItemList()
+            if (ret.size > 0) {
+                var duplicates : List<String>? = null
+                var added : List<String>? = null
+                for (eli in ret) {
+                    if (getBool(PREF_WARN_DUPLICATE) && lists.findByText(eli.text, false) != null)
+                        duplicates = duplicates?.plus(eli.text) ?: arrayListOf(eli.text)
+                    else {
+                        added = added?.plus(eli.text) ?: arrayListOf(eli.text)
+                        lists.addChild(eli) // depopulates importedLists, but not ret
+                    }
+                }
+                if (duplicates != null)
+                    onFail.failed(R.string.failed_duplicate_list, duplicates.joinToString())
+                if (added != null)
+                    saveLists(cxt,
+                            object : SuccessCallback {
+                                override fun succeeded(data: Any?) {
+                                    Log.d(TAG, "Saved imported lists")
+                                    onOK.succeeded(added)
+                                }
+                            }, onFail)
+            }
         } catch (e: Exception) {
             Log.e(TAG, "import failed " + stringifyException(e))
-            onFail.failed(R.string.failed_import)
+            onFail.failed(R.string.failed_import, e.toString())
         }
     }
 
@@ -297,7 +284,7 @@ class Lister : Application() {
          * @param code resource (error) code
          * @return true if the operation is safe to continue, false otherwise
          */
-        fun failed(code: Int): Boolean
+        fun failed(code: Int, vararg args : Any): Boolean
     }
 
     interface SuccessCallback {
@@ -323,7 +310,6 @@ class Lister : Application() {
         const val TEXT_SIZE_SMALL = 1
         const val TEXT_SIZE_MEDIUM = 2
         const val TEXT_SIZE_LARGE = 3
-        const val REQUEST_IMPORT = 3
         private val TAG = Lister::class.simpleName
         private val sBoolDefaults: Map<String, Boolean> = object : HashMap<String, Boolean>() {
             init {

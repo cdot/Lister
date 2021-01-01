@@ -82,8 +82,14 @@ class ChecklistActivity : EntryListActivity() {
             if (i == EditorInfo.IME_ACTION_DONE) {
                 val text = mBinding.addItemET.text.toString()
                 if (text.trim { it <= ' ' }.isNotEmpty()) {
-                    val find = list.findByText(text, false)
-                    if (find == null || !list.getFlag(EntryList.WARN_ABOUT_DUPLICATES)) addItem(text) else promptSimilarItem(text, find.text)
+                    if (list.getFlag(EntryList.WARN_ABOUT_DUPLICATES)) {
+                        val found = list.findByText(text, false)
+                        if (found == null)
+                            addItem(text)
+                        else
+                            promptSimilarItem(text, found.text)
+                    } else
+                        addItem(text)
                 }
                 return@setOnEditorActionListener true
             }
@@ -129,7 +135,7 @@ class ChecklistActivity : EntryListActivity() {
             it.setIcon(R.drawable.ic_action_item_add_on)
             it.setTitle(R.string.action_item_add_on)
         }
-        menu.findItem(R.id.action_settings).isEnabled = !mInEditMode
+        menu.findItem(R.id.action_preferences).isEnabled = !mInEditMode
         menu.findItem(R.id.action_check_all).isEnabled = (list as Checklist).countFlaggedEntries(ChecklistItem.IS_DONE) < list.size()
         menu.findItem(R.id.action_uncheck_all).isEnabled = (list as Checklist).countFlaggedEntries(ChecklistItem.IS_DONE) > 0
         menu.findItem(R.id.action_undo_delete).isEnabled = list.removeCount > 0
@@ -193,7 +199,7 @@ class ChecklistActivity : EntryListActivity() {
                 checkpoint()
                 reportShort(R.string.snack_restored, undone)
             }
-        } else if (it == R.id.action_export_list) exportChecklist() else if (it == R.id.action_settings) {
+        } else if (it == R.id.action_export_list) exportChecklist() else if (it == R.id.action_preferences) {
             val intent = Intent(this, PreferencesActivity::class.java)
             intent.putExtra(UID_EXTRA, list.sessionUID)
             startActivityForResult(intent, REQUEST_PREFERENCES)
@@ -293,7 +299,7 @@ class ChecklistActivity : EntryListActivity() {
             val mimeType = resources.getStringArray(R.array.share_format_mimetype)[mPlace[0]]
             intent.type = mimeType
             val ext = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType)
-            val fileName = listName!!.replace("[/\u0000]".toRegex(), "_") + ext
+            val fileName = listName.replace("[/\u0000]".toRegex(), "_") + ext
             // WTF! The EXTRA_SUBJECT is used as the document title for Drive saves!
             intent.putExtra(Intent.EXTRA_SUBJECT, fileName)
 
@@ -312,13 +318,11 @@ class ChecklistActivity : EntryListActivity() {
                         // JSON to simplify parenthood
                         val listJob = list.toJSON()
                         val container = Checklists()
-                        val copy = Checklist()
                         try {
-                            copy.fromJSON(listJob)
+                            container.addChild(Checklist().fromJSON(listJob))
                         } catch (je: JSONException) {
                             Log.e(TAG, Lister.stringifyException(je))
                         }
-                        container.addChild(copy)
                         w.write(container.toJSON().toString())
                     }
                     "text/csv" -> {
@@ -338,7 +342,7 @@ class ChecklistActivity : EntryListActivity() {
                 // Fire off the intent
                 startActivity(Intent.createChooser(intent, fileName))
             } catch (e: Exception) {
-                Log.e(TAG, "Export failed " + Lister.stringifyException(e))
+                Log.e(TAG, "Share failed " + Lister.stringifyException(e))
                 reportShort(R.string.failed_export)
             }
         }

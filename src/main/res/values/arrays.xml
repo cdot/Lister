@@ -27,4 +27,10 @@
         <item>application/json</item>
         <item>text/csv</item>
     </string-array>
-</resources>
+
+    <string-array name="file_format_mimetype">
+        <item>application/json</item>
+        <item>text/csv</item>
+        <item>text/plain</item>
+        <item>application/octet-stream</item>
+    </string-array></resources>
