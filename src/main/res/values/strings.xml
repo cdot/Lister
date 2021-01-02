@@ -33,7 +33,8 @@
     <string name="create_new_list">Create New List</string>
     <string name="csv_format">Comma-separated Values</string>
 
-    <string name="default_export_filename" translatable="false">Lists.json</string>
+    <string name="default_share_filename" translatable="false">Lists</string>
+    <string name="default_share_mimetype" translatable="false">application/json</string>
 
     <string name="edit_list_item">Edit list item</string>
     <string name="enter_name_of_new_list">Enter name of new list:</string>
@@ -43,7 +44,7 @@
     <string name="failed_access_denied">File access denied</string>
     <string name="failed_cache_load">Could not load cache</string>
     <string name="failed_duplicate_list">Import failed. Already have %1$s</string>
-    <string name="failed_export">Export Failed</string>
+    <string name="failed_share">Export Failed</string>
     <string name="failed_import">Import failed: %1$s</string>
     <string name="failed_no_file">Please open or create a file in Preferences</string>
     <string name="failed_save_to_cache">Save to cache failed. Recent changes may be lost!</string>

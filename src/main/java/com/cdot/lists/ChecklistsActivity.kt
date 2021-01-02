@@ -31,9 +31,7 @@ import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.ListView
 import androidx.appcompat.app.AlertDialog
-import androidx.core.content.FileProvider
 import com.cdot.lists.Lister.Companion.PREF_FILE_URI
-import com.cdot.lists.Lister.Companion.stringifyException
 import com.cdot.lists.databinding.ChecklistsActivityBinding
 import com.cdot.lists.model.Checklist
 import com.cdot.lists.model.EntryList
@@ -41,9 +39,6 @@ import com.cdot.lists.model.EntryListItem
 import com.cdot.lists.preferences.PreferencesActivity
 import com.cdot.lists.view.ChecklistsItemView
 import com.cdot.lists.view.EntryListItemView
-import java.io.File
-import java.io.FileWriter
-import java.io.Writer
 
 /**
  * Activity that displays a list of checklists. The checklists are stored in the MainActivity.
@@ -107,6 +102,7 @@ class ChecklistsActivity : EntryListActivity() {
                 //intent.putExtra(EXTRA_MIME_TYPES, resources.getStringArray(R.array.share_format_mimetype))
                 startActivityForResult(intent, REQUEST_IMPORT)
             }
+
             R.id.action_new_list -> {
                 val builder = AlertDialog.Builder(this)
                 builder.setTitle(R.string.create_new_list)
@@ -137,13 +133,13 @@ class ChecklistsActivity : EntryListActivity() {
                     (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager).showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT)
                 }
             }
-            R.id.action_share_lists -> {
-                shareChecklists()
-            }
-            R.id.action_preferences -> {
-                val sint = Intent(this, PreferencesActivity::class.java)
-                startActivityForResult(sint, REQUEST_PREFERENCES)
-            }
+
+            R.id.action_share_lists ->
+                share(list, resources.getString(R.string.default_share_filename))
+
+            R.id.action_preferences ->
+                startActivityForResult(Intent(this, PreferencesActivity::class.java), REQUEST_PREFERENCES)
+
             else -> return super.onOptionsItemSelected(menuItem)
         }
         return true
@@ -164,43 +160,6 @@ class ChecklistsActivity : EntryListActivity() {
         Log.d(TAG, "List $item added to $list")
         mBinding.itemListView.smoothScrollToPosition(displayOrder.indexOf(item))
         checkpoint()
-    }
-
-    /**
-     * Share the checklists e.g. to email in JSON format
-     */
-    private fun shareChecklists() {
-        val listName = list.text
-        val intent = Intent(Intent.ACTION_SEND)
-        intent.putExtra(Intent.EXTRA_TITLE, listName) // Dialog title
-        intent.type = "*/*"
-        intent.putExtra(Intent.EXTRA_MIME_TYPES, resources.getStringArray(R.array.file_format_mimetype))
-        // WTF! The EXTRA_SUBJECT is used as the document title for Drive saves!
-        val fileName = "Lists.json"
-        intent.putExtra(Intent.EXTRA_SUBJECT, fileName)
-
-        // text body e.g. for email
-        val text = list.toPlainString("")
-        intent.putExtra(Intent.EXTRA_TEXT, text)
-        try {
-            // Write a local file for the attachment
-            val sendFile = File(getExternalFilesDir("send"), fileName)
-            val w: Writer = FileWriter(sendFile)
-            w.write(list.toJSON().toString())
-            w.close()
-
-            // Expose the local file using a URI from the FileProvider, and add the URI to the intent
-            // See https://medium.com/@ali.muzaffar/what-is-android-os-fileuriexposedexception-and-what-you-can-do-about-it-70b9eb17c6d0
-            val authRoot = packageName.replace(".debug", "")
-            val uri = FileProvider.getUriForFile(this, "$authRoot.provider", sendFile)
-            intent.putExtra(Intent.EXTRA_STREAM, uri)
-
-            // Fire off the intent
-            startActivity(Intent.createChooser(intent, fileName))
-        } catch (e: Exception) {
-            Log.e(TAG, "Share failed " + stringifyException(e))
-            reportIndefinite(R.string.failed_export)
-        }
     }
 
     companion object {

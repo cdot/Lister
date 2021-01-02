@@ -37,6 +37,9 @@ import com.cdot.lists.Lister.FailCallback
 import com.cdot.lists.Lister.SuccessCallback
 import com.google.android.material.snackbar.Snackbar
 
+/**
+ * Abstract base class of all activities in the app
+ */
 abstract class ListerActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
     /**
      * Get the application
@@ -46,6 +49,12 @@ abstract class ListerActivity : AppCompatActivity(), OnSharedPreferenceChangeLis
     val lister: Lister
         get() = application as Lister
 
+    // The root view of the activity, derived from the binding. Because there is no useable base
+    // class for ViewBinding objects, but we  need the root view in order to create Snackbars, we
+    // need to keep this additional reference around.
+    protected abstract val rootView: View?
+
+    // Message handler for UI-related, activity specific, messages
     protected val mMessageHandler: Handler = Handler(Looper.getMainLooper()) {
         if (it.what == MESSAGE_UPDATE_DISPLAY) {
             invalidateOptionsMenu() // update menu items
@@ -55,19 +64,20 @@ abstract class ListerActivity : AppCompatActivity(), OnSharedPreferenceChangeLis
     }
 
     /**
-     * Call to notify all change listeners that the list managed by this activity has changed in
-     * some way, perhaps by reloading. Note this should NOT trigger a save, just a display update.
+     * Called to notify change listeners on data the activity is displaying that the data
+     * has changed in some way, perhaps by reloading. Note this should NOT trigger a save,
+     * just a display update.
      */
     abstract fun updateDisplay()
 
     /**
-     * Get the name of an HTML help asset appropriate for this activity
-     * Override in subclasses that have preference screens
-     * @return resource id for a raw html asset
+     * The resource ID of an raw HTML help asset appropriate for this activity
+     * Override in subclasses
      */
     protected open val helpAsset: Int = 0
 
-    private fun setShowOverLockScreen() {
+    // Do whatever is needed to keep the app in front of the lock screen
+    private fun configureShowOverLockScreen() {
         val show = lister.getBool(Lister.PREF_ALWAYS_SHOW)
 
         // None of this achieves anything on my Moto G8 Plus with Android 10, but works fine on a
@@ -82,72 +92,22 @@ abstract class ListerActivity : AppCompatActivity(), OnSharedPreferenceChangeLis
         }
     }
 
-    private fun setStayAwake() {
-        val stay = lister.getBool(Lister.PREF_STAY_AWAKE)
-        if (stay) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-    }
-
-    public override fun onSaveInstanceState(state: Bundle) {
-        super.onSaveInstanceState(state)
-        state.putString(JSON_EXTRA, lister.lists.toJSON().toString())
-    }
-
-    public override fun onRestoreInstanceState(state: Bundle) {
-        super.onRestoreInstanceState(state)
-        lister.lists.fromJSON(state.getString(JSON_EXTRA)!!)
-    }
-
-    public override fun onPause() {
-        lister.prefs?.unregisterOnSharedPreferenceChangeListener(this)
-        super.onPause()
-    }
-
-    // Activity
-    override fun onAttachedToWindow() {
-        // onAttachedToWindow is called after onResume (and it happens only once per lifecycle).
-        // ActivityThread.handleResumeActivity call will add DecorView to the current WindowManger
-        // which will in turn call WindowManagerGlobal.addView() which than traverse all the views
-        // and call onAttachedToWindow on each view.
-        setShowOverLockScreen()
-    }
-
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-        Log.d(TAG, "onNewIntent " + intent.data)
-    }
-
-    // Activity
-    public override fun onResume() {
-        super.onResume()
-        // Are we opening from a data source?
-        if (Intent.ACTION_VIEW == intent.action && intent.data != null) {
-            // If we are able to load from this URI, then the cache should be ignored
-            if (lister.getUri(Lister.PREF_FILE_URI) != intent.data) {
-                lister.setUri(Lister.PREF_FILE_URI, intent.data)
-                lister.unloadLists()
-                Log.d(TAG, "NEW URI from Intent " + lister.getUri(Lister.PREF_FILE_URI))
-            } else
-                Log.d(TAG, "SAME URI from Intent==Prefs " + lister.getUri(Lister.PREF_FILE_URI))
-        } else
-            Log.d(TAG, "OLD URI from Prefs " + lister.getUri(Lister.PREF_FILE_URI))
-        ensureListsLoaded(
-                null,
-                object : FailCallback {
-                    override fun failed(code: Int, vararg args : Any): Boolean {
-                        return reportIndefinite(code, *args)
-                    }
-                })
-        setStayAwake() // re-acquire wakelock if necessary
-        lister.prefs?.registerOnSharedPreferenceChangeListener(this)
+    // Do whatever is needed to keep the device awake while the app is active
+    private fun configureStayAwake() {
+        if (lister.getBool(Lister.PREF_STAY_AWAKE))
+            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        else
+            window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
     /**
-     * Called from onResume when the lists have been successfully loaded
+     * Called from onResume when the data displayed by the activity have been successfully loaded.
+     * TODO: can the functions of this be relocated to updateDisplay? Pretty sure they can
      */
     protected open fun onListsLoaded() {}
 
     /**
-     *
+     * UI wrapper around Lister.loadLists that handles security
      * @param onOK actions on load success
      * @param onFail actions on load failed
      */
@@ -157,12 +117,13 @@ abstract class ListerActivity : AppCompatActivity(), OnSharedPreferenceChangeLis
         lister.loadLists(this,
                 object : SuccessCallback {
                     override fun succeeded(data: Any?) {
+                        // TODO: is this needed? Shouldn't updateDisplay do it? If so, send the message
                         runOnUiThread { onListsLoaded() }
                         onOK?.succeeded(data)
                     }
                 },
                 object : FailCallback {
-                    override fun failed(code: Int, vararg args : Any): Boolean {
+                    override fun failed(code: Int, vararg args: Any): Boolean {
                         if (code == R.string.failed_access_denied) {
                             // In a thread, have to use the UI thread to request access
                             runOnUiThread {
@@ -199,21 +160,17 @@ abstract class ListerActivity : AppCompatActivity(), OnSharedPreferenceChangeLis
                     }
                 },
                 object : FailCallback {
-                    override fun failed(code: Int, vararg args : Any): Boolean {
+                    override fun failed(code: Int, vararg args: Any): Boolean {
                         return reportShort(code, *args)
                     }
                 })
     }
 
-    // Strictly speaking, this only applies in ChecklistsActivity, as it's the only place
-    // these preferences can be changed
-    // SharedPreferences.OnSharedPreferencesListener
-    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences, key: String) {
-        if (Lister.PREF_ALWAYS_SHOW == key) setShowOverLockScreen() else if (Lister.PREF_STAY_AWAKE == key) setStayAwake()
-    }
-
-    protected abstract val rootView: View?
-
+    /**
+     * Generate a snackbar report given a resource id and an arbitrary number of template
+     * parameters. This is not called directly from activities, but may be overridden by
+     * activities that want to control when and where snackbars are used.
+     */
     open fun report(code: Int, duration: Int, vararg ps: Any): Boolean {
         runOnUiThread {
             if (ps.isNotEmpty()) {
@@ -228,26 +185,86 @@ abstract class ListerActivity : AppCompatActivity(), OnSharedPreferenceChangeLis
         return true
     }
 
+    /**
+     * Generate a snackbar report given a resource id and an arbitrary number of template params
+     */
     fun reportShort(code: Int, vararg ps: Any): Boolean {
         return report(code, Snackbar.LENGTH_SHORT, *ps)
     }
 
+    /**
+     * Generate a snackbar report given a resource id and an arbitrary number of template params
+     */
     fun reportLong(code: Int, vararg ps: Any): Boolean {
         return report(code, Snackbar.LENGTH_LONG, *ps)
     }
 
+    /**
+     * Generate a snackbar report given a resource id and an arbitrary number of template params
+     */
     fun reportIndefinite(code: Int, vararg ps: Any): Boolean {
         return report(code, Snackbar.LENGTH_INDEFINITE, *ps)
     }
 
-    fun report(mess: String, duration: Int): Boolean {
-        runOnUiThread {
-            Snackbar.make(rootView!!, mess, duration)
-                    .setAction(R.string.close) { x: View? -> }.show()
-        }
-        return true
+    // override AppCompatActivity
+    public override fun onSaveInstanceState(state: Bundle) {
+        super.onSaveInstanceState(state)
+        state.putString(JSON_EXTRA, lister.lists.toJSON().toString())
     }
 
+    // override AppCompatActivity
+    public override fun onRestoreInstanceState(state: Bundle) {
+        super.onRestoreInstanceState(state)
+        lister.lists.fromJSON(state.getString(JSON_EXTRA)!!)
+    }
+
+    // override AppCompatActivity
+    public override fun onPause() {
+        lister.prefs?.unregisterOnSharedPreferenceChangeListener(this)
+        super.onPause()
+    }
+
+    // override AppCompatActivity
+    override fun onAttachedToWindow() {
+        // onAttachedToWindow is called after onResume (and it happens only once per lifecycle).
+        // ActivityThread.handleResumeActivity call will add DecorView to the current WindowManger
+        // which will in turn call WindowManagerGlobal.addView() which than traverse all the views
+        // and call onAttachedToWindow on each view.
+        configureShowOverLockScreen()
+        configureStayAwake()
+    }
+
+    // override AppCompatActivity
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        Log.d(TAG, "onNewIntent " + intent.data)
+    }
+
+    // override AppCompatActivity
+    public override fun onResume() {
+        super.onResume()
+        // Are we opening from a data source?
+        if (Intent.ACTION_VIEW == intent.action && intent.data != null) {
+            // If we are able to load from this URI, then the cache should be ignored
+            if (lister.getUri(Lister.PREF_FILE_URI) != intent.data) {
+                lister.setUri(Lister.PREF_FILE_URI, intent.data)
+                lister.unloadLists()
+                Log.d(TAG, "NEW URI from Intent " + lister.getUri(Lister.PREF_FILE_URI))
+            } else
+                Log.d(TAG, "SAME URI from Intent==Prefs " + lister.getUri(Lister.PREF_FILE_URI))
+        } else
+            Log.d(TAG, "OLD URI from Prefs " + lister.getUri(Lister.PREF_FILE_URI))
+        ensureListsLoaded(
+                null,
+                object : FailCallback {
+                    override fun failed(code: Int, vararg args: Any): Boolean {
+                        return reportIndefinite(code, *args)
+                    }
+                })
+        lister.prefs?.registerOnSharedPreferenceChangeListener(this)
+    }
+
+    // override AppCompatActivity
     public override fun onActivityResult(requestCode: Int, resultCode: Int, intent: Intent?) {
         if (requestCode == REQUEST_PREFERENCES) {
             // Result of a PreferenceActivity invocation; preferences may have changed, we need
@@ -330,6 +347,17 @@ abstract class ListerActivity : AppCompatActivity(), OnSharedPreferenceChangeLis
                         })
             }
             else -> super.onActivityResult(requestCode, resultCode, intent)
+        }
+    }
+
+    // TODO: Strictly speaking, this belongs in PreferencesActivity, as it's the only place
+    // these preferences can be changed
+    // override SharedPreferences.OnSharedPreferencesListener
+    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences, key: String) {
+        Log.e(TAG, "PANIC: onSharedPreferenceChanged") // test the TODO
+        when (key) {
+            Lister.PREF_ALWAYS_SHOW -> configureShowOverLockScreen()
+            Lister.PREF_STAY_AWAKE -> configureStayAwake()
         }
     }
 

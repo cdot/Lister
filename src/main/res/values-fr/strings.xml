@@ -37,7 +37,7 @@
 
     <string name="failed_access_denied">Accès au fichier refusé</string>
     <string name="failed_cache_load">Impossible de charger le cache</string>
-    <string name="failed_export">Échec de l\'exportation</string>
+    <string name="failed_share">Échec de l\'exportation</string>
     <string name="failed_import">L\'importation a échoué: %1$s</string>
     <string name="failed_no_file">Veuillez créer une fichier dans les préférences</string>
     <string name="failed_save_to_cache">L\'enregistrement dans le cache a échoué. Les modifications récentes peuvent être perdues!</string>

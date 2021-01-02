@@ -22,15 +22,19 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.util.Log
 import android.view.*
-import android.widget.ArrayAdapter
-import android.widget.ListView
-import android.widget.RelativeLayout
+import android.webkit.MimeTypeMap
+import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.FileProvider
 import com.cdot.lists.model.EntryList
 import com.cdot.lists.model.EntryListItem
 import com.cdot.lists.model.EntryListItem.Companion.NO_NAME
 import com.cdot.lists.view.EntryListItemView
+import com.opencsv.CSVWriter
+import java.io.File
+import java.io.FileWriter
+import java.io.Writer
 import java.util.*
 
 /**
@@ -118,7 +122,7 @@ abstract class EntryListActivity : ListerActivity(), EntryListItem.ChangeListene
 
     abstract fun addItem(str: String)
 
-        /**
+    /**
      * Prompt for similar item already in the list
      *
      * @param proposed the text of the proposed item
@@ -292,6 +296,83 @@ abstract class EntryListActivity : ListerActivity(), EntryListItem.ChangeListene
 
         override fun getCount(): Int {
             return list.size()
+        }
+    }
+
+    /**
+     * Share the list e.g. to email in JSON format
+     * @param the list to share. We can't use the list for this view, as it might have some
+     * preprocessing before it's ready to share
+     */
+    internal fun share(list: EntryList, listName: String) {
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle(R.string.export_format)
+        val picker = Spinner(this)
+        // Helper for indexing the array of share formats, must be final for inner class access
+        var mPlace = 0
+        val adapter = ArrayAdapter(this,
+                android.R.layout.simple_spinner_item, resources.getStringArray(R.array.share_format_description))
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        picker.adapter = adapter
+        picker.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, v: View, position: Int, id: Long) {
+                mPlace = position
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+        builder.setView(picker)
+        builder.setPositiveButton(R.string.ok) { dialog: DialogInterface?, id: Int ->
+            doShare(list, listName, resources.getStringArray(R.array.share_format_mimetype)[mPlace])
+        }
+        builder.setNegativeButton(R.string.cancel, null)
+        builder.show()
+    }
+
+    private fun doShare(list: EntryList, listName: String, mimeType: String) {
+        val intent = Intent(Intent.ACTION_SEND)
+        intent.putExtra(Intent.EXTRA_TITLE, listName) // Dialog title
+        intent.type = mimeType
+        val ext = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType) ?: resources.getString(R.string.default_share_mimetype)
+        val fileName = listName.replace("[/\u0000]".toRegex(), "_") + "." + ext
+        // WTF! The EXTRA_SUBJECT is used as the document title for Drive saves!
+        intent.putExtra(Intent.EXTRA_SUBJECT, fileName)
+
+        // text body e.g. for email
+        val text = list.toPlainString("")
+        intent.putExtra(Intent.EXTRA_TEXT, text)
+        try {
+            // Write a local file for the attachment
+            val sendFile = File(getExternalFilesDir(null), fileName)
+            val w: Writer = FileWriter(sendFile)
+            when (mimeType) {
+                "text/plain" ->                         // Re-write the text body in the attachment
+                    w.write(text)
+                "text/csv" -> {
+                    val csvw = CSVWriter(w)
+                    list.toCSV(csvw)
+                }
+                "application/json" -> {
+                    w.write(list.toJSON().toString())
+                }
+                else -> throw Exception("Unrecognised share format")
+            }
+            w.write(list.toJSON().toString())
+
+            w.close()
+
+            // Expose the local file using a URI from the FileProvider, and add the URI to the intent
+            // See https://medium.com/@ali.muzaffar/what-is-android-os-fileuriexposedexception-and-what-you-can-do-about-it-70b9eb17c6d0
+            val uri = FileProvider.getUriForFile(this, "com.cdot.lists.provider", sendFile)
+            intent.putExtra(Intent.EXTRA_STREAM, uri)
+
+            // using the chooser causes an exception to be reported in the debugger. However it
+            // doesn't seem to affect the functionality.
+            // See https://stackoverflow.com/questions/63723656/share-content-permission-denial-when-using-intent-createchooser
+            startActivity(Intent.createChooser(intent, fileName))
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Share failed " + Lister.stringifyException(e))
+            reportIndefinite(R.string.failed_share)
         }
     }
 

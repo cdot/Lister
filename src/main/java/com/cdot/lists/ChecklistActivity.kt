@@ -30,21 +30,14 @@ import android.view.MenuItem
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
-import android.webkit.MimeTypeMap
 import android.widget.*
-import android.widget.AdapterView.OnItemSelectedListener
 import androidx.appcompat.app.AlertDialog
-import androidx.core.content.FileProvider
 import com.cdot.lists.databinding.ChecklistActivityBinding
 import com.cdot.lists.model.*
 import com.cdot.lists.preferences.PreferencesActivity
 import com.cdot.lists.view.ChecklistItemView
 import com.cdot.lists.view.EntryListItemView
-import com.opencsv.CSVWriter
 import org.json.JSONException
-import java.io.File
-import java.io.FileWriter
-import java.io.Writer
 
 /**
  * Activity for managing interactions with a checklist of items
@@ -106,11 +99,11 @@ class ChecklistActivity : EntryListActivity() {
 
     // override EntryListActivity
     override val listView: ListView
-            get() = mBinding.itemListView
+        get() = mBinding.itemListView
 
     // ListerActivity
     override val rootView: View
-            get() = mBinding.root
+        get() = mBinding.root
 
     // implements EntryListActivity
     override fun makeItemView(movingItem: EntryListItem, drag: Boolean): EntryListItemView {
@@ -148,62 +141,85 @@ class ChecklistActivity : EntryListActivity() {
         // Beware dispatchTouchEvent stealing events
         //Log.d(TAG, "onOptionsItemSelected");
         if (super.onOptionsItemSelected(menuItem)) return true
-        val it = menuItem.itemId
         val checklist = list as Checklist
-        if (it == R.id.action_check_all) {
-            if (checklist.setFlagOnAll(ChecklistItem.IS_DONE, true)) {
+        when (menuItem.itemId) {
+            R.id.action_check_all -> if (checklist.setFlagOnAll(ChecklistItem.IS_DONE, true)) {
                 list.notifyChangeListeners()
                 Log.d(TAG, "check all")
                 checkpoint()
             }
-        } else if (it == R.id.action_delete_checked) {
-            val deleted = checklist.deleteAllFlagged(ChecklistItem.IS_DONE)
-            if (deleted > 0) {
-                list.notifyChangeListeners()
-                Log.d(TAG, "checked deleted")
-                checkpoint()
-                reportShort(R.string.snack_deleted, deleted)
-                if (list.size() == 0) {
-                    enableEditMode(true)
+
+            R.id.action_delete_checked -> {
+                val deleted = checklist.deleteAllFlagged(ChecklistItem.IS_DONE)
+                if (deleted > 0) {
+                    list.notifyChangeListeners()
+                    Log.d(TAG, "checked deleted")
+                    checkpoint()
+                    reportShort(R.string.snack_deleted, deleted)
+                    if (list.size() == 0) {
+                        enableEditMode(true)
+                        list.notifyChangeListeners()
+                        checkpoint()
+                    }
+                }
+            }
+
+            R.id.action_edit -> enableEditMode(!mInEditMode)
+
+            R.id.action_rename_list -> {
+                val builder = AlertDialog.Builder(this)
+                builder.setTitle(R.string.rename_list)
+                builder.setMessage(R.string.enter_new_name_of_list)
+                val editText = EditText(this)
+                editText.isSingleLine = true
+                editText.setText(list.text)
+                builder.setView(editText)
+                builder.setPositiveButton(R.string.ok) { dialogInterface: DialogInterface?, i: Int ->
+                    Log.d(TAG, "list renamed")
+                    list.text = editText.text.toString()
+                    lister.lists.notifyChangeListeners()
+                    checkpoint()
+                }
+                builder.setNegativeButton(R.string.cancel, null)
+                builder.show()
+            }
+
+            R.id.action_uncheck_all ->
+                if (checklist.setFlagOnAll(ChecklistItem.IS_DONE, false)) {
+                    Log.d(TAG, "uncheck all")
                     list.notifyChangeListeners()
                     checkpoint()
                 }
+
+            R.id.action_undo_delete -> {
+                val undone = checklist.undoRemove()
+                if (undone == 0) reportShort(R.string.snack_no_deleted_items) else {
+                    Log.d(TAG, "delete undone")
+                    list.notifyChangeListeners()
+                    checkpoint()
+                    reportShort(R.string.snack_restored, undone)
+                }
             }
-        } else if (it == R.id.action_edit) enableEditMode(!mInEditMode) else if (it == R.id.action_rename_list) {
-            val builder = AlertDialog.Builder(this)
-            builder.setTitle(R.string.rename_list)
-            builder.setMessage(R.string.enter_new_name_of_list)
-            val editText = EditText(this)
-            editText.isSingleLine = true
-            editText.setText(list.text)
-            builder.setView(editText)
-            builder.setPositiveButton(R.string.ok) { dialogInterface: DialogInterface?, i: Int ->
-                Log.d(TAG, "list renamed")
-                list.text = editText.text.toString()
-                lister.lists.notifyChangeListeners()
-                checkpoint()
+
+            R.id.action_share_list ->
+                try {
+                    // This doesn't have to be fast, so we use the clunky but safe mechanism of serialising to
+                    // JSON to simplify parenthood
+                    val container = Checklists()
+                    container.addChild(Checklist().fromJSON(list.toJSON()))
+                    share(container, list.text)
+                } catch (je: JSONException) {
+                    Log.e(TAG, Lister.stringifyException(je))
+                }
+
+            R.id.action_preferences -> {
+                val intent = Intent(this, PreferencesActivity::class.java)
+                intent.putExtra(UID_EXTRA, list.sessionUID)
+                startActivityForResult(intent, REQUEST_PREFERENCES)
             }
-            builder.setNegativeButton(R.string.cancel, null)
-            builder.show()
-        } else if (it == R.id.action_uncheck_all) {
-            if (checklist.setFlagOnAll(ChecklistItem.IS_DONE, false)) {
-                Log.d(TAG, "uncheck all")
-                list.notifyChangeListeners()
-                checkpoint()
-            }
-        } else if (it == R.id.action_undo_delete) {
-            val undone = checklist.undoRemove()
-            if (undone == 0) reportShort(R.string.snack_no_deleted_items) else {
-                list.notifyChangeListeners()
-                Log.d(TAG, "delete undone")
-                checkpoint()
-                reportShort(R.string.snack_restored, undone)
-            }
-        } else if (it == R.id.action_export_list) exportChecklist() else if (it == R.id.action_preferences) {
-            val intent = Intent(this, PreferencesActivity::class.java)
-            intent.putExtra(UID_EXTRA, list.sessionUID)
-            startActivityForResult(intent, REQUEST_PREFERENCES)
-        } else return super.onOptionsItemSelected(menuItem)
+
+            else -> return super.onOptionsItemSelected(menuItem)
+        }
         return true
     }
 
@@ -269,85 +285,6 @@ class ChecklistActivity : EntryListActivity() {
         mBinding.addItemET.setText("")
         mBinding.itemListView.smoothScrollToPosition(displayOrder.indexOf(item))
         checkpoint()
-    }
-
-    /**
-     * Export the checklist in a user-selected format
-     */
-    private fun exportChecklist() {
-        val builder = AlertDialog.Builder(this)
-        builder.setTitle(R.string.export_format)
-        val picker = Spinner(this)
-        // Helper for indexing the array of share formats, must be final for inner class access
-        val mPlace = IntArray(1)
-        val adapter = ArrayAdapter(this,
-                android.R.layout.simple_spinner_item, resources.getStringArray(R.array.share_format_description))
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        picker.adapter = adapter
-        picker.onItemSelectedListener = object : OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, v: View, position: Int, id: Long) {
-                mPlace[0] = position
-            }
-
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
-        }
-        builder.setView(picker)
-        val listName = list.text
-        builder.setPositiveButton(R.string.ok) { dialog: DialogInterface?, id: Int ->
-            val intent = Intent(Intent.ACTION_SEND)
-            intent.putExtra(Intent.EXTRA_TITLE, listName) // Dialog title
-            val mimeType = resources.getStringArray(R.array.share_format_mimetype)[mPlace[0]]
-            intent.type = mimeType
-            val ext = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType)
-            val fileName = listName.replace("[/\u0000]".toRegex(), "_") + ext
-            // WTF! The EXTRA_SUBJECT is used as the document title for Drive saves!
-            intent.putExtra(Intent.EXTRA_SUBJECT, fileName)
-
-            // text body e.g. for email
-            val text = list.toPlainString("")
-            intent.putExtra(Intent.EXTRA_TEXT, text)
-            try {
-                // Write a local file for the attachment
-                val sendFile = File(getExternalFilesDir("send"), fileName)
-                val w: Writer = FileWriter(sendFile)
-                when (mimeType) {
-                    "text/plain" ->                         // Re-write the text body in the attachment
-                        w.write(text)
-                    "application/json" -> {
-                        // This doesn't have to be fast, so we use the clunky but safe mechanism of serialising to
-                        // JSON to simplify parenthood
-                        val listJob = list.toJSON()
-                        val container = Checklists()
-                        try {
-                            container.addChild(Checklist().fromJSON(listJob))
-                        } catch (je: JSONException) {
-                            Log.e(TAG, Lister.stringifyException(je))
-                        }
-                        w.write(container.toJSON().toString())
-                    }
-                    "text/csv" -> {
-                        val csvw = CSVWriter(w)
-                        list.toCSV(csvw)
-                    }
-                    else -> throw Exception("Unrecognised share format")
-                }
-                w.close()
-
-                // Expose the local file using a URI from the FileProvider, and add the URI to the intent
-                // See https://medium.com/@ali.muzaffar/what-is-android-os-fileuriexposedexception-and-what-you-can-do-about-it-70b9eb17c6d0
-                val authRoot = packageName.replace(".debug", "")
-                val uri = FileProvider.getUriForFile(this, "$authRoot.provider", sendFile)
-                intent.putExtra(Intent.EXTRA_STREAM, uri)
-
-                // Fire off the intent
-                startActivity(Intent.createChooser(intent, fileName))
-            } catch (e: Exception) {
-                Log.e(TAG, "Share failed " + Lister.stringifyException(e))
-                reportShort(R.string.failed_export)
-            }
-        }
-        builder.setNegativeButton(R.string.cancel, null)
-        builder.show()
     }
 
     companion object {

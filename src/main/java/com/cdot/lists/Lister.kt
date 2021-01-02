@@ -13,10 +13,12 @@ import java.io.*
 import java.util.*
 
 /**
- * Application singleton that handles the lists and preferences
+ * Application singleton that handles data that is not specific to activities.
  */
 class Lister : Application() {
-    val lists: Checklists
+    // Always need a checklists instance, as a place to attach listeners
+    val lists: Checklists = Checklists()
+
     private var mListsLoaded = false
     private var mListsLoading = false
     private var mPrefs: SharedPreferences? = null
@@ -42,7 +44,7 @@ class Lister : Application() {
         mListsLoading = true
 
         // Asynchronously load the URI. If the load fails, try the cache
-        mLoadThread = Thread(Runnable {
+        mLoadThread = Thread {
             val uri = getUri(PREF_FILE_URI)
             Log.d(TAG, "Starting load thread to load from $uri")
             try {
@@ -75,7 +77,7 @@ class Lister : Application() {
                             }
                         },
                         object : FailCallback {
-                            override fun failed(code: Int, vararg args : Any): Boolean {
+                            override fun failed(code: Int, vararg args: Any): Boolean {
                                 onFail.failed(code, *args)
                                 mListsLoading = false
                                 // Backing store loaded OK but cache failed. That's OK.
@@ -109,16 +111,17 @@ class Lister : Application() {
                             }
                         },
                         object : FailCallback {
-                            override fun failed(code: Int, vararg args : Any): Boolean {
+                            override fun failed(code: Int, vararg args: Any): Boolean {
                                 mListsLoading = false
                                 return onFail.failed(code, *args)
                             }
                         })
             }
-        })
+        }
         mLoadThread!!.start()
     }
 
+    // Load from the cache file into a Checklists object
     private fun loadCache(cacheLists: Checklists, cxt: Context, onOK: SuccessCallback, onFail: FailCallback) {
         try {
             if (FORCE_CACHE_FAIL != 0) {
@@ -137,6 +140,9 @@ class Lister : Application() {
         }
     }
 
+    /**
+     * Save a new cache of the lists currently loaded into the app
+     */
     fun saveCache(cxt: Context): Boolean {
         try {
             if (FORCE_CACHE_FAIL != 0) throw Exception("TEST CACHE SAVE FAIL")
@@ -153,7 +159,7 @@ class Lister : Application() {
     }
 
     /**
-     * Save changes.
+     * Save changes to the cache and backing store
      * If there's a failure saving to the backing store, we set lastStoreSaveFailed in the preferences.
      * If there's a failure saving to the cache, this is a major problem that may not be recoverable.
      *
@@ -202,10 +208,13 @@ class Lister : Application() {
         }
     }
 
+    /**
+     * Import lists from the given uri into the set of lists managed by the app
+     */
     fun importList(uri: Uri, cxt: Context, onOK: SuccessCallback, onFail: FailCallback) {
         try {
             Log.d(TAG, "Importing from $uri")
-            val stream = cxt.contentResolver.openInputStream(uri)!!;
+            val stream = cxt.contentResolver.openInputStream(uri)!!
             val importedLists = Checklists()
             importedLists.fromStream(stream)
             val ret = importedLists.cloneItemList()
@@ -237,57 +246,89 @@ class Lister : Application() {
         }
     }
 
+    /**
+     * Empty the object
+     */
     fun unloadLists() {
         mListsLoaded = false
         lists.clear()
     }
 
-    // Shared Preferences
-    fun getInt(name: String?): Int {
-        val deflt = sIntDefaults[name]
+    /**
+     * Get a value from Shared Preferences, applying the appropriate default
+     */
+    fun getInt(name: String): Int {
+        val deflt = sDefaults[name] as Int?
         return prefs!!.getInt(name, deflt ?: 0)
     }
 
-    fun setInt(name: String?, value: Int) {
+    /**
+     * Set a value from Shared Preferences
+     */
+    fun setInt(name: String, value: Int) {
         val e = prefs!!.edit()
         e.putInt(name, value)
         e.apply()
     }
 
-    fun getBool(name: String?): Boolean {
-        val deflt = sBoolDefaults[name]
-        return prefs!!.getBoolean(name, deflt ?: false)
+    /**
+     * Get a value from Shared Preferences, applying the appropriate default
+     */
+    fun getBool(name: String): Boolean {
+        val deflt = sDefaults[name] as Boolean
+        return prefs!!.getBoolean(name, deflt)
     }
 
-    fun setBool(name: String?, value: Boolean) {
+    /**
+     * Set a value from Shared Preferences
+     */
+    fun setBool(name: String, value: Boolean) {
         val e = prefs!!.edit()
         e.putBoolean(name, value)
         e.apply()
     }
 
-    fun getUri(name: String?): Uri? {
-        val deflt = sStringDefaults[name]
+    /**
+     * Get a value from Shared Preferences, applying the appropriate default
+     */
+    fun getUri(name: String): Uri? {
+        val deflt = sDefaults[name] as String?
         val uris = prefs!!.getString(name, deflt)
         return if (uris == null) null else Uri.parse(uris)
     }
 
-    fun setUri(name: String?, value: Uri?) {
+    /**
+     * Set a value in Shared Preferences
+     */
+    fun setUri(name: String, value: Uri?) {
         val e = prefs!!.edit()
         e.putString(name, value?.toString())
         e.apply()
     }
 
+    /**
+     * Callback used to report failures
+     */
     interface FailCallback {
         /**
-         * Return false if it's unsafe to continue with the operation after recording the failure
-         *
-         * @param code resource (error) code
+         * Return false if it's unsafe to continue with the operation after recording the failure.
+         * The callback may be invoked several times during an operation, but the operation should
+         * stop if failed() returns false.
+         * @param code string resource (error) code
+         * @param args to the resource template
          * @return true if the operation is safe to continue, false otherwise
          */
         fun failed(code: Int, vararg args : Any): Boolean
     }
 
+    /**
+     * Callback on success
+     */
     interface SuccessCallback {
+        /**
+         * The contract is that this will be the last call in any successful operation
+         * @param data is arbitrary and defined by the operation
+         */
         fun succeeded(data: Any?)
     }
 
@@ -310,9 +351,14 @@ class Lister : Application() {
         const val TEXT_SIZE_SMALL = 1
         const val TEXT_SIZE_MEDIUM = 2
         const val TEXT_SIZE_LARGE = 3
+
         private val TAG = Lister::class.simpleName
-        private val sBoolDefaults: Map<String, Boolean> = object : HashMap<String, Boolean>() {
+
+        // Integer preference defaults
+        private val sDefaults: Map<String, Any?> = object : HashMap<String, Any?>() {
             init {
+                put(PREF_TEXT_SIZE_INDEX, TEXT_SIZE_DEFAULT)
+                put(PREF_FILE_URI, null)
                 put(PREF_ALWAYS_SHOW, false)
                 put(PREF_GREY_CHECKED, true)
                 put(PREF_WARN_DUPLICATE, true)
@@ -321,16 +367,6 @@ class Lister : Application() {
                 put(PREF_LEFT_HANDED, false)
                 put(PREF_STAY_AWAKE, false)
                 put(PREF_STRIKE_CHECKED, true)
-            }
-        }
-        private val sIntDefaults: Map<String, Int> = object : HashMap<String, Int>() {
-            init {
-                put(PREF_TEXT_SIZE_INDEX, TEXT_SIZE_DEFAULT)
-            }
-        }
-        private val sStringDefaults: Map<String, String?> = object : HashMap<String, String?>() {
-            init {
-                put(PREF_FILE_URI, null)
             }
         }
 
@@ -345,10 +381,5 @@ class Lister : Application() {
             e.printStackTrace(PrintWriter(sw))
             return sw.toString()
         }
-    }
-
-    init {
-        // Always need a checklists instance, as a place to attach listeners
-        lists = Checklists()
     }
 }

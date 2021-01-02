@@ -50,7 +50,7 @@
         android:title="@string/rename_list"
         app:showAsAction="never" />
     <item
-        android:id="@+id/action_export_list"
+        android:id="@+id/action_share_list"
         android:icon="@drawable/ic_action_export"
         android:orderInCategory="90"
         android:title="@string/action_share_list"
