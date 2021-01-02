@@ -69,6 +69,12 @@ class ChecklistsActivity : EntryListActivity() {
         return ChecklistsItemView(movingItem, drag, this)
     }
 
+    override fun updateDisplay() {
+        // Could simplify to runOnUiThread { notifyAdapter() }
+        super.updateDisplay()
+        supportActionBar!!.title = getString(R.string.app_name)
+    }
+
     // override ListerActivity
     override val helpAsset: Int = R.raw.checklists_help
 
@@ -112,8 +118,8 @@ class ChecklistsActivity : EntryListActivity() {
                 editText.isSingleLine = true
                 builder.setView(editText)
                 builder.setPositiveButton(R.string.ok) { dialogInterface: DialogInterface?, i: Int ->
-                    var text = editText.text.toString()
-                    if (!text.trim { it <= ' ' }.isEmpty()) {
+                    val text = editText.text.toString().trim { it <= ' ' }
+                    if (text.isNotEmpty()) {
                         if (!lister.getBool(Lister.PREF_WARN_DUPLICATE)) {
                             val find = list.findByText(text, false)
                             if (find == null)

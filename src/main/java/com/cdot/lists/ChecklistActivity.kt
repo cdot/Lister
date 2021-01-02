@@ -228,6 +228,12 @@ class ChecklistActivity : EntryListActivity() {
         return !list.getFlag(Checklist.CHECKED_AT_END) && super.canManualSort()
     }
 
+    override fun updateDisplay() {
+        // Could simplify to runOnUiThread { notifyAdapter() }
+        super.updateDisplay()
+        supportActionBar?.title = list.text
+    }
+
     // EntryListActivity
     override val displayOrder: MutableList<EntryListItem>
         get() {

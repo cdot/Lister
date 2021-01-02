@@ -24,12 +24,12 @@ import android.util.Log
 import android.view.*
 import android.webkit.MimeTypeMap
 import android.widget.*
+import androidx.annotation.CallSuper
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
 import com.cdot.lists.model.EntryList
 import com.cdot.lists.model.EntryListItem
-import com.cdot.lists.model.EntryListItem.Companion.NO_NAME
 import com.cdot.lists.view.EntryListItemView
 import com.opencsv.CSVWriter
 import java.io.File
@@ -62,12 +62,9 @@ abstract class EntryListActivity : ListerActivity(), EntryListItem.ChangeListene
         listView.adapter = mArrayAdapter
     }
 
+    @CallSuper
     override fun updateDisplay() {
-        // Could simplify to runOnUiThread { notifyAdapter() }
         list.notifyChangeListeners()
-        var t = list.text
-        if (t == NO_NAME) t = getString(R.string.app_name)
-        supportActionBar!!.title = t
     }
 
     /**
@@ -233,8 +230,7 @@ abstract class EntryListActivity : ListerActivity(), EntryListItem.ChangeListene
 
     // Activity
     override fun onOptionsItemSelected(menuItem: MenuItem): Boolean {
-        val it = menuItem.itemId
-        when (it) {
+        when (menuItem.itemId) {
             R.id.action_alpha_sort -> {
                 Log.d(TAG, "alpha sort option selected")
                 if (list.getFlag(EntryList.DISPLAY_SORTED)) list.clearFlag(EntryList.DISPLAY_SORTED) else list.setFlag(EntryList.DISPLAY_SORTED)
@@ -280,7 +276,7 @@ abstract class EntryListActivity : ListerActivity(), EntryListItem.ChangeListene
                 itemView.updateView()
                 return itemView
             } else if (convertView != null)
-                return convertView;
+                return convertView
             else {
                 // Sometimes on startup we get here, with list size 0 and item index 1. Why?
                 throw Error("Empty display order")
