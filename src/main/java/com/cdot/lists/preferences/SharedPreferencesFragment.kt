@@ -93,7 +93,8 @@ class SharedPreferencesFragment(private val mLister: Lister) : PreferencesFragme
         // The setting of mIssueReports will stay true from now on, but that's OK, it's only purpose
         // is to suppress repeated store alarms during initialisation
         (activity as PreferencesActivity?)!!.mIssueReports = true
-        requireActivity().startActivityForResult(intent, request)
+        val act = requireActivity()
+        act.startActivityForResult(intent, request)
         return true
     }
 

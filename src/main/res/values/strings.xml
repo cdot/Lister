@@ -96,8 +96,8 @@
     <string name="snack_no_cache">No cache found. One will be created when you make a change.</string>
     <string name="snack_no_deleted_items">No deleted items</string>
     <string name="snack_restored">%d entries restored</string>
-    <string name="snack_file_created">New file has been created</string>
-    <string name="snack_file_changed">File opened</string>
+Cured a problem     <string name="snack_file_created">New file created</string>
+    <string name="snack_file_changed">File changed</string>
 
     <string name="text_size_default">Default</string>
     <string name="text_size_small">Small</string>

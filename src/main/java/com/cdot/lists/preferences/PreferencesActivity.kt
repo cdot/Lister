@@ -18,6 +18,7 @@
  */
 package com.cdot.lists.preferences
 
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.view.View
 import com.cdot.lists.Lister
@@ -26,9 +27,8 @@ import com.cdot.lists.model.Checklist
 
 /**
  * Activity used to host preference fragments
- * Use startActivityForResult to know when the back is pressed
  */
-class PreferencesActivity : ListerActivity() {
+class PreferencesActivity : ListerActivity(), SharedPreferences.OnSharedPreferenceChangeListener {
     var mFragment: PreferencesFragment? = null
 
     // Flag that suppresses reporting during activity onResume/onCreate, so we don't get spammed
@@ -63,6 +63,26 @@ class PreferencesActivity : ListerActivity() {
         if (mIssueReports)
             return super.report(code, duration, ps)
         return true
+    }
+
+    // override AppCompatActivity
+    public override fun onPause() {
+        lister.prefs?.unregisterOnSharedPreferenceChangeListener(this)
+        super.onPause()
+    }
+
+    // override AppCompatActivity
+    public override fun onResume() {
+        super.onResume()
+        lister.prefs?.registerOnSharedPreferenceChangeListener(this)
+    }
+
+    // override SharedPreferences.OnSharedPreferencesListener
+    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences, key: String) {
+        when (key) {
+            Lister.PREF_ALWAYS_SHOW -> configureShowOverLockScreen()
+            Lister.PREF_STAY_AWAKE -> configureStayAwake()
+        }
     }
 
     companion object {

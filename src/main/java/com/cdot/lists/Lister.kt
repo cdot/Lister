@@ -17,7 +17,7 @@ import java.util.*
  */
 class Lister : Application() {
     // Always need a checklists instance, as a place to attach listeners
-    val lists: Checklists = Checklists()
+    val lists = Checklists()
 
     private var mListsLoaded = false
     private var mListsLoading = false
@@ -38,15 +38,16 @@ class Lister : Application() {
      * @param onFail callback
      */
     fun loadLists(cxt: Context, onOK: SuccessCallback, onFail: FailCallback) {
-
+        Log.d(TAG, "loadLists loaded=" + mListsLoaded + " loading=" + mListsLoading)
         // We can arrive here after synchronization lock is released by a previous load
         if (mListsLoaded || mListsLoading) return
         mListsLoading = true
 
         // Asynchronously load the URI. If the load fails, try the cache
         mLoadThread = Thread {
+            val thred = this
             val uri = getUri(PREF_FILE_URI)
-            Log.d(TAG, "Starting load thread to load from $uri")
+            Log.d(TAG, "Starting load thread " + thred + " to load from $uri")
             try {
                 if (uri == null) throw Exception("Null URI (this is OK)")
                 /*val stream: InputStream =
@@ -68,21 +69,20 @@ class Lister : Application() {
                                     Log.d(TAG, "Cache is more recent")
                                     unloadLists()
                                     for (i in cachedLists.cloneItemList())
-                                        lists.addChild(i);
-                                } else {
-                                    mListsLoaded = true
-                                    mListsLoading = false
-                                    onOK.succeeded(lists)
+                                        lists.addChild(i)
                                 }
+                                mListsLoaded = true
+                                onOK.succeeded(lists)
+                                Log.d(TAG, "Load thread " + thred + "finished")
                             }
                         },
                         object : FailCallback {
                             override fun failed(code: Int, vararg args: Any): Boolean {
                                 onFail.failed(code, *args)
-                                mListsLoading = false
                                 // Backing store loaded OK but cache failed. That's OK.
                                 mListsLoaded = true
                                 onOK.succeeded(lists)
+                                Log.d(TAG, "Load thread " + thred + "finished")
                                 return true
                             }
                         })
@@ -90,8 +90,8 @@ class Lister : Application() {
                 // openInputStream denied, pass back uri_access_denied to reroute through picker
                 // to re-establish permissions
                 Log.e(TAG, "Security Exception " + stringifyException(se))
-                mListsLoading = false
                 onFail.failed(R.string.failed_access_denied)
+                Log.d(TAG, "Load thread " + thred + "finished")
             } catch (e: Exception) {
                 if (uri == null) {
                     onFail.failed(R.string.failed_no_file)
@@ -99,24 +99,26 @@ class Lister : Application() {
                     Log.e(TAG, "Exception loading " + stringifyException(e))
                     onFail.failed(R.string.failed_file_load)
                 }
-                Log.d(TAG, "Loading " + lists + " from cache")
+                Log.d(TAG, "Loading $lists from cache")
                 loadCache(lists, cxt,
                         object : SuccessCallback {
                             override fun succeeded(data: Any?) {
                                 if (uri != null && lists.forUri != uri.toString()) lists.clear()
                                 Log.d(TAG, lists.size().toString() + " lists loaded to " + lists + " from cache")
                                 mListsLoaded = true
-                                mListsLoading = false
                                 onOK.succeeded(lists)
+                                Log.d(TAG, "Load thread " + thred + "finished")
                             }
                         },
                         object : FailCallback {
                             override fun failed(code: Int, vararg args: Any): Boolean {
-                                mListsLoading = false
+                                Log.d(TAG, "Load thread " + thred + "finished")
                                 return onFail.failed(code, *args)
                             }
                         })
             }
+            mListsLoading = false
+            Log.d(TAG, "Load thread " + thred + " finished loaded=" + mListsLoaded)
         }
         mLoadThread!!.start()
     }
@@ -218,7 +220,7 @@ class Lister : Application() {
             val importedLists = Checklists()
             importedLists.fromStream(stream)
             val ret = importedLists.cloneItemList()
-            if (ret.size > 0) {
+            if (ret.isNotEmpty()) {
                 var duplicates : List<String>? = null
                 var added : List<String>? = null
                 for (eli in ret) {

@@ -77,8 +77,12 @@ class Checklists : EntryList(NO_NAME) {
 
     @Throws(Exception::class)  // EntryListItem
     override fun fromCSV(r: CSVReader): EntryListItem {
-        while (r.peek() != null)
-            addChild(Checklist().fromCSV(r))
+        var peke = r.peek()
+        while (peke != null) {
+            if (peke.size > 0 && peke[0] != NO_NAME && peke[0] != "")
+                addChild(Checklist(peke[0]).fromCSV(r))
+            peke = r.peek();
+        }
         return this
     }
 

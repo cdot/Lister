@@ -20,8 +20,6 @@ package com.cdot.lists
 
 import android.content.DialogInterface
 import android.content.Intent
-import android.content.SharedPreferences
-import android.content.SharedPreferences.OnSharedPreferenceChangeListener
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -40,7 +38,7 @@ import com.google.android.material.snackbar.Snackbar
 /**
  * Abstract base class of all activities in the app
  */
-abstract class ListerActivity : AppCompatActivity(), OnSharedPreferenceChangeListener {
+abstract class ListerActivity : AppCompatActivity() {
     /**
      * Get the application
      *
@@ -77,7 +75,7 @@ abstract class ListerActivity : AppCompatActivity(), OnSharedPreferenceChangeLis
     protected open val helpAsset: Int = 0
 
     // Do whatever is needed to keep the app in front of the lock screen
-    private fun configureShowOverLockScreen() {
+    internal fun configureShowOverLockScreen() {
         val show = lister.getBool(Lister.PREF_ALWAYS_SHOW)
 
         // None of this achieves anything on my Moto G8 Plus with Android 10, but works fine on a
@@ -93,7 +91,7 @@ abstract class ListerActivity : AppCompatActivity(), OnSharedPreferenceChangeLis
     }
 
     // Do whatever is needed to keep the device awake while the app is active
-    private fun configureStayAwake() {
+    internal fun configureStayAwake() {
         if (lister.getBool(Lister.PREF_STAY_AWAKE))
             window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         else
@@ -106,6 +104,23 @@ abstract class ListerActivity : AppCompatActivity(), OnSharedPreferenceChangeLis
      */
     protected open fun onListsLoaded() {}
 
+    private fun handleUriAccessDenied() {
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle(R.string.failed_access_denied)
+        builder.setMessage(R.string.failed_file_access)
+        builder.setPositiveButton(R.string.ok) { dialogInterface: DialogInterface?, i: Int ->
+            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
+            // Callers must include CATEGORY_OPENABLE in the Intent to obtain URIs that can be opened with ContentResolver#openFileDescriptor(Uri, String)
+            intent.addCategory(Intent.CATEGORY_OPENABLE)
+            // Indicate the permissions should be persistable across device reboots
+            intent.flags = Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION or Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            if (Build.VERSION.SDK_INT >= 26) intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, lister.getUri(Lister.PREF_FILE_URI))
+            intent.type = "application/json"
+            startActivityForResult(intent, REQUEST_CHANGE_STORE)
+        }
+        builder.show()
+    }
+
     /**
      * UI wrapper around Lister.loadLists that handles security
      * @param onOK actions on load success
@@ -113,7 +128,6 @@ abstract class ListerActivity : AppCompatActivity(), OnSharedPreferenceChangeLis
      */
     @Synchronized
     fun ensureListsLoaded(onOK: SuccessCallback?, onFail: FailCallback) {
-        val act = this
         lister.loadLists(this,
                 object : SuccessCallback {
                     override fun succeeded(data: Any?) {
@@ -127,20 +141,7 @@ abstract class ListerActivity : AppCompatActivity(), OnSharedPreferenceChangeLis
                         if (code == R.string.failed_access_denied) {
                             // In a thread, have to use the UI thread to request access
                             runOnUiThread {
-                                val builder = AlertDialog.Builder(act)
-                                builder.setTitle(R.string.failed_access_denied)
-                                builder.setMessage(R.string.failed_file_access)
-                                builder.setPositiveButton(R.string.ok) { dialogInterface: DialogInterface?, i: Int ->
-                                    val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
-                                    // Callers must include CATEGORY_OPENABLE in the Intent to obtain URIs that can be opened with ContentResolver#openFileDescriptor(Uri, String)
-                                    intent.addCategory(Intent.CATEGORY_OPENABLE)
-                                    // Indicate the permissions should be persistable across device reboots
-                                    intent.flags = Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION or Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-                                    if (Build.VERSION.SDK_INT >= 26) intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, lister.getUri(Lister.PREF_FILE_URI))
-                                    intent.type = "application/json"
-                                    startActivityForResult(intent, REQUEST_CHANGE_STORE)
-                                }
-                                builder.show()
+                                handleUriAccessDenied()
                             }
                             return true
                         }
@@ -219,12 +220,6 @@ abstract class ListerActivity : AppCompatActivity(), OnSharedPreferenceChangeLis
     }
 
     // override AppCompatActivity
-    public override fun onPause() {
-        lister.prefs?.unregisterOnSharedPreferenceChangeListener(this)
-        super.onPause()
-    }
-
-    // override AppCompatActivity
     override fun onAttachedToWindow() {
         // onAttachedToWindow is called after onResume (and it happens only once per lifecycle).
         // ActivityThread.handleResumeActivity call will add DecorView to the current WindowManger
@@ -247,13 +242,13 @@ abstract class ListerActivity : AppCompatActivity(), OnSharedPreferenceChangeLis
         if (Intent.ACTION_VIEW == intent.action && intent.data != null) {
             // If we are able to load from this URI, then the cache should be ignored
             if (lister.getUri(Lister.PREF_FILE_URI) != intent.data) {
+                Log.d(TAG, "onResume new URI from Intent " + lister.getUri(Lister.PREF_FILE_URI))
                 lister.setUri(Lister.PREF_FILE_URI, intent.data)
                 lister.unloadLists()
-                Log.d(TAG, "NEW URI from Intent " + lister.getUri(Lister.PREF_FILE_URI))
             } else
-                Log.d(TAG, "SAME URI from Intent==Prefs " + lister.getUri(Lister.PREF_FILE_URI))
+                Log.d(TAG, "onResume same URI from Intent==Prefs " + lister.getUri(Lister.PREF_FILE_URI))
         } else
-            Log.d(TAG, "OLD URI from Prefs " + lister.getUri(Lister.PREF_FILE_URI))
+            Log.d(TAG, "onResume URI from Prefs " + lister.getUri(Lister.PREF_FILE_URI))
         ensureListsLoaded(
                 null,
                 object : FailCallback {
@@ -261,7 +256,6 @@ abstract class ListerActivity : AppCompatActivity(), OnSharedPreferenceChangeLis
                         return reportIndefinite(code, *args)
                     }
                 })
-        lister.prefs?.registerOnSharedPreferenceChangeListener(this)
     }
 
     // override AppCompatActivity
@@ -309,9 +303,10 @@ abstract class ListerActivity : AppCompatActivity(), OnSharedPreferenceChangeLis
             REQUEST_CHANGE_STORE ->
                 if (uri != lister.getUri(Lister.PREF_FILE_URI)) {
                     val flags = intent.flags
-                    lister.unloadLists()
                     // Reload from the new store. Note that the listener for the Checklists activity
                     // was removed when the Settings activity was invoked.
+                    Log.d(TAG, "New URI from REQUEST_CHANGE_STORE")
+                    lister.unloadLists()
                     lister.setUri(Lister.PREF_FILE_URI, uri)
                     ensureListsLoaded(
                             object : SuccessCallback {
@@ -320,8 +315,6 @@ abstract class ListerActivity : AppCompatActivity(), OnSharedPreferenceChangeLis
                                     val takeFlags = flags and (Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
                                     lister.getUri(Lister.PREF_FILE_URI)?.let { contentResolver.takePersistableUriPermission(it, takeFlags) }
                                     lister.saveCache(act)
-                                    val msg = mMessageHandler.obtainMessage(MESSAGE_UPDATE_DISPLAY)
-                                    mMessageHandler.sendMessage(msg)
                                     reportLong(R.string.snack_file_changed)
                                 }
                             },
@@ -332,6 +325,8 @@ abstract class ListerActivity : AppCompatActivity(), OnSharedPreferenceChangeLis
                             })
                 }
             REQUEST_CREATE_STORE -> {
+                Log.d(TAG, "New URI from REQUEST_CREATE_STORE")
+                lister.unloadLists()
                 lister.setUri(Lister.PREF_FILE_URI, uri)
                 // Save whatever is currently in memory to the new URI
                 lister.saveLists(this,
@@ -347,17 +342,6 @@ abstract class ListerActivity : AppCompatActivity(), OnSharedPreferenceChangeLis
                         })
             }
             else -> super.onActivityResult(requestCode, resultCode, intent)
-        }
-    }
-
-    // TODO: Strictly speaking, this belongs in PreferencesActivity, as it's the only place
-    // these preferences can be changed
-    // override SharedPreferences.OnSharedPreferencesListener
-    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences, key: String) {
-        Log.e(TAG, "PANIC: onSharedPreferenceChanged") // test the TODO
-        when (key) {
-            Lister.PREF_ALWAYS_SHOW -> configureShowOverLockScreen()
-            Lister.PREF_STAY_AWAKE -> configureStayAwake()
         }
     }
 
