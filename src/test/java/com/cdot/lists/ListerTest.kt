@@ -7,17 +7,18 @@ import com.cdot.lists.Lister.FailCallback
 import com.cdot.lists.Lister.SuccessCallback
 import com.cdot.lists.model.Checklist
 import com.cdot.lists.model.ChecklistItem
-import com.cdot.lists.model.EntryListItem
-import org.junit.Assert
+import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import java.io.File
 
 /**
  * Tests for com.cdot.lists.Lister
  */
+@Config(sdk = [28])
 @RunWith(RobolectricTestRunner::class)
 class ListerTest {
     internal inner class Waiter(private val mTest: String) {
@@ -29,14 +30,14 @@ class ListerTest {
             var tickityBoo = 30 // 3 second timeout waiting for a step
             // Timeout after 10s
             while (mStep != waitStep) {
-                if (!ALWAYS_WAIT && tickityBoo-- == 0) Assert.fail()
+                if (!ALWAYS_WAIT && tickityBoo-- == 0) fail()
                 try {
                     Thread.sleep(100)
                 } catch (ex: InterruptedException) {
                     Thread.currentThread().interrupt()
                 }
             }
-            val mph = File("/tmp/$mTest.json")
+            val mph = File("/tmp/" + mTest + ".json")
             if (mph.exists()) mph.delete()
         }
 
@@ -50,7 +51,7 @@ class ListerTest {
                     },
                     object : FailCallback {
                         override fun failed(code: Int, vararg args: Any): Boolean {
-                            Assert.fail()
+                            fail()
                             return false
                         }
                     })
@@ -70,17 +71,17 @@ class ListerTest {
     fun prefsTest() {
         val lister = ApplicationProvider.getApplicationContext<Context>() as Lister //new Lister();
         lister.setInt("test int pref", 666)
-        Assert.assertEquals(666, lister.getInt("test int pref").toLong())
+        assertEquals(666, lister.getInt("test int pref").toLong())
         lister.setInt("test int pref", 0)
-        Assert.assertEquals(0, lister.getInt("test int pref").toLong())
-        lister.setBool("test bool pref", false)
-        Assert.assertFalse(lister.getBool("test bool pref"))
-        lister.setBool("test bool pref", true)
-        Assert.assertTrue(lister.getBool("test bool pref"))
+        assertEquals(0, lister.getInt("test int pref").toLong())
         lister.setUri("test uri pref", Uri.parse("content://blah"))
-        Assert.assertEquals(Uri.parse("content://blah"), lister.getUri("test uri pref"))
+        assertEquals(Uri.parse("content://blah"), lister.getUri("test uri pref"))
         lister.setUri("test uri pref", Uri.parse("https://flobadob.co.hu/fleegle"))
-        Assert.assertEquals(Uri.parse("https://flobadob.co.hu/fleegle"), lister.getUri("test uri pref"))
+        assertEquals(Uri.parse("https://flobadob.co.hu/fleegle"), lister.getUri("test uri pref"))
+        lister.setBool("test bool pref", false)
+        assertFalse(lister.getBool("test bool pref"))
+        lister.setBool("test bool pref", true)
+        assertTrue(lister.getBool("test bool pref"))
     }
 
     @Before
@@ -88,7 +89,7 @@ class ListerTest {
         Lister.FORCE_CACHE_FAIL = 0
     }
 
-    fun makeApp(): Lister {
+    private fun makeApp(): Lister {
         val lister = ApplicationProvider.getApplicationContext<Context>() as Lister
         val lists = lister.lists
         var list = Checklist("A")
@@ -114,13 +115,13 @@ class ListerTest {
         lister.saveLists(lister,
                 object : SuccessCallback {
                     override fun succeeded(data: Any?) {
-                        Assert.assertNull(data)
+                        assertNull(data)
                         waiter.nextStep()
                     }
                 },
                 object : FailCallback {
-                    override fun failed(code: Int, vararg args : Any): Boolean {
-                        Assert.fail()
+                    override fun failed(code: Int, vararg args: Any): Boolean {
+                        fail()
                         return false
                     }
                 })
@@ -135,13 +136,13 @@ class ListerTest {
         lister.saveLists(lister,
                 object : SuccessCallback {
                     override fun succeeded(data: Any?) {
-                        Assert.assertNull(data)
+                        assertNull(data)
                         waiter.nextStep()
                     }
                 },
                 object : FailCallback {
-                    override fun failed(code: Int, vararg args : Any): Boolean {
-                        Assert.fail()
+                    override fun failed(code: Int, vararg args: Any): Boolean {
+                        fail()
                         return false
                     }
                 })
@@ -156,13 +157,13 @@ class ListerTest {
         lister.saveLists(lister,
                 object : SuccessCallback {
                     override fun succeeded(data: Any?) {
-                        Assert.assertNull(data)
+                        assertNull(data)
                         wait.nextStep()
                     }
                 },
                 object : FailCallback {
-                    override fun failed(code: Int, vararg args : Any): Boolean {
-                        Assert.assertEquals(R.string.failed_save_to_uri.toLong(), code.toLong())
+                    override fun failed(code: Int, vararg args: Any): Boolean {
+                        assertEquals(R.string.failed_save_to_uri.toLong(), code.toLong())
                         wait.nextStep()
                         return true
                     }
@@ -179,16 +180,18 @@ class ListerTest {
         lister.saveLists(lister,
                 object : SuccessCallback {
                     override fun succeeded(data: Any?) {
-                        Assert.assertNull(data)
+                        assertNull(data)
                         waiter.nextStep()
                     }
                 },
                 object : FailCallback {
-                    override fun failed(code: Int, vararg args : Any): Boolean {
+                    override fun failed(code: Int, vararg args: Any): Boolean {
                         // this ought to be called!
-                        if (waiter.atStep() == 0) Assert.assertEquals(R.string.failed_save_to_cache.toLong(), code.toLong())
-                        else if (waiter.atStep() == 1) Assert.assertEquals(R.string.failed_save_to_cache_and_file.toLong(), code.toLong())
-                        else Assert.fail()
+                        when (waiter.atStep()) {
+                            0 -> assertEquals(R.string.failed_save_to_cache.toLong(), code.toLong())
+                            1 -> assertEquals(R.string.failed_save_to_cache_and_file.toLong(), code.toLong())
+                            else -> fail()
+                        }
                         waiter.nextStep()
                         return true
                     }
@@ -206,13 +209,13 @@ class ListerTest {
         lister.saveLists(lister,
                 object : SuccessCallback {
                     override fun succeeded(data: Any?) {
-                        Assert.fail()
+                        fail()
                     }
                 },
                 object : FailCallback {
-                    override fun failed(code: Int, vararg args : Any): Boolean {
+                    override fun failed(code: Int, vararg args: Any): Boolean {
                         // this ought to be called!
-                        if (waiter.atStep() == 0) Assert.assertEquals(R.string.failed_save_to_cache.toLong(), code.toLong()) else if (waiter.atStep() == 1) Assert.assertEquals(R.string.failed_save_to_uri.toLong(), code.toLong()) else Assert.fail()
+                        if (waiter.atStep() == 0) assertEquals(R.string.failed_save_to_cache.toLong(), code.toLong()) else if (waiter.atStep() == 1) assertEquals(R.string.failed_save_to_uri.toLong(), code.toLong()) else fail()
                         waiter.nextStep()
                         return true
                     }
@@ -230,14 +233,14 @@ class ListerTest {
         lister.saveLists(lister,
                 object : SuccessCallback {
                     override fun succeeded(data: Any?) {
-                        Assert.assertNull(data)
+                        assertNull(data)
                         waiter.nextStep()
                     }
                 },
                 object : FailCallback {
-                    override fun failed(code: Int, vararg args : Any): Boolean {
+                    override fun failed(code: Int, vararg args: Any): Boolean {
                         // this ought to be called!
-                        if (waiter.atStep() == 0) Assert.assertEquals(R.string.failed_save_to_cache.toLong(), code.toLong()) else Assert.fail()
+                        if (waiter.atStep() == 0) assertEquals(R.string.failed_save_to_cache.toLong(), code.toLong()) else fail()
                         waiter.nextStep()
                         return true
                     }
@@ -253,13 +256,13 @@ class ListerTest {
         lister.saveLists(lister,
                 object : SuccessCallback {
                     override fun succeeded(data: Any?) {
-                        Assert.assertNull(data)
+                        assertNull(data)
                         waiter.nextStep()
                     }
                 },
                 object : FailCallback {
-                    override fun failed(code: Int, vararg args : Any): Boolean {
-                        Assert.fail()
+                    override fun failed(code: Int, vararg args: Any): Boolean {
+                        fail()
                         return false
                     }
                 })
@@ -270,23 +273,23 @@ class ListerTest {
     fun loadCacheOKStoreNull() {
         val lister = makeApp()
         val waiter = Waiter("loadCacheOKStoreNull")
-        waiter.waitForSave(lister, Runnable {
+        waiter.waitForSave(lister) {
             lister.setUri(Lister.PREF_FILE_URI, null)
             lister.loadLists(lister,
                     object : SuccessCallback {
                         override fun succeeded(data: Any?) {
-                            Assert.assertSame(data, lister.lists)
+                            assertSame(data, lister.lists)
                             waiter.nextStep()
                         }
                     },
                     object : FailCallback {
-                        override fun failed(code: Int, vararg args : Any): Boolean {
-                            Assert.assertEquals(R.string.failed_no_file.toLong(), code.toLong())
+                        override fun failed(code: Int, vararg args: Any): Boolean {
+                            assertEquals(R.string.failed_no_file.toLong(), code.toLong())
                             waiter.nextStep()
                             return true
                         }
                     })
-        })
+        }
         waiter.waitForStep(2)
     }
 
@@ -294,22 +297,22 @@ class ListerTest {
     fun loadCacheOKStoreOK() {
         val lister = makeApp()
         val waiter = Waiter("loadCacheOKStoreOK")
-        waiter.waitForSave(lister, Runnable {
+        waiter.waitForSave(lister) {
             lister.setUri(Lister.PREF_FILE_URI, waiter.fileUri)
             lister.loadLists(lister,
                     object : SuccessCallback {
                         override fun succeeded(data: Any?) {
-                            Assert.assertSame(data, lister.lists)
+                            assertSame(data, lister.lists)
                             waiter.nextStep()
                         }
                     },
                     object : FailCallback {
-                        override fun failed(code: Int, vararg args : Any): Boolean {
-                            Assert.fail()
+                        override fun failed(code: Int, vararg args: Any): Boolean {
+                            fail()
                             return false
                         }
                     })
-        })
+        }
         waiter.waitForStep(1)
     }
 
@@ -317,23 +320,23 @@ class ListerTest {
     fun loadCacheOKStoreFail() {
         val lister = makeApp()
         val waiter = Waiter("loadCacheOKStoreFail")
-        waiter.waitForSave(lister, Runnable {
+        waiter.waitForSave(lister) {
             lister.setUri(Lister.PREF_FILE_URI, Uri.parse(BAD_URI + "loadCacheOKStoreFail"))
             lister.loadLists(lister,
                     object : SuccessCallback {
                         override fun succeeded(data: Any?) {
-                            Assert.assertSame(data, lister.lists)
+                            assertSame(data, lister.lists)
                             waiter.nextStep()
                         }
                     },
                     object : FailCallback {
-                        override fun failed(code: Int, vararg args : Any): Boolean {
-                            Assert.assertEquals(R.string.failed_file_load.toLong(), code.toLong())
+                        override fun failed(code: Int, vararg args: Any): Boolean {
+                            assertEquals(R.string.failed_file_load.toLong(), code.toLong())
                             waiter.nextStep()
                             return true
                         }
                     })
-        })
+        }
         waiter.waitForStep(2)
     }
 
@@ -341,24 +344,24 @@ class ListerTest {
     fun loadCacheFailStoreNull() {
         val lister = makeApp()
         val waiter = Waiter("loadCacheFailStoreNull")
-        waiter.waitForSave(lister, Runnable {
+        waiter.waitForSave(lister) {
             Lister.FORCE_CACHE_FAIL = R.string.failed_cache_load
             lister.setUri(Lister.PREF_FILE_URI, null)
             lister.loadLists(lister,
                     object : SuccessCallback {
                         override fun succeeded(data: Any?) {
-                            Assert.fail()
+                            fail()
                         }
                     },
                     object : FailCallback {
-                        override fun failed(code: Int, vararg args : Any): Boolean {
+                        override fun failed(code: Int, vararg args: Any): Boolean {
                             // this ought to be called!
-                            if (waiter.atStep() == 0) Assert.assertEquals(R.string.failed_no_file.toLong(), code.toLong()) else if (waiter.atStep() == 1) Assert.assertEquals(R.string.failed_cache_load.toLong(), code.toLong())
+                            if (waiter.atStep() == 0) assertEquals(R.string.failed_no_file.toLong(), code.toLong()) else if (waiter.atStep() == 1) assertEquals(R.string.failed_cache_load.toLong(), code.toLong())
                             waiter.nextStep()
                             return true
                         }
                     })
-        })
+        }
         waiter.waitForStep(2)
     }
 
@@ -366,24 +369,24 @@ class ListerTest {
     fun loadCacheFailStoreFail() {
         val lister = makeApp()
         val waiter = Waiter("loadCacheFailStoreFail")
-        waiter.waitForSave(lister, Runnable {
+        waiter.waitForSave(lister) {
             Lister.FORCE_CACHE_FAIL = R.string.failed_cache_load
             lister.setUri(Lister.PREF_FILE_URI, Uri.parse(BAD_URI))
             lister.loadLists(lister,
                     object : SuccessCallback {
                         override fun succeeded(data: Any?) {
-                            Assert.assertSame(data, lister.lists)
+                            assertSame(data, lister.lists)
                             waiter.nextStep()
                         }
                     },
                     object : FailCallback {
-                        override fun failed(code: Int, vararg args : Any): Boolean {
-                            if (waiter.atStep() == 0) Assert.assertEquals(R.string.failed_file_load.toLong(), code.toLong()) else if (waiter.atStep() == 1) Assert.assertEquals(R.string.failed_cache_load.toLong(), code.toLong()) else Assert.fail()
+                        override fun failed(code: Int, vararg args: Any): Boolean {
+                            if (waiter.atStep() == 0) assertEquals(R.string.failed_file_load.toLong(), code.toLong()) else if (waiter.atStep() == 1) assertEquals(R.string.failed_cache_load.toLong(), code.toLong()) else fail()
                             waiter.nextStep()
                             return true
                         }
                     })
-        })
+        }
         waiter.waitForStep(2)
     }
 
@@ -391,24 +394,24 @@ class ListerTest {
     fun loadCacheFailStoreOK() {
         val lister = makeApp()
         val waiter = Waiter("loadCacheFailStoreOK")
-        waiter.waitForSave(lister, Runnable {
+        waiter.waitForSave(lister) {
             Lister.FORCE_CACHE_FAIL = R.string.failed_cache_load
             lister.loadLists(lister,
                     object : SuccessCallback {
                         override fun succeeded(data: Any?) {
-                            Assert.assertEquals(1, waiter.atStep().toLong())
+                            assertEquals(1, waiter.atStep().toLong())
                             waiter.nextStep()
                         }
                     },
                     object : FailCallback {
-                        override fun failed(code: Int, vararg args : Any): Boolean {
-                            Assert.assertEquals(0, waiter.atStep().toLong())
-                            Assert.assertEquals(R.string.failed_cache_load.toLong(), code.toLong())
+                        override fun failed(code: Int, vararg args: Any): Boolean {
+                            assertEquals(0, waiter.atStep())
+                            assertEquals(R.string.failed_cache_load, code)
                             waiter.nextStep()
                             return true
                         }
                     })
-        })
+        }
         waiter.waitForStep(2)
     }
 
@@ -416,40 +419,29 @@ class ListerTest {
     fun loadImportOK() {
         val lister = makeApp()
         val waiter = Waiter("loadImportOK")
-        waiter.waitForSave(lister, Runnable {
-            lister.loadLists(lister,
+        waiter.waitForSave(lister) {
+            lister.lists.remove(lister.lists.data[0], false)
+            lister.importList(waiter.fileUri, lister,
                     object : SuccessCallback {
                         override fun succeeded(data: Any?) {
-                            lister.importList(waiter.fileUri, lister,
-                                    object : SuccessCallback {
-                                        override fun succeeded(data: Any?) {
-                                            val el = data as List<EntryListItem>
-                                            Assert.assertEquals(2, el.size.toLong())
-                                            Assert.assertEquals("A", el[0].text)
-                                            Assert.assertEquals("B", el[1].text)
-                                            waiter.nextStep()
-                                        }
-                                    },
-                                    object : FailCallback {
-                                        override fun failed(code: Int, vararg args : Any): Boolean {
-                                            Assert.fail()
-                                            return false
-                                        }
-                                    })
+                            val el = data as List<String>
+                            assertEquals(1, el.size.toLong())
+                            assertEquals("A", el[0])
+                            waiter.nextStep()
                         }
                     },
                     object : FailCallback {
-                        override fun failed(code: Int, vararg args : Any): Boolean {
-                            Assert.fail()
+                        override fun failed(code: Int, vararg args: Any): Boolean {
+                            assertEquals(R.string.failed_duplicate_list, code)
+                            assertEquals(1, args.size)
+                            assertEquals("B", args[0])
                             return false
                         }
                     })
-        })
+        }
         waiter.waitForStep(1)
-        Assert.assertEquals(4, lister.lists.size().toLong())
-    } /*
-        lister.handleChangeStore(Context cxt, Intent intent, com.cdot.lists.Lister.SuccessCallback onOK, com.cdot.lists.Lister.FailCallback onFail);
-    */
+        assertEquals(2, lister.lists.size().toLong())
+    }
 
     companion object {
         private const val TEST_FILE = "file:///tmp/test"

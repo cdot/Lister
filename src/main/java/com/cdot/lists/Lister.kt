@@ -4,6 +4,7 @@
 package com.cdot.lists
 
 import android.app.Application
+import android.content.ContentResolver
 import android.content.Context
 import android.content.SharedPreferences
 import android.net.Uri
@@ -50,13 +51,12 @@ class Lister : Application() {
             Log.d(TAG, "Starting load thread " + thred + " to load from $uri")
             try {
                 if (uri == null) throw Exception("Null URI (this is OK)")
-                /*val stream: InputStream =
+                val stream: InputStream =
                         when (uri.scheme) {
-                            ContentResolver.SCHEME_FILE -> FileInputStream(File(uri.path!!))
-                            ContentResolver.SCHEME_CONTENT -> cxt.contentResolver.openInputStream(uri)!!
+                            ContentResolver.SCHEME_FILE -> FileInputStream(File(uri.path!!)) // for tests
+                            ContentResolver.SCHEME_CONTENT -> cxt.contentResolver.openInputStream(uri)!! // normal usage
                             else -> throw IOException("Failed to load lists. Unknown uri scheme: " + uri.scheme)
-                        }*/
-                val stream = cxt.contentResolver.openInputStream(uri)!!
+                        }
                 lists.fromStream(stream)
                 lists.forUri = uri.toString()
                 // Check against the cache
@@ -186,12 +186,11 @@ class Lister : Application() {
             data = jsonString.toByteArray()
             Thread {
                 try {
-                    val stream : OutputStream = /*when (uri.scheme) {
-                        ContentResolver.SCHEME_FILE -> FileOutputStream(File(uri.path!!))
+                    val stream : OutputStream = when (uri.scheme) {
+                        ContentResolver.SCHEME_FILE -> FileOutputStream(File(uri.path!!)) // for tests
                         ContentResolver.SCHEME_CONTENT -> cxt.contentResolver.openOutputStream(uri)
                         else -> throw IOException("Unknown uri scheme: " + uri.scheme)
                     } ?: throw IOException("Stream open failed")
-                        ContentResolver.SCHEME_CONTENT -> */cxt.contentResolver.openOutputStream(uri)!!
                     stream.write(data)
                     stream.close()
                     setBool(PREF_LAST_STORE_FAILED, false)
@@ -216,7 +215,12 @@ class Lister : Application() {
     fun importList(uri: Uri, cxt: Context, onOK: SuccessCallback, onFail: FailCallback) {
         try {
             Log.d(TAG, "Importing from $uri")
-            val stream = cxt.contentResolver.openInputStream(uri)!!
+            val stream: InputStream =
+                    when (uri.scheme) {
+                        ContentResolver.SCHEME_FILE -> FileInputStream(File(uri.path!!)) // for tests
+                        ContentResolver.SCHEME_CONTENT -> cxt.contentResolver.openInputStream(uri)!! // normal usage
+                        else -> throw IOException("Failed to load lists. Unknown uri scheme: " + uri.scheme)
+                    }
             val importedLists = Checklists()
             importedLists.fromStream(stream)
             val ret = importedLists.cloneItemList()
@@ -277,8 +281,8 @@ class Lister : Application() {
      * Get a value from Shared Preferences, applying the appropriate default
      */
     fun getBool(name: String): Boolean {
-        val deflt = sDefaults[name] as Boolean
-        return prefs!!.getBoolean(name, deflt)
+        val deflt = sDefaults[name] as Boolean?
+        return prefs!!.getBoolean(name, deflt ?: false)
     }
 
     /**
