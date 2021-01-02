@@ -62,19 +62,12 @@ abstract class EntryListActivity : ListerActivity(), EntryListItem.ChangeListene
         listView.adapter = mArrayAdapter
     }
 
-    // ListerActivity
-    public override fun onListsLoaded() {
-        super.onListsLoaded()
-        Log.d(TAG, "onListsLoaded list $list")
+    override fun updateDisplay() {
+        // Could simplify to runOnUiThread { notifyAdapter() }
         list.notifyChangeListeners()
         var t = list.text
         if (t == NO_NAME) t = getString(R.string.app_name)
         supportActionBar!!.title = t
-    }
-
-    override fun updateDisplay() {
-        // Could simplify to runOnUiThread { notifyAdapter() }
-        list.notifyChangeListeners()
     }
 
     /**

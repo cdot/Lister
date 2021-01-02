@@ -98,12 +98,6 @@ abstract class ListerActivity : AppCompatActivity() {
             window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
-    /**
-     * Called from onResume when the data displayed by the activity have been successfully loaded.
-     * TODO: can the functions of this be relocated to updateDisplay? Pretty sure they can
-     */
-    protected open fun onListsLoaded() {}
-
     private fun handleUriAccessDenied() {
         val builder = AlertDialog.Builder(this)
         builder.setTitle(R.string.failed_access_denied)
@@ -131,8 +125,6 @@ abstract class ListerActivity : AppCompatActivity() {
         lister.loadLists(this,
                 object : SuccessCallback {
                     override fun succeeded(data: Any?) {
-                        // TODO: is this needed? Shouldn't updateDisplay do it? If so, send the message
-                        runOnUiThread { onListsLoaded() }
                         onOK?.succeeded(data)
                     }
                 },
