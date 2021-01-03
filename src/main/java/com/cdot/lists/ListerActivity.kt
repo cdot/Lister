@@ -53,7 +53,7 @@ abstract class ListerActivity : AppCompatActivity() {
     protected abstract val rootView: View?
 
     // Message handler for UI-related, activity specific, messages
-    protected val mMessageHandler: Handler = Handler(Looper.getMainLooper()) {
+    protected val messageHandler: Handler = Handler(Looper.getMainLooper()) {
         if (it.what == MESSAGE_UPDATE_DISPLAY) {
             invalidateOptionsMenu() // update menu items
             updateDisplay()
@@ -150,6 +150,7 @@ abstract class ListerActivity : AppCompatActivity() {
                 object : SuccessCallback {
                     override fun succeeded(data: Any?) {
                         Log.d(TAG, "checkpoint save OK")
+                        invalidateOptionsMenu()
                     }
                 },
                 object : FailCallback {
@@ -199,19 +200,17 @@ abstract class ListerActivity : AppCompatActivity() {
         return report(code, Snackbar.LENGTH_INDEFINITE, *ps)
     }
 
-    // override AppCompatActivity
     public override fun onSaveInstanceState(state: Bundle) {
         super.onSaveInstanceState(state)
         state.putString(JSON_EXTRA, lister.lists.toJSON().toString())
     }
 
-    // override AppCompatActivity
     public override fun onRestoreInstanceState(state: Bundle) {
         super.onRestoreInstanceState(state)
-        lister.lists.fromJSON(state.getString(JSON_EXTRA)!!)
+        if (lister.lists.size() == 0)
+            lister.lists.fromJSON(state.getString(JSON_EXTRA)!!)
     }
 
-    // override AppCompatActivity
     override fun onAttachedToWindow() {
         // onAttachedToWindow is called after onResume (and it happens only once per lifecycle).
         // ActivityThread.handleResumeActivity call will add DecorView to the current WindowManger
@@ -221,13 +220,11 @@ abstract class ListerActivity : AppCompatActivity() {
         configureStayAwake()
     }
 
-    // override AppCompatActivity
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         Log.d(TAG, "onNewIntent " + intent.data)
     }
 
-    // override AppCompatActivity
     public override fun onResume() {
         super.onResume()
         // Are we opening from a data source?
@@ -250,12 +247,11 @@ abstract class ListerActivity : AppCompatActivity() {
                 })
     }
 
-    // override AppCompatActivity
     public override fun onActivityResult(requestCode: Int, resultCode: Int, intent: Intent?) {
         if (requestCode == REQUEST_PREFERENCES) {
             // Result of a PreferenceActivity invocation; preferences may have changed, we need
             // to redraw
-            mMessageHandler.sendMessage(mMessageHandler.obtainMessage(MESSAGE_UPDATE_DISPLAY))
+            messageHandler.sendMessage(messageHandler.obtainMessage(MESSAGE_UPDATE_DISPLAY))
             return
         }
         val lister = lister
@@ -283,8 +279,8 @@ abstract class ListerActivity : AppCompatActivity() {
                                         reportShort(R.string.snack_imported, report)
                                     }
                                 }
-                                val msg = mMessageHandler.obtainMessage(MESSAGE_UPDATE_DISPLAY)
-                                mMessageHandler.sendMessage(msg)
+                                val msg = messageHandler.obtainMessage(MESSAGE_UPDATE_DISPLAY)
+                                messageHandler.sendMessage(msg)
                             }
                         },
                         object : FailCallback {

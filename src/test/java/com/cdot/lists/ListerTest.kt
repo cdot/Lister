@@ -420,7 +420,7 @@ class ListerTest {
         val lister = makeApp()
         val waiter = Waiter("loadImportOK")
         waiter.waitForSave(lister) {
-            lister.lists.remove(lister.lists.data[0], false)
+            lister.lists.remove(lister.lists.children[0], false)
             lister.importList(waiter.fileUri, lister,
                     object : SuccessCallback {
                         override fun succeeded(data: Any?) {

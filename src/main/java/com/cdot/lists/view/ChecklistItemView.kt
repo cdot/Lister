@@ -26,16 +26,15 @@ import com.cdot.lists.model.EntryListItem
  */
 @SuppressLint("ViewConstructor")
 class ChecklistItemView(it: EntryListItem, // item we're moving
-                        private val mIsMoving: Boolean,  // True if this view is of an item being moved
+                        private val isMoving: Boolean,  // True if this view is of an item being moved
                         elActivity: EntryListActivity) : EntryListItemView(it, elActivity) {
     // True if the checkbox is on the right (which is where the basic layout has it)
-    private var mCheckboxOnRight: Boolean
-    private val mBinding: ChecklistItemViewBinding
+    private var isCheckboxOnRight: Boolean
+    private val binding: ChecklistItemViewBinding
 
-    // View.OnClickListener()
     override fun onClick(view: View) {
-        if (!mIsMoving && lister.getBool(Lister.PREF_ENTIRE_ROW_TOGGLES)) {
-            val cb = mBinding.checklistCheckbox
+        if (!isMoving && lister.getBool(Lister.PREF_ENTIRE_ROW_TOGGLES)) {
+            val cb = binding.checklistCheckbox
             if (setChecked(!cb.isChecked)) {
                 Log.d(TAG, "Item toggled")
                 checkpoint()
@@ -43,18 +42,17 @@ class ChecklistItemView(it: EntryListItem, // item we're moving
         }
     }
 
-    // EntryListItemView
     override fun setTextFormatting(it: TextView) {
         super.setTextFormatting(it)
 
         // Transparency
         var f = TRANSPARENCY_OPAQUE // Completely opague
         if (item.getFlag(ChecklistItem.IS_DONE) && lister.getBool(Lister.PREF_GREY_CHECKED)) // Greyed out
-            f = TRANSPARENCY_GREYED else if (!mIsMoving && item === activity.mMovingItem) {
+            f = TRANSPARENCY_GREYED else if (!isMoving && item === activity.movingItem) {
             // Item being moved (but NOT the moving view)
             f = TRANSPARENCY_FAINT
-            mBinding.rightLayout.alpha = f
-            mBinding.leftLayout.alpha = f
+            binding.rightLayout.alpha = f
+            binding.leftLayout.alpha = f
         }
         it.alpha = f
 
@@ -62,32 +60,30 @@ class ChecklistItemView(it: EntryListItem, // item we're moving
         if (!item.getFlag(ChecklistItem.IS_DONE) || !lister.getBool(Lister.PREF_STRIKE_CHECKED)) it.paintFlags = it.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv() else it.paintFlags = it.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
     }
 
-    // EntryListItemView
     override fun updateView() {
         super.updateView()
-        val left: ViewGroup = mBinding.leftLayout
-        val right: ViewGroup = mBinding.rightLayout
-        val checkBox = mBinding.checklistCheckbox
-        val moveButton = mBinding.moveButton
-        if (lister.getBool(Lister.PREF_LEFT_HANDED) && mCheckboxOnRight) {
+        val left: ViewGroup = binding.leftLayout
+        val right: ViewGroup = binding.rightLayout
+        val checkBox = binding.checklistCheckbox
+        val moveButton = binding.moveButton
+        if (lister.getBool(Lister.PREF_LEFT_HANDED) && isCheckboxOnRight) {
             // Move checkbox to left panel
             right.removeView(checkBox)
             left.removeView(moveButton)
             left.addView(checkBox)
             right.addView(moveButton)
-            mCheckboxOnRight = false
-        } else if (!lister.getBool(Lister.PREF_LEFT_HANDED) && !mCheckboxOnRight) {
+            isCheckboxOnRight = false
+        } else if (!lister.getBool(Lister.PREF_LEFT_HANDED) && !isCheckboxOnRight) {
             // Move checkbox to right panel
             left.removeView(checkBox)
             right.removeView(moveButton)
             right.addView(checkBox)
             left.addView(moveButton)
-            mCheckboxOnRight = true
+            isCheckboxOnRight = true
         }
         checkBox.isChecked = item.getFlag(ChecklistItem.IS_DONE)
     }
 
-    // EntryListItemView
     override fun onPopupMenuAction(action: Int): Boolean {
         when(action) {
             R.id.action_delete -> {
@@ -133,7 +129,7 @@ class ChecklistItemView(it: EntryListItem, // item we're moving
             el.notifyChangeListeners()
             return true
         }
-        mBinding.checklistCheckbox.isChecked = isChecked
+        binding.checklistCheckbox.isChecked = isChecked
         if (item.getFlag(ChecklistItem.IS_DONE) != isChecked) {
             if (isChecked) item.setFlag(ChecklistItem.IS_DONE) else item.clearFlag(ChecklistItem.IS_DONE)
             item.notifyChangeListeners()
@@ -151,18 +147,18 @@ class ChecklistItemView(it: EntryListItem, // item we're moving
 
     init {
         item = it
-        mBinding = ChecklistItemViewBinding.inflate(LayoutInflater.from(elActivity), this, true)
-        if (!mIsMoving) {
-            addItemListeners(mBinding.moveButton, R.menu.checklist_item_popup)
-            mBinding.checklistCheckbox.setOnClickListener { view: View? ->
-                if (setChecked(mBinding.checklistCheckbox.isChecked)) {
+        binding = ChecklistItemViewBinding.inflate(LayoutInflater.from(elActivity), this, true)
+        if (!isMoving) {
+            addItemListeners(binding.moveButton, R.menu.checklist_item_popup)
+            binding.checklistCheckbox.setOnClickListener { view: View? ->
+                if (setChecked(binding.checklistCheckbox.isChecked)) {
                     Log.d(TAG, "item checked")
-                    if (mBinding.checklistCheckbox.isChecked) item.setFlag(ChecklistItem.IS_DONE) else item.clearFlag(ChecklistItem.IS_DONE)
+                    if (binding.checklistCheckbox.isChecked) item.setFlag(ChecklistItem.IS_DONE) else item.clearFlag(ChecklistItem.IS_DONE)
                     checkpoint()
                 }
             }
         }
-        mCheckboxOnRight = true
+        isCheckboxOnRight = true
         updateView()
     }
 }

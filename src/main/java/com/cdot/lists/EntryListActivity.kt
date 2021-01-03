@@ -18,10 +18,12 @@
  */
 package com.cdot.lists
 
+import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.util.Log
 import android.view.*
+import android.view.inputmethod.InputMethodManager
 import android.webkit.MimeTypeMap
 import android.widget.*
 import androidx.annotation.CallSuper
@@ -43,35 +45,33 @@ import java.util.*
  */
 abstract class EntryListActivity : ListerActivity(), EntryListItem.ChangeListener {
 
+    protected var arrayAdapter: EntryListAdapter? = null
+
     @JvmField
     @Transient
-    var mMovingItem: EntryListItem? = null
-    protected var mArrayAdapter: EntryListAdapter? = null
+    var movingItem: EntryListItem? = null
 
     @Transient
-    private var mMovingView: EntryListItemView? = null
+    private var movingView: EntryListItemView? = null
 
     // The list we're viewing
     abstract val list: EntryList
     abstract val listView: ListView
 
+    // When in edit mode, sorting and moving checked items is disabled
+    protected var isInEditMode = false
+    abstract val addItemTextView : TextView
+
     // Set the common bindings, obtained from the ViewBinding, and create the array adapter
     // MUST be called from subclass onCreate immediately the view binding has been established
     protected fun makeAdapter() {
-        mArrayAdapter = EntryListAdapter(this)
-        listView.adapter = mArrayAdapter
+        arrayAdapter = EntryListAdapter(this)
+        listView.adapter = arrayAdapter
     }
 
     @CallSuper
     override fun updateDisplay() {
         list.notifyChangeListeners()
-    }
-
-    /**
-     * List contents have changed; notify the adapter
-     */
-    protected fun notifyAdapter() {
-        mArrayAdapter!!.notifyDataSetChanged()
     }
 
     override fun onPause() {
@@ -86,9 +86,8 @@ abstract class EntryListActivity : ListerActivity(), EntryListItem.ChangeListene
         list.notifyChangeListeners()
     }
 
-    // implement EntryListItem.ChangeListener
     override fun onListChanged(item: EntryListItem) {
-        runOnUiThread { notifyAdapter() }
+        runOnUiThread { arrayAdapter!!.notifyDataSetChanged() }
     }
 
     /**
@@ -99,18 +98,44 @@ abstract class EntryListActivity : ListerActivity(), EntryListItem.ChangeListene
     protected open val displayOrder: MutableList<EntryListItem>
         get() {
             val dl: MutableList<EntryListItem> = ArrayList<EntryListItem>()
-            dl.addAll(list.data)
-            if (list.getFlag(EntryList.DISPLAY_SORTED)) {
-                dl.sortWith(object : Comparator<EntryListItem> {
-                    override fun compare(o1: EntryListItem, o2: EntryListItem): Int {
-                        return o1.text.compareTo(o2.text, ignoreCase = true)
-                    }
-                })
-            }
+            dl.addAll(list.children)
+            if (isInEditMode) return dl // unsorted list
+            if (list.getFlag(EntryList.DISPLAY_SORTED))
+                dl.sortWith { o1, o2 -> o1.text.compareTo(o2.text, ignoreCase = true) }
             return dl
         }
 
+    /**
+     * Handle adding an item after it's confirmed
+     *
+     * @param str the text of the item
+     */
     abstract fun addItem(str: String)
+
+    protected fun enableEditMode() {
+        if (isInEditMode) return
+        addItemTextView.visibility = View.VISIBLE
+        addItemTextView.isFocusable = true
+        addItemTextView.isFocusableInTouchMode = true
+        addItemTextView.requestFocus()
+        val inputMethodManager = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        inputMethodManager.showSoftInput(addItemTextView, InputMethodManager.SHOW_IMPLICIT)
+        isInEditMode = true
+        messageHandler.sendMessage(messageHandler.obtainMessage(MESSAGE_UPDATE_DISPLAY))
+    }
+
+    protected fun disableEditMode() {
+        if (!isInEditMode) return
+        addItemTextView.visibility = View.INVISIBLE
+        val inputMethodManager = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        inputMethodManager.hideSoftInputFromWindow((currentFocus ?: addItemTextView).windowToken, 0)
+        isInEditMode = false
+        messageHandler.sendMessage(messageHandler.obtainMessage(MESSAGE_UPDATE_DISPLAY))
+    }
+
+    protected fun toggleEditMode() {
+        if (isInEditMode) disableEditMode() else enableEditMode()
+    }
 
     /**
      * Prompt for similar item already in the list
@@ -146,18 +171,12 @@ abstract class EntryListActivity : ListerActivity(), EntryListItem.ChangeListene
      */
     protected abstract fun makeItemView(movingItem: EntryListItem, drag: Boolean): EntryListItemView
 
-    /**
-     * Moving items in the list
-     *
-     * @param motionEvent the event
-     * @return true if the event is handled
-     */
     @Synchronized
     override fun dispatchTouchEvent(motionEvent: MotionEvent): Boolean {
         // Check the item can be moved
-        if (mMovingItem == null) return super.dispatchTouchEvent(motionEvent)
-        val movingItem = mMovingItem!!
-        if (!movingItem.isMoveable) return super.dispatchTouchEvent(motionEvent)
+        if (movingItem == null) return super.dispatchTouchEvent(motionEvent)
+        val movingItem = movingItem!!
+        if (!(movingItem.parent?.childrenAreMoveable ?: true)) return super.dispatchTouchEvent(motionEvent)
 
         // get screen position of the ListView and the Activity
         val iArr = IntArray(2)
@@ -198,18 +217,18 @@ abstract class EntryListActivity : ListerActivity(), EntryListItem.ChangeListene
         if (moveTo != itemIndex && moveTo >= 0 && moveTo < list.size()) {
             Log.d(TAG, "Moved " + movingItem.text + " from " + itemIndex + " to " + moveTo)
             list.remove(movingItem, false)
-            list.put(moveTo, movingItem)
+            list.insertAt(moveTo, movingItem)
             list.notifyChangeListeners()
             checkpoint()
         }
         if (motionEvent.action == MotionEvent.ACTION_MOVE) {
-            if (mMovingView == null) {
+            if (movingView == null) {
                 // Drag is starting
                 //Log.d(TAG, "dispatchTouchEvent adding moving view ");
-                mMovingView = makeItemView(movingItem, true)
+                movingView = makeItemView(movingItem, true)
                 // addView is not supported in AdapterView, so can't add the movingView there.
                 // Instead have to add to the activity and adjust margins accordingly
-                listLayout.addView(mMovingView)
+                listLayout.addView(movingView)
             }
             if (y < halfItemHeight) listView.smoothScrollToPosition(itemIndex - 1)
             if (y > listView.height - halfItemHeight) listView.smoothScrollToPosition(itemIndex + 1)
@@ -217,26 +236,28 @@ abstract class EntryListActivity : ListerActivity(), EntryListItem.ChangeListene
             val lp: RelativeLayout.LayoutParams = RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT)
             // Set the top margin to move the view to the right place relative to the Activity
             lp.setMargins(0, listViewTop - activityTop + y - halfItemHeight, 0, 0)
-            mMovingView!!.layoutParams = lp
+            movingView!!.layoutParams = lp
         }
         if (motionEvent.action == MotionEvent.ACTION_UP || motionEvent.action == MotionEvent.ACTION_CANCEL) {
-            listLayout.removeView(mMovingView)
-            mMovingItem = null
-            notifyAdapter()
-            mMovingView = null
+            listLayout.removeView(movingView)
+            this.movingItem = null
+            arrayAdapter!!.notifyDataSetChanged()
+            movingView = null
         }
         return true
     }
 
-    // Activity
     override fun onOptionsItemSelected(menuItem: MenuItem): Boolean {
         when (menuItem.itemId) {
+            R.id.action_save -> checkpoint()
+
             R.id.action_alpha_sort -> {
                 Log.d(TAG, "alpha sort option selected")
                 if (list.getFlag(EntryList.DISPLAY_SORTED)) list.clearFlag(EntryList.DISPLAY_SORTED) else list.setFlag(EntryList.DISPLAY_SORTED)
-                mMessageHandler.sendMessage(mMessageHandler.obtainMessage(MESSAGE_UPDATE_DISPLAY))
+                messageHandler.sendMessage(messageHandler.obtainMessage(MESSAGE_UPDATE_DISPLAY))
                 checkpoint()
             }
+
             R.id.action_help -> {
                 val hint = Intent(this, HelpActivity::class.java)
                 hint.putExtra(HelpActivity.ASSET_EXTRA, helpAsset)
@@ -247,7 +268,6 @@ abstract class EntryListActivity : ListerActivity(), EntryListItem.ChangeListene
         return true
     }
 
-    // AppCompatActivity
     override fun onPrepareOptionsMenu(menu: Menu): Boolean {
         super.onPrepareOptionsMenu(menu)
         var menuItem = menu.findItem(R.id.action_alpha_sort)
@@ -267,7 +287,6 @@ abstract class EntryListActivity : ListerActivity(), EntryListItem.ChangeListene
      * Adapter for the list. This is only created when the list is actually displayed.
      */
     inner class EntryListAdapter internal constructor(act: AppCompatActivity?) : ArrayAdapter<EntryListItem?>(act!!, 0) {
-        // ArrayAdapter
         override fun getView(i: Int, convertView: View?, viewGroup: ViewGroup): View {
             val dl = displayOrder // get sorted list
             if (i < dl.size) {
@@ -317,6 +336,7 @@ abstract class EntryListActivity : ListerActivity(), EntryListItem.ChangeListene
         builder.show()
     }
 
+    // Handle share once a format has been chosen
     private fun doShare(list: EntryList, listName: String, mimeType: String) {
         val intent = Intent(Intent.ACTION_SEND)
         intent.putExtra(Intent.EXTRA_TITLE, listName) // Dialog title

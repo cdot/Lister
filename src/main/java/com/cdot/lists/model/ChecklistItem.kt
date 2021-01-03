@@ -32,25 +32,9 @@ class ChecklistItem(t:String) : EntryListItem(t) {
 
     constructor() : this(NO_NAME)
 
-    /**
-     * Construct by copying the given item into the given checklist
-     *
-     * @param copy      item to copy
-     */
-    constructor(copy: ChecklistItem) : this(copy.text) {
-        for (f in flagNames)
-            if (copy.getFlag(f)) setFlag(f) else clearFlag(f)
-    }
-
-    // override EntryListItem
     override val flagNames: Set<String>
         get() = super.flagNames.plus(IS_DONE)
 
-    // implement EntryListItem
-    override val isMoveable: Boolean
-        get() = parent == null || parent!!.itemsAreMoveable
-
-    // override EntryListItem
     override fun sameAs(other: EntryListItem?): Boolean {
         if (other is ChecklistItem)
             if (getFlag(IS_DONE) != other.getFlag(IS_DONE))
@@ -58,14 +42,12 @@ class ChecklistItem(t:String) : EntryListItem(t) {
         return super.sameAs(other)
     }
 
-    // override EntryListItem
     @Throws(JSONException::class)
     override fun fromJSON(jo: JSONObject) : EntryListItem {
         text = jo.getString("name")
         return super.fromJSON(jo)
     }
 
-    // implement EntryListItem
     @Throws(Exception::class)
     override fun fromCSV(r: CSVReader): EntryListItem {
         val row = r.readNext()!!
@@ -75,7 +57,6 @@ class ChecklistItem(t:String) : EntryListItem(t) {
         return this
     }
 
-    // override EntryListItem
     override fun toJSON(): JSONObject {
         val iob = super.toJSON()
         try {
@@ -86,7 +67,6 @@ class ChecklistItem(t:String) : EntryListItem(t) {
         return iob
     }
 
-    // implement EntryListItem
     override fun toCSV(w: CSVWriter) {
         val a = arrayOfNulls<String>(3)
         if (parent == null) a[0] = "" else a[0] = parent!!.text
@@ -95,7 +75,6 @@ class ChecklistItem(t:String) : EntryListItem(t) {
         w.writeNext(a)
     }
 
-    // implement EntryListItem
     override fun toPlainString(tab: String): String {
         val sb = StringBuilder()
         sb.append(tab).append(text)

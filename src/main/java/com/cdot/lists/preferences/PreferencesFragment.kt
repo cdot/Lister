@@ -30,7 +30,6 @@ abstract class PreferencesFragment : PreferenceFragmentCompat() {
     var rootView: View? = null
         private set
 
-    // PreferenceFragmentCompat
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         rootView = view

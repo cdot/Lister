@@ -26,6 +26,7 @@ import android.provider.DocumentsContract
 import android.util.Log
 import androidx.preference.CheckBoxPreference
 import androidx.preference.Preference
+import com.cdot.lists.BuildConfig
 import com.cdot.lists.Lister
 import com.cdot.lists.ListerActivity
 import com.cdot.lists.R
@@ -54,26 +55,46 @@ class SharedPreferencesFragment(private val mLister: Lister) : PreferencesFragme
         initBoolPref(Lister.PREF_ALWAYS_SHOW)
         initBoolPref(Lister.PREF_STAY_AWAKE)
         initBoolPref(Lister.PREF_WARN_DUPLICATE)
-        val ilPref = findPreference<IntListPreference>(Lister.PREF_TEXT_SIZE_INDEX)!!
-        val v = mLister.getInt(Lister.PREF_TEXT_SIZE_INDEX)
-        ilPref.value = v.toString()
-        ilPref.summary = resources.getStringArray(R.array.text_size_options)[v]
-        ilPref.onPreferenceChangeListener = Preference.OnPreferenceChangeListener { preference: Preference, value: Any ->
+        initBoolPref(Lister.PREF_DISABLE_CACHE)
+        initBoolPref(Lister.PREF_DISABLE_FILE)
+
+
+        val textSizePref = findPreference<IntListPreference>(Lister.PREF_TEXT_SIZE_INDEX)!!
+        val textSizeIndex = mLister.getInt(Lister.PREF_TEXT_SIZE_INDEX)
+        textSizePref.intValue = textSizeIndex
+        textSizePref.summary = resources.getStringArray(R.array.text_size_options)[textSizeIndex]
+        textSizePref.onPreferenceChangeListener = Preference.OnPreferenceChangeListener { preference: Preference, value: Any ->
             val ival = value.toString().toInt()
             Log.d(TAG, "setting text size to $ival")
             preference.summary = resources.getStringArray(R.array.text_size_options)[ival]
             mLister.setInt(Lister.PREF_TEXT_SIZE_INDEX, ival)
             true
         }
-        var pref = findPreference<Preference>("action_change_uri")!!
-        pref.onPreferenceClickListener = Preference.OnPreferenceClickListener {
+
+        val changeStorePref = findPreference<Preference>("action_change_uri")!!
+        changeStorePref.onPreferenceClickListener = Preference.OnPreferenceClickListener {
             handleStoreClick(Intent.ACTION_OPEN_DOCUMENT, ListerActivity.REQUEST_CHANGE_STORE)
         }
-        pref.setTitle(if (mLister.getUri(Lister.PREF_FILE_URI) != null) R.string.action_file_change else R.string.action_file_open)
-        pref.setSummary(if (mLister.getUri(Lister.PREF_FILE_URI) != null) R.string.help_file_change else R.string.help_file_open)
-        pref = findPreference("action_create_uri")!!
-        pref.onPreferenceClickListener = Preference.OnPreferenceClickListener {
+        changeStorePref.setTitle(if (mLister.getUri(Lister.PREF_FILE_URI) != null) R.string.action_file_change else R.string.action_file_open)
+        changeStorePref.setSummary(if (mLister.getUri(Lister.PREF_FILE_URI) != null) R.string.help_file_change else R.string.help_file_open)
+
+        val createStorePref = findPreference<Preference>("action_create_uri")!!
+        createStorePref.onPreferenceClickListener = Preference.OnPreferenceClickListener {
             handleStoreClick(Intent.ACTION_CREATE_DOCUMENT, ListerActivity.REQUEST_CREATE_STORE)
+        }
+
+        val disableCache = findPreference<CheckBoxPreference>(Lister.PREF_DISABLE_CACHE)!!
+        val disableFile= findPreference<CheckBoxPreference>(Lister.PREF_DISABLE_FILE)!!
+        if (BuildConfig.DEBUG) {
+            disableCache.isVisible = true
+            disableFile.isVisible = true
+        } else {
+            disableCache.isVisible = false
+            disableFile.isVisible = false
+            // Just in case we accidentally leave these preferences set, a quick turn through the
+            // preference screen will reset them in the production code.
+            mLister.setBool(Lister.PREF_DISABLE_CACHE, false)
+            mLister.setBool(Lister.PREF_DISABLE_FILE, false)
         }
     }
 
@@ -91,8 +112,8 @@ class SharedPreferencesFragment(private val mLister: Lister) : PreferencesFragme
         intent.putExtra(EXTRA_MIME_TYPES, resources.getStringArray(R.array.file_format_mimetype))
 
         // The setting of mIssueReports will stay true from now on, but that's OK, it's only purpose
-        // is to suppress repeated store alarms during initialisation
-        (activity as PreferencesActivity?)!!.mIssueReports = true
+        // is to suppress repeated store alarms during PreferencesActivity+SharedPreferencesFragment startup
+        (activity as PreferencesActivity?)!!.issuingReports = true
         val act = requireActivity()
         act.startActivityForResult(intent, request)
         return true

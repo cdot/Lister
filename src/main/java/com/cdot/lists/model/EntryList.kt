@@ -36,23 +36,12 @@ import java.util.*
  * Base class for lists of items. An EntryList can itself be an item in an EntryList, so it inherits from
  * EntryListItem
  */
-abstract class EntryList : EntryListItem {
-    internal constructor(t: String) : super(t)
+abstract class EntryList internal constructor(t: String) : EntryListItem(t) {
 
-    // The basic list
-    private var mData = ArrayList<EntryListItem>()
+    val children = ArrayList<EntryListItem>()
 
     // Undo stack
-    private var mRemoves = Stack<ArrayList<Remove>>()
-
-    /**
-     * Copy constructor
-     *
-     * @param copy the item being copied
-     */
-    internal constructor(copy: EntryList) : super(copy) {
-        mRemoves = Stack()
-    }
+    private var undoStack = Stack<ArrayList<Remove>>()
 
     /**
      * Get a set of the legal flag names for this entry list
@@ -62,21 +51,14 @@ abstract class EntryList : EntryListItem {
     override val flagNames: Set<String>
         get() = super.flagNames.plus(DISPLAY_SORTED).plus(WARN_ABOUT_DUPLICATES)
 
-    /**
-     * Get the default value for this flag
-     *
-     * @param key flag name
-     * @return flag value
-     */
     override fun getFlagDefault(key: String): Boolean {
         return if (WARN_ABOUT_DUPLICATES == key) true else super.getFlagDefault(key)
     }
 
-    // implements EntryListItem
     override fun toJSON(): JSONObject {
         val job = super.toJSON()
         val its = JSONArray()
-        for (cl in mData) its.put(cl.toJSON())
+        for (cl in children) its.put(cl.toJSON())
         try {
             job.put("items", its)
         } catch (je: JSONException) {
@@ -85,28 +67,24 @@ abstract class EntryList : EntryListItem {
         return job
     }
 
-    // implement EntryListItem
     override fun toCSV(w: CSVWriter) {
-        for (it in mData) {
+        for (it in children) {
             it.toCSV(w)
         }
     }
 
-    // implement EntryListItem
     override fun toPlainString(tab: String): String {
         val sb = StringBuilder()
         sb.append(tab).append(text).append(":\n")
-        for (next in mData) {
+        for (next in children)
             sb.append(next.toPlainString(tab + "\t")).append("\n")
-        }
         return sb.toString()
     }
 
-    // implement EntryListItem
     override fun sameAs(other: EntryListItem?): Boolean {
         if (other is EntryList) {
             if (!super.sameAs(other) || other.size() != size()) return false
-            for (oit in other.mData) {
+            for (oit in other.children) {
                 val found = findByText(oit.text, true)
                 if (found == null || !oit.sameAs(found)) return false
             }
@@ -115,18 +93,14 @@ abstract class EntryList : EntryListItem {
             return super.sameAs(other)
     }
 
-    val data: List<EntryListItem>
-        get() = mData
-
     /**
-     * Make a copy of the data list. This is so the created list can be sorted before display without
-     * impacting the underlying list.
+     * Make a copy of the child list. This is so the created list can be manipulated
+     * without impacting the underlying list.
      *
-     * @return a copy of the list of entry items.
+     * @return a copy of the list of child items.
      */
-    fun cloneItemList(): List<EntryListItem> {
-        val i: Any = mData.clone()
-        return i as List<EntryListItem>
+    fun cloneChildren(): List<EntryListItem> {
+        return children.clone() as List<EntryListItem>
     }
 
     /**
@@ -135,7 +109,7 @@ abstract class EntryList : EntryListItem {
      * @return size
      */
     fun size(): Int {
-        return mData.size
+        return children.size
     }
 
     /**
@@ -145,7 +119,7 @@ abstract class EntryList : EntryListItem {
      */
     fun addChild(item: EntryListItem) {
         if (item.parent != null) (item.parent as EntryList).remove(item, false)
-        mData.add(item)
+        children.add(item)
         item.parent = this
         notifyChangeListeners()
     }
@@ -157,9 +131,9 @@ abstract class EntryList : EntryListItem {
      * @param i    the index of the added item
      * @throws IndexOutOfBoundsException if the index is out of range (index < 0 || index > size())
      */
-    fun put(i: Int, item: EntryListItem) {
+    fun insertAt(i: Int, item: EntryListItem) {
         if (item.parent != null) (item.parent as EntryList).remove(item, false)
-        mData.add(i, item)
+        children.add(i, item)
         item.parent = this
         notifyChangeListeners()
     }
@@ -168,14 +142,14 @@ abstract class EntryList : EntryListItem {
      * Empty the list
      */
     fun clear() {
-        while (mData.size > 0)
-            remove(mData[0], false)
-        mRemoves.clear()
+        while (children.size > 0)
+            remove(children[0], false)
+        undoStack.clear()
         notifyChangeListeners()
     }
 
     val removeCount: Int
-        get() = mRemoves.size
+        get() = undoStack.size
 
     /**
      * Remove the given item from the list
@@ -185,18 +159,19 @@ abstract class EntryList : EntryListItem {
     fun remove(item: EntryListItem, undo: Boolean) {
         Log.d(TAG, "remove")
         if (undo) {
-            if (mRemoves.size == 0) mRemoves.push(ArrayList())
-            mRemoves.peek().add(Remove(mData.indexOf(item), item))
+            if (undoStack.size == 0) undoStack.push(ArrayList())
+            undoStack.peek().add(Remove(children.indexOf(item), item))
         }
         item.parent = null
-        mData.remove(item)
+        children.remove(item)
         notifyChangeListeners()
     }
 
     /**
-     * Say if items in this list should be interactively moveable
+     * Say if items in this list should be interactively moveable. By default they are not.
      */
-    open val itemsAreMoveable: Boolean
+    open val childrenAreMoveable: Boolean
+    // Surely this has to be true, or we can't sort Checklists
         get() = false
 
     /**
@@ -204,7 +179,7 @@ abstract class EntryList : EntryListItem {
      * recent undo set.
      */
     fun newUndoSet() {
-        mRemoves.push(ArrayList())
+        undoStack.push(ArrayList())
     }
 
     /**
@@ -213,11 +188,11 @@ abstract class EntryList : EntryListItem {
      * @return the number of items restored
      */
     fun undoRemove(): Int {
-        if (mRemoves.size == 0) return 0
-        val items = mRemoves.pop()
+        if (undoStack.size == 0) return 0
+        val items = undoStack.pop()
         if (items.size == 0) return 0
         for (it in items) {
-            mData.add(it.index, it.item)
+            children.add(it.index, it.item)
             it.item.parent = this
         }
         notifyChangeListeners()
@@ -232,7 +207,7 @@ abstract class EntryList : EntryListItem {
      */
     fun countFlaggedEntries(flag: String): Int {
         var i = 0
-        for (item in data) {
+        for (item in children) {
             if (item.getFlag(flag)) i++
         }
         return i
@@ -245,7 +220,7 @@ abstract class EntryList : EntryListItem {
      */
     fun setFlagOnAll(flag: String, check: Boolean): Boolean {
         var changed = false
-        for (item in data) {
+        for (item in children) {
             val ci = item as ChecklistItem
             if (ci.getFlag(ChecklistItem.IS_DONE) != check) {
                 if (check) ci.setFlag(flag) else ci.clearFlag(ChecklistItem.IS_DONE)
@@ -262,7 +237,7 @@ abstract class EntryList : EntryListItem {
      */
     fun deleteAllFlagged(flag: String): Int {
         val kill = ArrayList<EntryListItem>()
-        for (it in data) {
+        for (it in children) {
             if (it.getFlag(flag)) kill.add(it)
         }
         newUndoSet()
@@ -280,11 +255,11 @@ abstract class EntryList : EntryListItem {
      * @return matched item or null if not found
      */
     fun findByText(str: String, matchCase: Boolean): EntryListItem? {
-        for (item in mData) {
+        for (item in children) {
             if (item.text.equals(str, ignoreCase = true)) return item
         }
         if (matchCase) return null
-        for (item in mData)
+        for (item in children)
             if (item.text.toLowerCase(Locale.getDefault()).contains(str.toLowerCase(Locale.getDefault()))) return item
         return null
     }
@@ -296,7 +271,7 @@ abstract class EntryList : EntryListItem {
      * @return matched item or null if not found
      */
     fun findBySessionUID(uid: Int): EntryListItem? {
-        for (item in mData) {
+        for (item in children) {
             if (item.sessionUID == uid) return item
         }
         return null
@@ -310,7 +285,7 @@ abstract class EntryList : EntryListItem {
      * @return the index of the item in the list, or -1 if it's not there
      */
     fun indexOf(ci: EntryListItem?): Int {
-        return mData.indexOf(ci)
+        return children.indexOf(ci)
     }
 
     /**

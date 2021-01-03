@@ -26,10 +26,12 @@ import androidx.preference.ListPreference
  * Customisation of ListPreference to persist integer values rather than the string values that
  * ListPreference insists on.
  */
-internal class IntListPreference
-(context: Context?, attrs: AttributeSet?) : ListPreference(context, attrs) {
+internal class IntListPreference(context: Context?, attrs: AttributeSet?) : ListPreference(context, attrs) {
 
-    // Persist the string value managed by the list as an int.
+    var intValue : Int
+        get() = value.toInt()
+        set(v) { value = v.toString() }
+
     override fun persistString(value: String): Boolean {
         val intValue = value.toInt()
         return persistInt(intValue) // from Preference

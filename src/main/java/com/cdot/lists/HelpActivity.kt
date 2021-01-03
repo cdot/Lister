@@ -33,10 +33,14 @@ import java.io.InputStreamReader
 class HelpActivity : AppCompatActivity() {
     public override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val intent = intent
         val asset = intent.getIntExtra(ASSET_EXTRA, 0)
         val binding = HelpActivityBinding.inflate(layoutInflater)
         binding.webview.settings.builtInZoomControls = true
+        binding.webview.settings.textZoom = when ((application as Lister).getInt(Lister.PREF_TEXT_SIZE_INDEX)) {
+            1 -> 75 // Scalings determined empirically
+            3 -> 133
+            else -> 100
+        }
         // Get the right HTML for the current locale
         try {
             val `is` = resources.openRawResource(asset)
@@ -50,13 +54,14 @@ class HelpActivity : AppCompatActivity() {
             val pack = getPackageName()
             val html = regex.replace(sb.toString()) { m ->
                 val resName = m.groups[1]!!.value;
-                val id = r.getIdentifier(resName,"string", pack)
+                val id = r.getIdentifier(resName, "string", pack)
                 if (id == 0) "<span class='error'>" + resName + "</span>"
                 else "<span class='action'>" + r.getString(id) + "</span>"
             }
             binding.webview.loadDataWithBaseURL("file:///android_asset/", html, "text/html", "utf-8", null)
         } catch (ieo: IOException) {
         }
+
         setContentView(binding.root)
     }
 

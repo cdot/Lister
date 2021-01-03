@@ -30,37 +30,29 @@ import java.util.*
 /**
  * Interface to items in an EntryList. These are either ChecklistItem or Checklist
  */
-abstract class EntryListItem
-internal constructor(t : String) {
+abstract class EntryListItem internal constructor(t: String) {
 
     /**
-     * Label, or list name, or empty string for root
+     * Label, or list name, or NO_NAME for root or as-yet unspecified
      */
-    open var text: String = t
+    var text: String = t
 
-    // The list that contains this list.
+    // The list that contains this item - or null if not yet known, or root
     var parent: EntryList? = null
 
     // Listeners to changes made to this list
-    private val mListeners: MutableList<ChangeListener> = ArrayList()
+    private val listeners: MutableList<ChangeListener> = ArrayList()
 
     /**
      * The session UID for this item
      */
     var sessionUID: Int
-        protected set
 
     // Boolean flags
-    private val mFlags: MutableMap<String, Boolean?> = HashMap()
+    private val flags: MutableMap<String, Boolean?> = HashMap()
 
-    /**
-     * Copy constructor. Only the item text is copied.
-     *
-     * @param copy the item to copy from
-     */
-    internal constructor(copy: EntryListItem) : this(copy.text) {
-        mFlags.putAll(copy.mFlags)
-    }
+    // time it was last changed
+    protected var timestamp = System.currentTimeMillis()
 
     /**
      * Add a change listener. Change listeners will be notified whenever a change is made
@@ -68,7 +60,7 @@ internal constructor(t : String) {
      * @param l the listener
      */
     fun addChangeListener(l: ChangeListener) {
-        if (!mListeners.contains(l)) mListeners.add(l)
+        if (!listeners.contains(l)) listeners.add(l)
     }
 
     /**
@@ -77,22 +69,18 @@ internal constructor(t : String) {
      * @param l the listener
      */
     fun removeChangeListener(l: ChangeListener?) {
-        mListeners.remove(l)
+        listeners.remove(l)
     }
 
     /**
      * Notify any views of this list that the list contents have changed and redisplay is required.
      */
     open fun notifyChangeListeners() {
+        timestamp = System.currentTimeMillis()
         // It'll usually be the parent list that carries the change listeners
         if (parent != null) parent!!.notifyChangeListeners()
-        for (cl in mListeners) cl.onListChanged(this)
+        for (cl in listeners) cl.onListChanged(this)
     }
-
-    /**
-     * Return false if the item is not moveable in the current list view
-     */
-    abstract val isMoveable: Boolean
 
     /**
      * Get a set of the legal flag names for this entry list. Subclasses override to add their
@@ -120,8 +108,8 @@ internal constructor(t : String) {
      * @return flag value
      */
     fun getFlag(key: String): Boolean {
-        if (!mFlags.containsKey(key)) return getFlagDefault(key)
-        val v = mFlags[key]
+        if (!flags.containsKey(key)) return getFlagDefault(key)
+        val v = flags[key]
         return v ?: false
     }
 
@@ -130,7 +118,7 @@ internal constructor(t : String) {
      * @param key flag name
      */
     fun setFlag(key: String) {
-        mFlags[key] = true
+        flags[key] = true
     }
 
     /**
@@ -138,7 +126,16 @@ internal constructor(t : String) {
      * @param key flag name
      */
     fun clearFlag(key: String) {
-        mFlags[key] = false
+        flags[key] = false
+    }
+
+    /**
+     * Copy fields from another object into this
+     */
+    open fun copy(other: EntryListItem): EntryListItem {
+        text = other.text
+        flags.putAll(other.flags)
+        return this
     }
 
     /**
@@ -150,7 +147,7 @@ internal constructor(t : String) {
      */
     @CallSuper
     @Throws(JSONException::class)
-    open fun fromJSON(jo: JSONObject) : EntryListItem {
+    open fun fromJSON(jo: JSONObject): EntryListItem {
         for (k in flagNames) {
             try {
                 if (jo.getBoolean(k)) setFlag(k) else clearFlag(k)
@@ -167,7 +164,7 @@ internal constructor(t : String) {
      * @param js JSON string
      * @return this
      */
-    fun fromJSON(js: String) : EntryListItem {
+    fun fromJSON(js: String): EntryListItem {
         try {
             val job = JSONObject(js)
             fromJSON(job)
@@ -183,7 +180,7 @@ internal constructor(t : String) {
      * @param r a reader
      */
     @Throws(Exception::class)
-    abstract fun fromCSV(r: CSVReader) : EntryListItem
+    abstract fun fromCSV(r: CSVReader): EntryListItem
 
     /**
      * Get the JSON object that represents the content of this object
@@ -222,6 +219,14 @@ internal constructor(t : String) {
      */
     open fun sameAs(other: EntryListItem?): Boolean {
         return text == other?.text
+    }
+
+    /**
+     * Determine if this is a more recent version of another object of the sme type, as determined
+     * by the timestamp that is set whenever anything changes.
+     */
+    open fun isMoreRecentVersionOf(other: EntryListItem): Boolean {
+        return timestamp > other.timestamp
     }
 
     /**

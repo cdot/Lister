@@ -29,28 +29,14 @@ import org.json.JSONObject
  */
 class Checklists : EntryList(NO_NAME) {
 
-    private var mTimestamp // time it was last changed
-            : Long = 0
-
     // URI it was loaded from (or is a cache for). Kept here so it gets serialised with the cache,
     // and thereby detect when the cache doesn't correspond to the loaded URI
     var forUri : String? = null
 
-    // implement EntryListItem
-    override val isMoveable: Boolean
-        get() = false
-
-    // EntryList
-    override fun notifyChangeListeners() {
-        mTimestamp = System.currentTimeMillis()
-        super.notifyChangeListeners()
-    }
-
-    // EntryList
     override fun toJSON(): JSONObject {
         val job = super.toJSON()
         try {
-            job.put("timestamp", mTimestamp)
+            job.put("timestamp", timestamp)
             job.put("uri", forUri)
         } catch (je: JSONException) {
             Log.e(TAG, Lister.stringifyException(je))
@@ -61,7 +47,7 @@ class Checklists : EntryList(NO_NAME) {
     @Throws(JSONException::class)  // EntryList
     override fun fromJSON(jo: JSONObject) : EntryListItem {
         try {
-            mTimestamp = if (jo.has("timestamp")) jo.getLong("timestamp") else 0 // 0=unknown
+            timestamp = if (jo.has("timestamp")) jo.getLong("timestamp") else 0 // 0=unknown
             forUri = if (jo.has("uri")) jo.getString("uri") else ""
             val lists = jo.getJSONArray("items")
             for (i in 0 until lists.length())
@@ -79,31 +65,23 @@ class Checklists : EntryList(NO_NAME) {
     override fun fromCSV(r: CSVReader): EntryListItem {
         var peke = r.peek()
         while (peke != null) {
-            if (peke.size > 0 && peke[0] != NO_NAME && peke[0] != "")
+            if (peke.isNotEmpty() && peke[0] != NO_NAME && peke[0] != "")
                 addChild(Checklist(peke[0]).fromCSV(r))
-            peke = r.peek();
+            peke = r.peek()
         }
         return this
     }
 
-    // EntryList
     override fun toPlainString(tab: String): String {
         val sb = StringBuilder()
-        for (item in data) {
+        for (item in children)
             sb.append(item.toPlainString(tab)).append("\n")
-        }
         return sb.toString()
     }
 
-    /**
-     * Determine if this is a more recent version of another set of checklists, as determined by the
-     * timestamp that is set whenever anything in the lists changes.
-     *
-     * @return false if the two lists don't come from the same URI, or if the other list's
-     * time stamp is more recent than this list.
-     */
-    fun isMoreRecentVersionOf(other: Checklists): Boolean {
-        return other.forUri == forUri && mTimestamp > other.mTimestamp
+    override fun isMoreRecentVersionOf(other: EntryListItem): Boolean {
+        other as Checklists
+        return other.forUri == forUri && super.isMoreRecentVersionOf(other)
     }
 
     companion object {

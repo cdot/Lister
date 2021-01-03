@@ -29,55 +29,49 @@ import com.cdot.lists.model.Checklist
  * Activity used to host preference fragments
  */
 class PreferencesActivity : ListerActivity(), SharedPreferences.OnSharedPreferenceChangeListener {
-    var mFragment: PreferencesFragment? = null
+    var fragment: PreferencesFragment? = null
 
     // Flag that suppresses reporting during activity onResume/onCreate, so we don't get spammed
     // by startup warnings repeated from the ChecklistsActivity
     @JvmField
-    var mIssueReports = false
+    var issuingReports = false
 
-    // AppCompatActivity
     override fun onCreate(state: Bundle?) {
         super.onCreate(state)
-        val mFragmentManager = supportFragmentManager
-        val mFragmentTransaction = mFragmentManager.beginTransaction()
+        val fm = supportFragmentManager
+        val ft = fm.beginTransaction()
         val lister = application as Lister
         val intent = intent
         val uid = intent?.getIntExtra(UID_EXTRA, -1) ?: -1
         if (uid > 0) {
             val list = (lister.lists.findBySessionUID(uid) as Checklist)
-            mFragmentTransaction.replace(android.R.id.content, ChecklistPreferencesFragment(list).also { mFragment = it })
-        } else mFragmentTransaction.replace(android.R.id.content, SharedPreferencesFragment(lister).also { mFragment = it })
-        mFragmentTransaction.commit()
+            ft.replace(android.R.id.content, ChecklistPreferencesFragment(list).also { fragment = it })
+        } else
+            ft.replace(android.R.id.content, SharedPreferencesFragment(lister).also { fragment = it })
+        ft.commit()
     }
 
-    // ListerActivity
     override val rootView : View?
-        get() = mFragment!!.rootView
+        get() = fragment!!.rootView
 
-    // No lists, so nothing to do
     override fun updateDisplay() {}
 
-    // ListerActivity
     override fun report(code: Int, duration: Int, vararg ps: Any): Boolean {
-        if (mIssueReports)
+        if (issuingReports)
             return super.report(code, duration, ps)
         return true
     }
 
-    // override AppCompatActivity
     public override fun onPause() {
         lister.prefs?.unregisterOnSharedPreferenceChangeListener(this)
         super.onPause()
     }
 
-    // override AppCompatActivity
     public override fun onResume() {
         super.onResume()
         lister.prefs?.registerOnSharedPreferenceChangeListener(this)
     }
 
-    // override SharedPreferences.OnSharedPreferencesListener
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences, key: String) {
         when (key) {
             Lister.PREF_ALWAYS_SHOW -> configureShowOverLockScreen()

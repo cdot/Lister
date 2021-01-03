@@ -22,7 +22,6 @@ import android.os.Bundle
 import android.util.Log
 import androidx.preference.CheckBoxPreference
 import androidx.preference.Preference
-import com.cdot.lists.Lister
 import com.cdot.lists.ListerActivity
 import com.cdot.lists.R
 import com.cdot.lists.model.Checklist
@@ -30,35 +29,21 @@ import com.cdot.lists.model.Checklist
 /**
  * Handle preferences that are carried in a list
  */
-class ChecklistPreferencesFragment : PreferencesFragment {
-    private var mList: Checklist? = null
-
-    constructor()
-    constructor(list: Checklist?) {
-        mList = list
-    }
+class ChecklistPreferencesFragment(private var theList: Checklist) : PreferencesFragment() {
 
     override fun onSaveInstanceState(state: Bundle) {
-        state.putInt(ListerActivity.UID_EXTRA, mList!!.sessionUID)
+        state.putInt(ListerActivity.UID_EXTRA, theList.sessionUID)
     }
 
-    // PreferenceFragmentCompat
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         setPreferencesFromResource(R.xml.list_preferences, rootKey)
-        if (mList == null) {
-            Log.d(TAG, "Recovering list from saved instance state")
-            val lister = requireActivity().application as Lister
-            val uid = savedInstanceState!!.getInt(ListerActivity.UID_EXTRA)
-            mList = lister.lists.findBySessionUID(uid) as Checklist?
-        }
-        if (mList == null) throw Error("Null list")
-        for (k in mList!!.flagNames) {
+        for (k in theList.flagNames) {
             val cbPref = findPreference<CheckBoxPreference>(k)
             if (cbPref != null) {
-                cbPref.isChecked = mList!!.getFlag(k)
+                cbPref.isChecked = theList.getFlag(k)
                 cbPref.onPreferenceChangeListener = Preference.OnPreferenceChangeListener { preference: Preference?, newValue: Any ->
                     Log.d(TAG, "setting $k to $newValue")
-                    if (newValue as Boolean) mList!!.setFlag(k) else mList!!.clearFlag(k)
+                    if (newValue as Boolean) theList.setFlag(k) else theList.clearFlag(k)
                     (activity as PreferencesActivity?)!!.checkpoint()
                     true
                 }

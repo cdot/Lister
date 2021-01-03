@@ -49,7 +49,7 @@ internal constructor(var it : EntryListItem, protected var activity: EntryListAc
         butt.setOnTouchListener { view: View?, motionEvent: MotionEvent ->
             if (motionEvent.action == MotionEvent.ACTION_DOWN) {
                 Log.d(TAG, "OnDrag " + item.text)
-                activity.mMovingItem = item
+                activity.movingItem = item
             }
             true
         }
@@ -67,12 +67,10 @@ internal constructor(var it : EntryListItem, protected var activity: EntryListAc
      * Called to update the row view when settings have changed
      */
     open fun updateView() {
-        // Update the item text
-        val it = findViewById<TextView>(R.id.item_text)
-        val t = item.text
-        it.text = t
+        val it = findViewById<TextView>(R.id.item_text)!!
+        it.text = item.text
         setTextFormatting(it)
-        val mb = findViewById<ImageButton>(R.id.move_button)
+        val mb = findViewById<ImageButton>(R.id.move_button)!!
         mb.visibility = if (activity.canManualSort()) View.VISIBLE else View.GONE
     }
 

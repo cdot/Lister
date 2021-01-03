@@ -25,15 +25,12 @@ class ModelTest {
         Assert.assertTrue(ci.getFlag(ChecklistItem.IS_DONE))
         ci.clearFlag(ChecklistItem.IS_DONE)
         Assert.assertFalse(ci.getFlag(ChecklistItem.IS_DONE))
-        Assert.assertTrue(ci.isMoveable)
         var job = JSONObject()
                 .put("name", "A")
                 .put("done", true)
         ci.fromJSON(job)
         Assert.assertEquals("A", ci.text)
         Assert.assertTrue(ci.getFlag(ChecklistItem.IS_DONE))
-        // it's moveable because there is no parent
-        Assert.assertTrue(ci.isMoveable)
         val ear: EntryListItem.ChangeListener = object : EntryListItem.ChangeListener {
             override fun onListChanged(item: EntryListItem) {
                 Assert.assertSame(item, ci)
@@ -69,24 +66,22 @@ class ModelTest {
         }
         Assert.assertEquals("", seen)
         Assert.assertEquals(0, cli.countFlaggedEntries(ChecklistItem.IS_DONE))
-        Assert.assertTrue(cli.itemsAreMoveable)
-        Assert.assertTrue(cli.isMoveable)
+        Assert.assertTrue(cli.childrenAreMoveable)
         cli.setFlag(Checklist.CHECKED_AT_END)
-        Assert.assertFalse(cli.itemsAreMoveable)
-        Assert.assertTrue(cli.isMoveable)
+        Assert.assertFalse(cli.childrenAreMoveable)
         Assert.assertEquals(-1, cli.indexOf(ChecklistItem()).toLong())
         var job = JSONObject("{\"name\":\"Love\",\"items\":[{\"name\":\"Rose thorns\"},{\"name\":\"Peppermint\"}]}")
         cli.fromJSON(job)
         Assert.assertEquals(2, cli.size().toLong())
         Assert.assertEquals("Love", cli.text)
-        Assert.assertEquals(1, cli.indexOf(cli.data[1]).toLong())
+        Assert.assertEquals(1, cli.indexOf(cli.children[1]).toLong())
         cli.setFlagOnAll(ChecklistItem.IS_DONE, true)
-        Assert.assertTrue(cli.data[0].getFlag(ChecklistItem.IS_DONE))
-        Assert.assertTrue(cli.data[1].getFlag(ChecklistItem.IS_DONE))
+        Assert.assertTrue(cli.children[0].getFlag(ChecklistItem.IS_DONE))
+        Assert.assertTrue(cli.children[1].getFlag(ChecklistItem.IS_DONE))
         cli.setFlagOnAll(ChecklistItem.IS_DONE, false)
-        Assert.assertFalse(cli.data[0].getFlag(ChecklistItem.IS_DONE))
-        Assert.assertFalse(cli.data[1].getFlag(ChecklistItem.IS_DONE))
-        cli.data[1].setFlag(ChecklistItem.IS_DONE)
+        Assert.assertFalse(cli.children[0].getFlag(ChecklistItem.IS_DONE))
+        Assert.assertFalse(cli.children[1].getFlag(ChecklistItem.IS_DONE))
+        cli.children[1].setFlag(ChecklistItem.IS_DONE)
         cli.deleteAllFlagged(ChecklistItem.IS_DONE)
         Assert.assertEquals(1, cli.size().toLong())
         job = cli.toJSON()
@@ -97,10 +92,10 @@ class ModelTest {
         cli2.fromCSV(CSVReader(StringReader("Love,Row1,T\nLove,Row2,false")))
         Assert.assertEquals("Love", cli2.text)
         Assert.assertEquals(2, cli2.size().toLong())
-        Assert.assertEquals("Row1", cli2.data[0].text)
-        Assert.assertTrue(cli2.data[0].getFlag(ChecklistItem.IS_DONE))
-        Assert.assertEquals("Row2", cli2.data[1].text)
-        Assert.assertFalse(cli2.data[1].getFlag(ChecklistItem.IS_DONE))
+        Assert.assertEquals("Row1", cli2.children[0].text)
+        Assert.assertTrue(cli2.children[0].getFlag(ChecklistItem.IS_DONE))
+        Assert.assertEquals("Row2", cli2.children[1].text)
+        Assert.assertFalse(cli2.children[1].getFlag(ChecklistItem.IS_DONE))
     }
 
     @Test
@@ -133,10 +128,10 @@ class ModelTest {
         clis.notifyChangeListeners()
         Assert.assertTrue(called)
         called = false
-        val cli: EntryListItem = clis.data.get(0)
+        val cli: EntryListItem = clis.children.get(0)
         cli.notifyChangeListeners()
         Assert.assertTrue(called)
-        val ci = (cli as Checklist).data[0]
+        val ci = (cli as Checklist).children[0]
         called = false
         ci.notifyChangeListeners()
         Assert.assertTrue(called)
@@ -144,8 +139,6 @@ class ModelTest {
         called = false
         clis.notifyChangeListeners()
         Assert.assertFalse(called)
-
-        // TODO: test copy constructor
     }
 
     companion object {

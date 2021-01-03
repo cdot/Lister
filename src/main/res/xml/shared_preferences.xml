@@ -53,4 +53,12 @@
         android:title="@string/action_file_create"
         android:summary="@string/help_create_file" />
 
+    <CheckBoxPreference
+        android:key="disableCache"
+        android:title="@string/option_disable_cache"/>
+
+    <CheckBoxPreference
+        android:key="disableFile"
+        android:title="@string/option_disable_file"/>
+
 </PreferenceScreen>

@@ -18,7 +18,6 @@ import com.cdot.lists.R
 import com.cdot.lists.databinding.ChecklistsItemViewBinding
 import com.cdot.lists.model.Checklist
 import com.cdot.lists.model.Checklists
-import com.cdot.lists.model.EntryList
 import com.cdot.lists.model.EntryListItem
 
 /**
@@ -28,7 +27,6 @@ import com.cdot.lists.model.EntryListItem
 class ChecklistsItemView @SuppressLint("ClickableViewAccessibility") constructor(item: EntryListItem, isMoving: Boolean, cxt: EntryListActivity) : EntryListItemView(item, cxt) {
     var mBinding: ChecklistsItemViewBinding
 
-    // View
     override fun onClick(view: View) {
         // A click on a list name will open that list in a ChecklistActivity
         val intent = Intent(context, ChecklistActivity::class.java)
@@ -36,7 +34,6 @@ class ChecklistsItemView @SuppressLint("ClickableViewAccessibility") constructor
         context.startActivity(intent)
     }
 
-    // EntryListItemView
     override fun onPopupMenuAction(action: Int): Boolean {
         val checklists = item.parent as Checklists
         val builder: AlertDialog.Builder
@@ -70,7 +67,7 @@ class ChecklistsItemView @SuppressLint("ClickableViewAccessibility") constructor
             builder.setNegativeButton(R.string.cancel, null)
             builder.show()
         } else if (action == R.id.action_copy) {
-            val checklist = Checklist(item as EntryList)
+            val checklist = Checklist().copy(item)
             val newname = checklist.text + " (copy)"
             checklist.text = newname
             checklists.addChild(checklist)

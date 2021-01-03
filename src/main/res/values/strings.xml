@@ -49,7 +49,7 @@
     <string name="failed_no_file">Please open or create a file in Preferences</string>
     <string name="failed_save_to_cache">Save to cache failed. Recent changes may be lost!</string>
     <string name="failed_save_to_cache_and_file">File and Cache saves both failed</string>
-    <string name="failed_save_to_uri">Save to file failed. Recent changes have been saved in the cache, but may be lost!</string>
+    <string name="failed_save_to_uri">Save to file failed. Changes cached on this device</string>
     <string name="failed_file_access">Access to file denied. Please re-confirm file location</string>
     <string name="failed_file_load">Could not load from file, relying on cache</string>
 
@@ -75,6 +75,8 @@
     <string name="ok">OK</string>
     <string name="option_checked_at_end">Checked at bottom</string>
     <string name="option_delete_checked">Delete checked</string>
+    <string name="option_disable_file" translatable="false">Disable file store</string>
+    <string name="option_disable_cache" translatable="false">Disable cache</string>
     <string name="option_grey_checked">Grey out checked</string>
     <string name="option_left_hand">Left handed</string>
     <string name="option_overlap_lock">Overlap lock screen</string>
@@ -96,7 +98,7 @@
     <string name="snack_no_cache">No cache found. One will be created when you make a change.</string>
     <string name="snack_no_deleted_items">No deleted items</string>
     <string name="snack_restored">%d entries restored</string>
-Cured a problem     <string name="snack_file_created">New file created</string>
+    <string name="snack_file_created">New file created</string>
     <string name="snack_file_changed">File changed</string>
 
     <string name="text_size_default">Default</string>

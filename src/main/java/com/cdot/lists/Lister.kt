@@ -10,6 +10,7 @@ import android.content.SharedPreferences
 import android.net.Uri
 import android.util.Log
 import com.cdot.lists.model.Checklists
+import org.json.JSONException
 import java.io.*
 import java.util.*
 
@@ -20,15 +21,15 @@ class Lister : Application() {
     // Always need a checklists instance, as a place to attach listeners
     val lists = Checklists()
 
-    private var mListsLoaded = false
-    private var mListsLoading = false
-    private var mPrefs: SharedPreferences? = null
-    private var mLoadThread: Thread? = null
+    private var listsAreLoaded = false
+    private var listsAreLoading = false
+    private var sharedPrefs: SharedPreferences? = null
+    private var loadThread: Thread? = null
 
     val prefs: SharedPreferences?
         get() {
-            if (mPrefs == null) mPrefs = getSharedPreferences(null, Context.MODE_PRIVATE)
-            return mPrefs
+            if (sharedPrefs == null) sharedPrefs = getSharedPreferences(null, Context.MODE_PRIVATE)
+            return sharedPrefs
         }
 
     /**
@@ -39,18 +40,19 @@ class Lister : Application() {
      * @param onFail callback
      */
     fun loadLists(cxt: Context, onOK: SuccessCallback, onFail: FailCallback) {
-        Log.d(TAG, "loadLists loaded=" + mListsLoaded + " loading=" + mListsLoading)
+        Log.d(TAG, "loadLists loaded=" + listsAreLoaded + " loading=" + listsAreLoading)
         // We can arrive here after synchronization lock is released by a previous load
-        if (mListsLoaded || mListsLoading) return
-        mListsLoading = true
+        if (listsAreLoaded || listsAreLoading) return
+        listsAreLoading = true
 
         // Asynchronously load the URI. If the load fails, try the cache
-        mLoadThread = Thread {
+        loadThread = Thread {
             val thred = this
             val uri = getUri(PREF_FILE_URI)
             Log.d(TAG, "Starting load thread " + thred + " to load from $uri")
             try {
                 if (uri == null) throw Exception("Null URI (this is OK)")
+                if (getBool(PREF_DISABLE_FILE)) throw Exception("File load disabled")
                 val stream: InputStream =
                         when (uri.scheme) {
                             ContentResolver.SCHEME_FILE -> FileInputStream(File(uri.path!!)) // for tests
@@ -68,10 +70,10 @@ class Lister : Application() {
                                 if (cachedLists.isMoreRecentVersionOf(lists)) {
                                     Log.d(TAG, "Cache is more recent")
                                     unloadLists()
-                                    for (i in cachedLists.cloneItemList())
+                                    for (i in cachedLists.cloneChildren())
                                         lists.addChild(i)
                                 }
-                                mListsLoaded = true
+                                listsAreLoaded = true
                                 onOK.succeeded(lists)
                                 Log.d(TAG, "Load thread " + thred + "finished")
                             }
@@ -80,7 +82,7 @@ class Lister : Application() {
                             override fun failed(code: Int, vararg args: Any): Boolean {
                                 onFail.failed(code, *args)
                                 // Backing store loaded OK but cache failed. That's OK.
-                                mListsLoaded = true
+                                listsAreLoaded = true
                                 onOK.succeeded(lists)
                                 Log.d(TAG, "Load thread " + thred + "finished")
                                 return true
@@ -105,7 +107,7 @@ class Lister : Application() {
                             override fun succeeded(data: Any?) {
                                 if (uri != null && lists.forUri != uri.toString()) lists.clear()
                                 Log.d(TAG, lists.size().toString() + " lists loaded to " + lists + " from cache")
-                                mListsLoaded = true
+                                listsAreLoaded = true
                                 onOK.succeeded(lists)
                                 Log.d(TAG, "Load thread " + thred + "finished")
                             }
@@ -117,18 +119,17 @@ class Lister : Application() {
                             }
                         })
             }
-            mListsLoading = false
-            Log.d(TAG, "Load thread " + thred + " finished loaded=" + mListsLoaded)
+            listsAreLoading = false
+            Log.d(TAG, "Load thread " + thred + " finished loaded=" + listsAreLoaded)
         }
-        mLoadThread!!.start()
+        loadThread!!.start()
     }
 
     // Load from the cache file into a Checklists object
     private fun loadCache(cacheLists: Checklists, cxt: Context, onOK: SuccessCallback, onFail: FailCallback) {
         try {
-            if (FORCE_CACHE_FAIL != 0) {
-                // TESTING ONLY
-                onFail.failed(FORCE_CACHE_FAIL)
+            if (getBool(PREF_DISABLE_CACHE)) {
+                onFail.failed(R.string.failed_cache_load)
             } else {
                 cacheLists.fromStream(cxt.openFileInput(CACHE_FILE))
                 onOK.succeeded(cacheLists)
@@ -147,7 +148,7 @@ class Lister : Application() {
      */
     fun saveCache(cxt: Context): Boolean {
         try {
-            if (FORCE_CACHE_FAIL != 0) throw Exception("TEST CACHE SAVE FAIL")
+            if (getBool(PREF_DISABLE_CACHE)) throw Exception("TEST CACHE SAVE FAIL")
             val jsonString = lists.toJSON().toString(1)
             val stream = cxt.openFileOutput(CACHE_FILE, Context.MODE_PRIVATE)
             stream.write(jsonString.toByteArray())
@@ -178,35 +179,36 @@ class Lister : Application() {
             if (cacheOK) onSuccess.succeeded(null) else onFail.failed(R.string.failed_save_to_cache_and_file)
             return
         }
-        val data: ByteArray
-        try {
-            val jsonString = lists.toJSON().toString(1)
-
-            // Launch a thread to do this save, so we don't block the ui thread
-            data = jsonString.toByteArray()
-            Thread {
-                try {
-                    val stream : OutputStream = when (uri.scheme) {
-                        ContentResolver.SCHEME_FILE -> FileOutputStream(File(uri.path!!)) // for tests
-                        ContentResolver.SCHEME_CONTENT -> cxt.contentResolver.openOutputStream(uri)
-                        else -> throw IOException("Unknown uri scheme: " + uri.scheme)
-                    } ?: throw IOException("Stream open failed")
-                    stream.write(data)
-                    stream.close()
-                    setBool(PREF_LAST_STORE_FAILED, false)
-                    Log.d(TAG, "Saved " + lists.size() + " lists to " + uri)
-                    onSuccess.succeeded(null)
-                } catch (ioe: IOException) {
-                    Log.e(TAG, "Exception while saving " + stringifyException(ioe))
-                    setBool(PREF_LAST_STORE_FAILED, true)
-                    onFail.failed(R.string.failed_save_to_uri)
-                    if (cacheOK) onSuccess.succeeded(null)
-                }
-            }.start()
-        } catch (e: Exception) {
-            Log.e(TAG, stringifyException(e))
-            onFail.failed(R.string.failed_save_to_uri)
-        }
+        // Launch a thread to do this save, so we don't block the ui thread
+        Thread {
+            val data: ByteArray
+            try {
+                val jsonString = lists.toJSON().toString(1)
+                data = jsonString.toByteArray()
+            } catch (e: JSONException) {
+                Log.e(TAG, "Should never happen " + stringifyException(e))
+                onFail.failed(R.string.failed_save_to_uri)
+                return@Thread
+            }
+            try {
+                if (getBool(PREF_DISABLE_FILE)) throw IOException("File load disabled")
+                val stream: OutputStream = when (uri.scheme) {
+                    ContentResolver.SCHEME_FILE -> FileOutputStream(File(uri.path!!)) // for tests
+                    ContentResolver.SCHEME_CONTENT -> cxt.contentResolver.openOutputStream(uri)
+                    else -> throw IOException("Unknown uri scheme: " + uri.scheme)
+                } ?: throw IOException("Stream open failed")
+                stream.write(data)
+                stream.close()
+                setBool(PREF_LAST_STORE_FAILED, false)
+                Log.d(TAG, "Saved " + lists.size() + " lists to " + uri)
+                onSuccess.succeeded(null)
+            } catch (ioe: IOException) {
+                Log.e(TAG, "Exception while saving " + stringifyException(ioe))
+                setBool(PREF_LAST_STORE_FAILED, true)
+                onFail.failed(R.string.failed_save_to_uri)
+                if (cacheOK) onSuccess.succeeded(null)
+            }
+        }.start()
     }
 
     /**
@@ -223,10 +225,10 @@ class Lister : Application() {
                     }
             val importedLists = Checklists()
             importedLists.fromStream(stream)
-            val ret = importedLists.cloneItemList()
+            val ret = importedLists.cloneChildren()
             if (ret.isNotEmpty()) {
-                var duplicates : List<String>? = null
-                var added : List<String>? = null
+                var duplicates: List<String>? = null
+                var added: List<String>? = null
                 for (eli in ret) {
                     if (getBool(PREF_WARN_DUPLICATE) && lists.findByText(eli.text, false) != null)
                         duplicates = duplicates?.plus(eli.text) ?: arrayListOf(eli.text)
@@ -256,7 +258,7 @@ class Lister : Application() {
      * Empty the object
      */
     fun unloadLists() {
-        mListsLoaded = false
+        listsAreLoaded = false
         lists.clear()
     }
 
@@ -324,7 +326,7 @@ class Lister : Application() {
          * @param args to the resource template
          * @return true if the operation is safe to continue, false otherwise
          */
-        fun failed(code: Int, vararg args : Any): Boolean
+        fun failed(code: Int, vararg args: Any): Boolean
     }
 
     /**
@@ -350,6 +352,8 @@ class Lister : Application() {
         const val PREF_TEXT_SIZE_INDEX = "textSizeIndex"
         const val PREF_FILE_URI = "backingStore"
         const val PREF_WARN_DUPLICATE = "warnDuplicates"
+        const val PREF_DISABLE_FILE = "disableFile"
+        const val PREF_DISABLE_CACHE = "disableCache"
         const val CACHE_FILE = "checklists.json"
 
         // Must match res/values/strings.xml/text_size_list
@@ -373,12 +377,10 @@ class Lister : Application() {
                 put(PREF_LEFT_HANDED, false)
                 put(PREF_STAY_AWAKE, false)
                 put(PREF_STRIKE_CHECKED, true)
+                put(PREF_DISABLE_FILE, false)
+                put(PREF_DISABLE_CACHE, false)
             }
         }
-
-        // TESTING ONLY
-        @JvmField
-        var FORCE_CACHE_FAIL = 0
 
         // Useful for debug
         @JvmStatic

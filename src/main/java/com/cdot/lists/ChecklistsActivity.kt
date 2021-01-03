@@ -30,6 +30,7 @@ import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.ListView
+import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import com.cdot.lists.Lister.Companion.PREF_FILE_URI
 import com.cdot.lists.databinding.ChecklistsActivityBinding
@@ -41,30 +42,29 @@ import com.cdot.lists.view.ChecklistsItemView
 import com.cdot.lists.view.EntryListItemView
 
 /**
- * Activity that displays a list of checklists. The checklists are stored in the MainActivity.
+ * Activity that displays a list of checklists.
  */
 class ChecklistsActivity : EntryListActivity() {
-    private lateinit var mBinding: ChecklistsActivityBinding
+    private lateinit var binding: ChecklistsActivityBinding
 
-    // EntryListActivity
     override val list: EntryList
         get() = lister.lists
 
-    // ListerActivity
     override val rootView: View
-        get() = mBinding.root
+        get() = binding.root
 
-    // AppCompatActivity
+    override val addItemTextView: TextView
+        get() = throw NoSuchElementException()
+
     public override fun onCreate(state: Bundle?) {
         super.onCreate(state)
-        mBinding = ChecklistsActivityBinding.inflate(layoutInflater) // lateinit
+        binding = ChecklistsActivityBinding.inflate(layoutInflater) // lateinit
         makeAdapter()
-        setContentView(mBinding.root)
+        setContentView(binding.root)
         if (BuildConfig.DEBUG)
             lister.getUri(PREF_FILE_URI)?.let { reportIndefinite(R.string.report_uri, it) }
     }
 
-    // EntryListActivity
     override fun makeItemView(movingItem: EntryListItem, drag: Boolean): EntryListItemView {
         return ChecklistsItemView(movingItem, drag, this)
     }
@@ -75,27 +75,23 @@ class ChecklistsActivity : EntryListActivity() {
         supportActionBar!!.title = getString(R.string.app_name)
     }
 
-    // override ListerActivity
     override val helpAsset: Int = R.raw.checklists_help
 
-    // EntryListActivity
     override fun onListChanged(item: EntryListItem) {
         super.onListChanged(item)
         runOnUiThread {
             val sz = list.size()
-            mBinding.listsMessage.visibility = if (sz == 0) View.VISIBLE else View.GONE
-            mBinding.itemListView.visibility = if (sz == 0) View.GONE else View.VISIBLE
+            binding.listsMessage.visibility = if (sz == 0) View.VISIBLE else View.GONE
+            binding.itemListView.visibility = if (sz == 0) View.GONE else View.VISIBLE
         }
     }
 
-    // Action menu handling
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         //Log.d(TAG, "onCreateOptionsMenu");
         menuInflater.inflate(R.menu.checklists, menu)
         return true
     }
 
-    // Action menu handling
     override fun onOptionsItemSelected(menuItem: MenuItem): Boolean {
         //Log.d(TAG, "onOptionsItemSelected");
         if (super.onOptionsItemSelected(menuItem)) return true
@@ -151,20 +147,14 @@ class ChecklistsActivity : EntryListActivity() {
         return true
     }
 
-    // EntryListActivity
     override val listView: ListView
-        get() = mBinding.itemListView
+        get() = binding.itemListView
 
-    /**
-     * Handle adding an item after it's confirmed
-     *
-     * @param str the text of the item
-     */
     override fun addItem(str: String) {
         val item = Checklist(str)
         list.addChild(item)
         Log.d(TAG, "List $item added to $list")
-        mBinding.itemListView.smoothScrollToPosition(displayOrder.indexOf(item))
+        binding.itemListView.smoothScrollToPosition(displayOrder.indexOf(item))
         checkpoint()
     }
 

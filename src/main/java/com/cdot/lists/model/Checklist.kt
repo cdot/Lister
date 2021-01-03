@@ -29,37 +29,23 @@ import org.json.JSONObject
  * A checklist of checkable items. An item in a Checklists, so it has behaviours from
  * EntryListItem, inherited via EntryList
  */
-class Checklist : EntryList {
+class Checklist(name: String) : EntryList(name) {
 
-    constructor() : super(NO_NAME)
-    constructor(name: String) : super(name)
+    constructor() : this(NO_NAME)
 
-    /**
-     * Construct by copying an existing list and saving it to a new list
-     *
-     * @param copy   list to clone
-     */
-    constructor(copy: EntryList) : super(copy) {
-        for (item in copy.data) addChild(ChecklistItem(item as ChecklistItem))
-    }
-
-    // override EntryListItem
     override val flagNames: Set<String>
         get() = super.flagNames.plus(CHECKED_AT_END).plus(DELETE_CHECKED)
 
-    // implement EntryListItem
-    override val isMoveable: Boolean
-        get() = true
-
-    override val itemsAreMoveable: Boolean
+    override val childrenAreMoveable: Boolean
         get() = !getFlag(CHECKED_AT_END)
 
-    /**
-     * Load from JSON
-     *
-     * @param jo    the JSON object
-     * @throws JSONException if something goes wrong
-     */
+    override fun copy(other: EntryListItem) : EntryListItem {
+        super.copy(other)
+        other as EntryList
+        for (item in other.children) addChild(ChecklistItem().copy(item))
+        return this
+    }
+
     @Throws(JSONException::class)
     override fun fromJSON(jo: JSONObject) : EntryListItem {
         text = jo.getString("name")
@@ -69,7 +55,7 @@ class Checklist : EntryList {
         return super.fromJSON(jo)
     }
 
-    // CSV lists continue of a set of rows, each with the list name in the first column,
+    // CSV checklists consist of a set of rows, each with the list name in the first column,
     // the item name in the second column, and the done status in the third column
     @Throws(Exception::class)  // EntryListItem
     override fun fromCSV(r: CSVReader): EntryListItem {
@@ -81,13 +67,12 @@ class Checklist : EntryList {
         return this
     }
 
-    // EntryListItem
     override fun toJSON(): JSONObject {
         val job = super.toJSON()
         try {
             job.put("name", text)
             val items = JSONArray()
-            for (item in data) {
+            for (item in children) {
                 items.put(item.toJSON())
             }
             job.put("items", items)
