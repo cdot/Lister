@@ -52,7 +52,7 @@ class Lister : Application() {
             Log.d(TAG, "Starting load thread " + thred + " to load from $uri")
             try {
                 if (uri == null) throw Exception("Null URI (this is OK)")
-                if (getBool(PREF_DISABLE_FILE)) throw Exception("File load disabled")
+                if (BuildConfig.DEBUG && getBool(PREF_DISABLE_FILE)) throw Exception("DEBUG File load disabled")
                 val stream: InputStream =
                         when (uri.scheme) {
                             ContentResolver.SCHEME_FILE -> FileInputStream(File(uri.path!!)) // for tests
@@ -128,12 +128,9 @@ class Lister : Application() {
     // Load from the cache file into a Checklists object
     private fun loadCache(cacheLists: Checklists, cxt: Context, onOK: SuccessCallback, onFail: FailCallback) {
         try {
-            if (getBool(PREF_DISABLE_CACHE)) {
-                onFail.failed(R.string.failed_cache_load)
-            } else {
-                cacheLists.fromStream(cxt.openFileInput(CACHE_FILE))
-                onOK.succeeded(cacheLists)
-            }
+            if (BuildConfig.DEBUG && getBool(PREF_DISABLE_CACHE)) throw Exception("DEBUG Cache load disabled")
+            cacheLists.fromStream(cxt.openFileInput(CACHE_FILE))
+            onOK.succeeded(cacheLists)
         } catch (ce: FileNotFoundException) {
             Log.e(TAG, "FileNotFoundException loading cache $CACHE_FILE: $ce")
             onFail.failed(R.string.snack_no_cache)
@@ -148,7 +145,7 @@ class Lister : Application() {
      */
     fun saveCache(cxt: Context): Boolean {
         try {
-            if (getBool(PREF_DISABLE_CACHE)) throw Exception("TEST CACHE SAVE FAIL")
+            if (BuildConfig.DEBUG && getBool(PREF_DISABLE_CACHE)) throw Exception("DEBUG Cache save disabled")
             val jsonString = lists.toJSON().toString(1)
             val stream = cxt.openFileOutput(CACHE_FILE, Context.MODE_PRIVATE)
             stream.write(jsonString.toByteArray())
@@ -191,7 +188,7 @@ class Lister : Application() {
                 return@Thread
             }
             try {
-                if (getBool(PREF_DISABLE_FILE)) throw IOException("File load disabled")
+                if (BuildConfig.DEBUG && getBool(PREF_DISABLE_FILE)) throw IOException("DEBUG File save disabled")
                 val stream: OutputStream = when (uri.scheme) {
                     ContentResolver.SCHEME_FILE -> FileOutputStream(File(uri.path!!)) // for tests
                     ContentResolver.SCHEME_CONTENT -> cxt.contentResolver.openOutputStream(uri)

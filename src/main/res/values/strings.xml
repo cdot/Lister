@@ -25,7 +25,7 @@
     <string name="action_file_open">Open File</string>
     <string name="app_name" translatable="false">Mr Lister</string>
 
-    <string name="cache_is_newer">Local cache is newer than saved lists</string>
+    <string name="cache_is_newer">Local cache is newer than the file</string>
     <string name="cancel">Cancel</string>
     <string name="close">Close</string>
     <string name="confirm_delete">Confirm Delete</string>
@@ -39,7 +39,6 @@
     <string name="edit_list_item">Edit list item</string>
     <string name="enter_name_of_new_list">Enter name of new list:</string>
     <string name="enter_new_name_of_list">Enter new name of list:</string>
-    <string name="export_format">Format to Export</string>
 
     <string name="failed_access_denied">File access denied</string>
     <string name="failed_cache_load">Could not load cache</string>
@@ -75,8 +74,8 @@
     <string name="ok">OK</string>
     <string name="option_checked_at_end">Checked at bottom</string>
     <string name="option_delete_checked">Delete checked</string>
-    <string name="option_disable_file" translatable="false">Disable file store</string>
-    <string name="option_disable_cache" translatable="false">Disable cache</string>
+    <string name="option_disable_file" translatable="false">Disable file store (debug)</string>
+    <string name="option_disable_cache" translatable="false">Disable cache (debug)</string>
     <string name="option_grey_checked">Grey out checked</string>
     <string name="option_left_hand">Left handed</string>
     <string name="option_overlap_lock">Overlap lock screen</string>
@@ -90,6 +89,7 @@
     <string name="rename_list">Rename List</string>
     <string name="report_uri" translatable="false">URI %1$s</string><!-- debug -->
 
+    <string name="share_format">Format to Share</string>
     <string name="similar_item_already_in_list">Similar entry found</string>
     <string name="similar_item_x_already_in_list">Similar entry \'%1$s\' already there. Add another \'%2$s\'?</string>
     <string name="snack_deleted">%d entries deleted</string>
@@ -105,4 +105,7 @@
     <string name="text_size_small">Small</string>
     <string name="text_size_medium">Medium</string>
     <string name="text_size_large">Large</string>
+
+    <string name="version_info" translatable="false">%1$s %2$d</string>
+    <string name="action_about">About</string>
 </resources>

@@ -57,7 +57,7 @@ class HelpActivity : AppCompatActivity() {
                 val id = r.getIdentifier(resName, "string", pack)
                 if (id == 0) "<span class='error'>" + resName + "</span>"
                 else "<span class='action'>" + r.getString(id) + "</span>"
-            }
+            }.replace("#version_info", r.getString(R.string.version_info, BuildConfig.VERSION_NAME, BuildConfig.BUILD_TIME))
             binding.webview.loadDataWithBaseURL("file:///android_asset/", html, "text/html", "utf-8", null)
         } catch (ieo: IOException) {
         }

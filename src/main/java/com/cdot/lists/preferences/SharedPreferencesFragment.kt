@@ -58,7 +58,6 @@ class SharedPreferencesFragment(private val mLister: Lister) : PreferencesFragme
         initBoolPref(Lister.PREF_DISABLE_CACHE)
         initBoolPref(Lister.PREF_DISABLE_FILE)
 
-
         val textSizePref = findPreference<IntListPreference>(Lister.PREF_TEXT_SIZE_INDEX)!!
         val textSizeIndex = mLister.getInt(Lister.PREF_TEXT_SIZE_INDEX)
         textSizePref.intValue = textSizeIndex
@@ -83,19 +82,11 @@ class SharedPreferencesFragment(private val mLister: Lister) : PreferencesFragme
             handleStoreClick(Intent.ACTION_CREATE_DOCUMENT, ListerActivity.REQUEST_CREATE_STORE)
         }
 
-        val disableCache = findPreference<CheckBoxPreference>(Lister.PREF_DISABLE_CACHE)!!
-        val disableFile= findPreference<CheckBoxPreference>(Lister.PREF_DISABLE_FILE)!!
-        if (BuildConfig.DEBUG) {
-            disableCache.isVisible = true
-            disableFile.isVisible = true
-        } else {
-            disableCache.isVisible = false
-            disableFile.isVisible = false
-            // Just in case we accidentally leave these preferences set, a quick turn through the
-            // preference screen will reset them in the production code.
-            mLister.setBool(Lister.PREF_DISABLE_CACHE, false)
-            mLister.setBool(Lister.PREF_DISABLE_FILE, false)
-        }
+        findPreference<CheckBoxPreference>(Lister.PREF_DISABLE_CACHE)!!.isVisible = BuildConfig.DEBUG
+        findPreference<CheckBoxPreference>(Lister.PREF_DISABLE_FILE)!!.isVisible = BuildConfig.DEBUG
+
+        val aboutPref = findPreference<Preference>("action_about")!!
+        aboutPref.summary = resources.getString(R.string.app_name) + " " + resources.getString(R.string.version_info, BuildConfig.VERSION_NAME, BuildConfig.BUILD_TIME)
     }
 
     private fun handleStoreClick(action: String, request: Int): Boolean {

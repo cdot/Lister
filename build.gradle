@@ -40,8 +40,10 @@ android {
         applicationId 'com.cdot.lists'
         minSdkVersion 23
         targetSdkVersion 30
-        versionCode 1
-        versionName "Eas"
+        // Increment the versionCode on each release - it is not shown to the user
+        versionCode 5
+        versionName "v1.5 Eas"
+        buildConfigField "long", "BUILD_TIME",  System.currentTimeMillis() + "L"
     }
 
     lintOptions {
@@ -51,13 +53,14 @@ android {
     buildTypes {
         release {
             minifyEnabled true
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
         }
 
         debug {
             applicationIdSuffix ".debug"
             debuggable true
             signingConfig signingConfigs.debug
+            versionNameSuffix '.debug'
         }
     }
     compileOptions {

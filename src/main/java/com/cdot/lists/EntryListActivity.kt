@@ -314,7 +314,7 @@ abstract class EntryListActivity : ListerActivity(), EntryListItem.ChangeListene
      */
     internal fun share(list: EntryList, listName: String) {
         val builder = AlertDialog.Builder(this)
-        builder.setTitle(R.string.export_format)
+        builder.setTitle(R.string.share_format)
         val picker = Spinner(this)
         // Helper for indexing the array of share formats, must be final for inner class access
         var mPlace = 0

@@ -61,4 +61,8 @@
         android:key="disableFile"
         android:title="@string/option_disable_file"/>
 
+    <Preference
+        android:key="action_about"
+        android:title="@string/action_about" />
+
 </PreferenceScreen>
