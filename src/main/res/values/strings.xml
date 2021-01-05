@@ -7,7 +7,8 @@
     <string name="action_delete">Delete</string>
     <string name="action_delete_checked">Delete All Checked Items</string>
     <string name="action_preferences">Preferences</string>
-    <string name="action_edit_list">Edit List</string>
+    <string name="action_add_items_on">Add Items</string>
+    <string name="action_add_items_off">Add Items Off</string>
     <string name="action_share_lists">Share</string>
     <string name="action_share_list">Share</string>
     <string name="action_help">Help</string>
@@ -37,8 +38,8 @@
     <string name="default_share_mimetype" translatable="false">application/json</string>
 
     <string name="edit_list_item">Edit list item</string>
-    <string name="enter_name_of_new_list">Enter name of new list:</string>
-    <string name="enter_new_name_of_list">Enter new name of list:</string>
+    <string name="enter_name_of_new_list">Name of new list</string>
+    <string name="enter_new_name_of_list">New name of list</string>
 
     <string name="failed_access_denied">File access denied</string>
     <string name="failed_cache_load">Could not load cache</string>
@@ -69,7 +70,7 @@
     <string name="json_format">JSON data</string>
 
     <string name="no_lists_yet">No lists yet…</string>
-    <string name="new_item_hint">New list item</string>
+    <string name="new_item_hint">New item</string>
 
     <string name="ok">OK</string>
     <string name="option_checked_at_end">Checked at bottom</string>
@@ -92,12 +93,12 @@
     <string name="share_format">Format to Share</string>
     <string name="similar_item_already_in_list">Similar entry found</string>
     <string name="similar_item_x_already_in_list">Similar entry \'%1$s\' already there. Add another \'%2$s\'?</string>
-    <string name="snack_deleted">%d entries deleted</string>
+    <string name="snack_deleted">%1$d entries deleted</string>
     <string name="snack_imported">Imported %1$s</string>
     <string name="snack_imported_nothing">Nothing imported</string>
     <string name="snack_no_cache">No cache found. One will be created when you make a change.</string>
     <string name="snack_no_deleted_items">No deleted items</string>
-    <string name="snack_restored">%d entries restored</string>
+    <string name="snack_restored">%1$d entries restored</string>
     <string name="snack_file_created">New file created</string>
     <string name="snack_file_changed">File changed</string>
 
@@ -108,4 +109,6 @@
 
     <string name="version_info" translatable="false">%1$s %2$d</string>
     <string name="action_about">About</string>
+    <string name="debug_countdown" translatable="false">%1$d touches away from debug %2$s</string>
+    <string name="debug_toggled" translatable="false">Debug %1$s</string>
 </resources>

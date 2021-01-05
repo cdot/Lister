@@ -61,7 +61,7 @@ class ChecklistsActivity : EntryListActivity() {
         binding = ChecklistsActivityBinding.inflate(layoutInflater) // lateinit
         makeAdapter()
         setContentView(binding.root)
-        if (BuildConfig.DEBUG)
+        if (lister.getBool(Lister.PREF_DEBUG))
             lister.getUri(PREF_FILE_URI)?.let { reportIndefinite(R.string.report_uri, it) }
     }
 
@@ -70,20 +70,56 @@ class ChecklistsActivity : EntryListActivity() {
     }
 
     override fun updateDisplay() {
-        // Could simplify to runOnUiThread { notifyAdapter() }
         super.updateDisplay()
         supportActionBar!!.title = getString(R.string.app_name)
     }
 
     override val helpAsset: Int = R.raw.checklists_help
 
+    public override fun onResume() {
+        super.onResume()
+        // Are we opening from a data source?
+        if (Intent.ACTION_VIEW == intent.action && intent.data != null) {
+            // If we are able to load from this URI, then the cache should be ignored
+            if (lister.getUri(Lister.PREF_FILE_URI) != intent.data) {
+                Log.d(TAG, "onResume new URI from Intent " + lister.getUri(Lister.PREF_FILE_URI))
+                lister.setUri(Lister.PREF_FILE_URI, intent.data)
+                lister.unloadLists()
+            } else
+                Log.d(TAG, "onResume same URI from Intent==Prefs " + lister.getUri(Lister.PREF_FILE_URI))
+        } else
+            Log.d(TAG, "onResume URI from Prefs " + lister.getUri(Lister.PREF_FILE_URI))
+        ensureListsLoaded(
+                object : Lister.SuccessCallback {
+                    override fun succeeded(data: Any?) {
+                        updateListDisplay()
+                    }
+                },
+                object : Lister.FailCallback {
+                    override fun failed(code: Int, vararg args: Any): Boolean {
+                        updateListDisplay()
+                        return reportIndefinite(code, *args)
+                    }
+                })
+    }
+
+    private fun updateListDisplay() {
+        runOnUiThread {
+            binding.loadingProgress.visibility = View.GONE
+            val sz = list.size()
+            if (sz == 0) {
+                binding.listsMessage.visibility = View.VISIBLE
+                binding.itemListView.visibility = View.GONE
+            } else {
+                binding.listsMessage.visibility = View.GONE
+                binding.itemListView.visibility = View.VISIBLE
+            }
+        }
+    }
+
     override fun onListChanged(item: EntryListItem) {
         super.onListChanged(item)
-        runOnUiThread {
-            val sz = list.size()
-            binding.listsMessage.visibility = if (sz == 0) View.VISIBLE else View.GONE
-            binding.itemListView.visibility = if (sz == 0) View.GONE else View.VISIBLE
-        }
+        updateListDisplay()
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -95,7 +131,7 @@ class ChecklistsActivity : EntryListActivity() {
     override fun onOptionsItemSelected(menuItem: MenuItem): Boolean {
         //Log.d(TAG, "onOptionsItemSelected");
         if (super.onOptionsItemSelected(menuItem)) return true
-        when(menuItem.itemId) {
+        when (menuItem.itemId) {
             R.id.action_import_lists -> {
                 val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
                 intent.addCategory(Intent.CATEGORY_OPENABLE)
@@ -105,7 +141,7 @@ class ChecklistsActivity : EntryListActivity() {
                 startActivityForResult(intent, REQUEST_IMPORT)
             }
 
-            R.id.action_new_list -> {
+            R.id.action_add_items -> {
                 val builder = AlertDialog.Builder(this)
                 builder.setTitle(R.string.create_new_list)
                 builder.setMessage(R.string.enter_name_of_new_list)
@@ -141,8 +177,6 @@ class ChecklistsActivity : EntryListActivity() {
 
             R.id.action_preferences ->
                 startActivityForResult(Intent(this, PreferencesActivity::class.java), REQUEST_PREFERENCES)
-
-            else -> return super.onOptionsItemSelected(menuItem)
         }
         return true
     }

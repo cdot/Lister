@@ -83,7 +83,7 @@ class ChecklistActivity : EntryListActivity() {
             false
         }
         binding.addItemET.imeOptions = EditorInfo.IME_ACTION_DONE
-        if (list.size() == 0) enableEditMode()
+        if (list.size() == 0) enableAddingMode()
         setContentView(binding.root)
         supportActionBar!!.title = list.text
     }
@@ -111,15 +111,15 @@ class ChecklistActivity : EntryListActivity() {
 
     override fun onPrepareOptionsMenu(menu: Menu): Boolean {
         super.onPrepareOptionsMenu(menu)
-        val it = menu.findItem(R.id.action_edit)
-        if (isInEditMode) {
+        val it = menu.findItem(R.id.action_add_items)
+        if (isInAddingMode) {
             it.setIcon(R.drawable.ic_action_item_add_off)
             it.setTitle(R.string.action_item_add_off)
         } else {
             it.setIcon(R.drawable.ic_action_item_add_on)
             it.setTitle(R.string.action_item_add_on)
         }
-        menu.findItem(R.id.action_preferences).isEnabled = !isInEditMode
+        menu.findItem(R.id.action_preferences).isEnabled = !isInAddingMode
         menu.findItem(R.id.action_check_all).isEnabled = (list as Checklist).countFlaggedEntries(ChecklistItem.IS_DONE) < list.size()
         menu.findItem(R.id.action_uncheck_all).isEnabled = (list as Checklist).countFlaggedEntries(ChecklistItem.IS_DONE) > 0
         menu.findItem(R.id.action_undo_delete).isEnabled = list.removeCount > 0
@@ -147,14 +147,14 @@ class ChecklistActivity : EntryListActivity() {
                     checkpoint()
                     reportShort(R.string.snack_deleted, deleted)
                     if (list.size() == 0) {
-                        enableEditMode()
+                        enableAddingMode()
                         list.notifyChangeListeners()
                         checkpoint()
                     }
                 }
             }
 
-            R.id.action_edit -> toggleEditMode()
+            R.id.action_add_items -> toggleAddingMode()
 
             R.id.action_rename_list -> {
                 val builder = AlertDialog.Builder(this)

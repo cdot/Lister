@@ -8,16 +8,16 @@
         android:title="@string/action_save"
         app:showAsAction="always" />
     <item
-        android:id="@+id/action_alpha_sort"
-        android:icon="@drawable/ic_action_alpha_sort_on"
+        android:id="@+id/action_add_items"
+        android:icon="@drawable/ic_action_item_add_on"
         android:orderInCategory="20"
-        android:title="@string/action_alpha_sort_on"
+        android:title="@string/action_new_list"
         app:showAsAction="ifRoom" />
     <item
-        android:id="@+id/action_new_list"
-        android:icon="@drawable/ic_action_item_add_on"
+        android:id="@+id/action_alpha_sort"
+        android:icon="@drawable/ic_action_alpha_sort_on"
         android:orderInCategory="30"
-        android:title="@string/action_new_list"
+        android:title="@string/action_alpha_sort_on"
         app:showAsAction="ifRoom" />
     <item
         android:id="@+id/action_import_lists"

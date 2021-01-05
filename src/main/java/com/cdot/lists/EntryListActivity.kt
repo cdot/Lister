@@ -59,7 +59,7 @@ abstract class EntryListActivity : ListerActivity(), EntryListItem.ChangeListene
     abstract val listView: ListView
 
     // When in edit mode, sorting and moving checked items is disabled
-    protected var isInEditMode = false
+    protected var isInAddingMode = false
     abstract val addItemTextView : TextView
 
     // Set the common bindings, obtained from the ViewBinding, and create the array adapter
@@ -99,7 +99,7 @@ abstract class EntryListActivity : ListerActivity(), EntryListItem.ChangeListene
         get() {
             val dl: MutableList<EntryListItem> = ArrayList<EntryListItem>()
             dl.addAll(list.children)
-            if (isInEditMode) return dl // unsorted list
+            if (isInAddingMode) return dl // unsorted list
             if (list.getFlag(EntryList.DISPLAY_SORTED))
                 dl.sortWith { o1, o2 -> o1.text.compareTo(o2.text, ignoreCase = true) }
             return dl
@@ -112,29 +112,29 @@ abstract class EntryListActivity : ListerActivity(), EntryListItem.ChangeListene
      */
     abstract fun addItem(str: String)
 
-    protected fun enableEditMode() {
-        if (isInEditMode) return
+    protected fun enableAddingMode() {
+        if (isInAddingMode) return
+        isInAddingMode = true
         addItemTextView.visibility = View.VISIBLE
         addItemTextView.isFocusable = true
         addItemTextView.isFocusableInTouchMode = true
         addItemTextView.requestFocus()
         val inputMethodManager = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
         inputMethodManager.showSoftInput(addItemTextView, InputMethodManager.SHOW_IMPLICIT)
-        isInEditMode = true
         messageHandler.sendMessage(messageHandler.obtainMessage(MESSAGE_UPDATE_DISPLAY))
     }
 
-    protected fun disableEditMode() {
-        if (!isInEditMode) return
+    protected fun disableAddingMode() {
+        if (!isInAddingMode) return
+        isInAddingMode = false
         addItemTextView.visibility = View.INVISIBLE
         val inputMethodManager = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
         inputMethodManager.hideSoftInputFromWindow((currentFocus ?: addItemTextView).windowToken, 0)
-        isInEditMode = false
         messageHandler.sendMessage(messageHandler.obtainMessage(MESSAGE_UPDATE_DISPLAY))
     }
 
-    protected fun toggleEditMode() {
-        if (isInEditMode) disableEditMode() else enableEditMode()
+    protected fun toggleAddingMode() {
+        if (isInAddingMode) disableAddingMode() else enableAddingMode()
     }
 
     /**
@@ -270,16 +270,28 @@ abstract class EntryListActivity : ListerActivity(), EntryListItem.ChangeListene
 
     override fun onPrepareOptionsMenu(menu: Menu): Boolean {
         super.onPrepareOptionsMenu(menu)
-        var menuItem = menu.findItem(R.id.action_alpha_sort)
+
+        val alphaSort = menu.findItem(R.id.action_alpha_sort)
         if (list.getFlag(EntryList.DISPLAY_SORTED)) {
-            menuItem.setIcon(R.drawable.ic_action_alpha_sort_off)
-            menuItem.setTitle(R.string.action_alpha_sort_off)
+            alphaSort.setIcon(R.drawable.ic_action_alpha_sort_off)
+            alphaSort.setTitle(R.string.action_alpha_sort_off)
         } else {
-            menuItem.setIcon(R.drawable.ic_action_alpha_sort_on)
-            menuItem.setTitle(R.string.action_alpha_sort_on)
+            alphaSort.setIcon(R.drawable.ic_action_alpha_sort_on)
+            alphaSort.setTitle(R.string.action_alpha_sort_on)
         }
-        menuItem = menu.findItem(R.id.action_save)
-        menuItem.isVisible = lister.getBool(Lister.PREF_LAST_STORE_FAILED)
+
+        val adding = menu.findItem(R.id.action_add_items)
+        if (isInAddingMode) {
+            adding.setIcon(R.drawable.ic_action_item_add_off)
+            adding.setTitle(R.string.action_add_items_off)
+        } else {
+            adding.setIcon(R.drawable.ic_action_item_add_on)
+            adding.setTitle(R.string.action_add_items_on)
+        }
+
+        val save = menu.findItem(R.id.action_save)
+        save.isVisible = lister.getBool(Lister.PREF_LAST_STORE_FAILED)
+
         return true
     }
 

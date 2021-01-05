@@ -63,13 +63,13 @@ class PreferencesActivity : ListerActivity(), SharedPreferences.OnSharedPreferen
     }
 
     public override fun onPause() {
-        lister.prefs?.unregisterOnSharedPreferenceChangeListener(this)
+        lister.prefs.unregisterOnSharedPreferenceChangeListener(this)
         super.onPause()
     }
 
     public override fun onResume() {
         super.onResume()
-        lister.prefs?.registerOnSharedPreferenceChangeListener(this)
+        lister.prefs.registerOnSharedPreferenceChangeListener(this)
     }
 
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences, key: String) {

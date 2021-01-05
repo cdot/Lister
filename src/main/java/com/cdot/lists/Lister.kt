@@ -22,14 +22,14 @@ class Lister : Application() {
     val lists = Checklists()
 
     private var listsAreLoaded = false
-    private var listsAreLoading = false
+    var isLoading = false
     private var sharedPrefs: SharedPreferences? = null
     private var loadThread: Thread? = null
 
-    val prefs: SharedPreferences?
+    val prefs: SharedPreferences
         get() {
             if (sharedPrefs == null) sharedPrefs = getSharedPreferences(null, Context.MODE_PRIVATE)
-            return sharedPrefs
+            return sharedPrefs!!
         }
 
     /**
@@ -40,19 +40,18 @@ class Lister : Application() {
      * @param onFail callback
      */
     fun loadLists(cxt: Context, onOK: SuccessCallback, onFail: FailCallback) {
-        Log.d(TAG, "loadLists loaded=" + listsAreLoaded + " loading=" + listsAreLoading)
-        // We can arrive here after synchronization lock is released by a previous load
-        if (listsAreLoaded || listsAreLoading) return
-        listsAreLoading = true
+        Log.d(TAG, "loadLists loaded=$listsAreLoaded loading=$isLoading")
+        if (listsAreLoaded || isLoading) return
+        isLoading = true
 
         // Asynchronously load the URI. If the load fails, try the cache
         loadThread = Thread {
             val thred = this
             val uri = getUri(PREF_FILE_URI)
-            Log.d(TAG, "Starting load thread " + thred + " to load from $uri")
+            Log.d(TAG, "Starting load thread $thred to load from $uri")
             try {
                 if (uri == null) throw Exception("Null URI (this is OK)")
-                if (BuildConfig.DEBUG && getBool(PREF_DISABLE_FILE)) throw Exception("DEBUG File load disabled")
+                if (getBool(PREF_DEBUG) && getBool(PREF_DISABLE_FILE)) throw Exception("DEBUG File load disabled")
                 val stream: InputStream =
                         when (uri.scheme) {
                             ContentResolver.SCHEME_FILE -> FileInputStream(File(uri.path!!)) // for tests
@@ -119,8 +118,8 @@ class Lister : Application() {
                             }
                         })
             }
-            listsAreLoading = false
-            Log.d(TAG, "Load thread " + thred + " finished loaded=" + listsAreLoaded)
+            isLoading = false
+            Log.d(TAG, "Load thread $thred finished loaded=$listsAreLoaded")
         }
         loadThread!!.start()
     }
@@ -128,7 +127,7 @@ class Lister : Application() {
     // Load from the cache file into a Checklists object
     private fun loadCache(cacheLists: Checklists, cxt: Context, onOK: SuccessCallback, onFail: FailCallback) {
         try {
-            if (BuildConfig.DEBUG && getBool(PREF_DISABLE_CACHE)) throw Exception("DEBUG Cache load disabled")
+            if (getBool(PREF_DEBUG) && getBool(PREF_DISABLE_CACHE)) throw Exception("DEBUG Cache load disabled")
             cacheLists.fromStream(cxt.openFileInput(CACHE_FILE))
             onOK.succeeded(cacheLists)
         } catch (ce: FileNotFoundException) {
@@ -145,7 +144,7 @@ class Lister : Application() {
      */
     fun saveCache(cxt: Context): Boolean {
         try {
-            if (BuildConfig.DEBUG && getBool(PREF_DISABLE_CACHE)) throw Exception("DEBUG Cache save disabled")
+            if (getBool(PREF_DEBUG) && getBool(PREF_DISABLE_CACHE)) throw Exception("DEBUG Cache save disabled")
             val jsonString = lists.toJSON().toString(1)
             val stream = cxt.openFileOutput(CACHE_FILE, Context.MODE_PRIVATE)
             stream.write(jsonString.toByteArray())
@@ -188,7 +187,7 @@ class Lister : Application() {
                 return@Thread
             }
             try {
-                if (BuildConfig.DEBUG && getBool(PREF_DISABLE_FILE)) throw IOException("DEBUG File save disabled")
+                if (getBool(PREF_DEBUG) && getBool(PREF_DISABLE_FILE)) throw IOException("DEBUG File save disabled")
                 val stream: OutputStream = when (uri.scheme) {
                     ContentResolver.SCHEME_FILE -> FileOutputStream(File(uri.path!!)) // for tests
                     ContentResolver.SCHEME_CONTENT -> cxt.contentResolver.openOutputStream(uri)
@@ -264,14 +263,14 @@ class Lister : Application() {
      */
     fun getInt(name: String): Int {
         val deflt = sDefaults[name] as Int?
-        return prefs!!.getInt(name, deflt ?: 0)
+        return prefs.getInt(name, deflt ?: 0)
     }
 
     /**
      * Set a value from Shared Preferences
      */
     fun setInt(name: String, value: Int) {
-        val e = prefs!!.edit()
+        val e = prefs.edit()
         e.putInt(name, value)
         e.apply()
     }
@@ -281,14 +280,14 @@ class Lister : Application() {
      */
     fun getBool(name: String): Boolean {
         val deflt = sDefaults[name] as Boolean?
-        return prefs!!.getBoolean(name, deflt ?: false)
+        return prefs.getBoolean(name, deflt ?: false)
     }
 
     /**
      * Set a value from Shared Preferences
      */
     fun setBool(name: String, value: Boolean) {
-        val e = prefs!!.edit()
+        val e = prefs.edit()
         e.putBoolean(name, value)
         e.apply()
     }
@@ -298,7 +297,7 @@ class Lister : Application() {
      */
     fun getUri(name: String): Uri? {
         val deflt = sDefaults[name] as String?
-        val uris = prefs!!.getString(name, deflt)
+        val uris = prefs.getString(name, deflt)
         return if (uris == null) null else Uri.parse(uris)
     }
 
@@ -306,7 +305,7 @@ class Lister : Application() {
      * Set a value in Shared Preferences
      */
     fun setUri(name: String, value: Uri?) {
-        val e = prefs!!.edit()
+        val e = prefs.edit()
         e.putString(name, value?.toString())
         e.apply()
     }
@@ -351,6 +350,7 @@ class Lister : Application() {
         const val PREF_WARN_DUPLICATE = "warnDuplicates"
         const val PREF_DISABLE_FILE = "disableFile"
         const val PREF_DISABLE_CACHE = "disableCache"
+        const val PREF_DEBUG = "debug"
         const val CACHE_FILE = "checklists.json"
 
         // Must match res/values/strings.xml/text_size_list
@@ -376,6 +376,7 @@ class Lister : Application() {
                 put(PREF_STRIKE_CHECKED, true)
                 put(PREF_DISABLE_FILE, false)
                 put(PREF_DISABLE_CACHE, false)
+                put(PREF_DEBUG, false)
             }
         }
 

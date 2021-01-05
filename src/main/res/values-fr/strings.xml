@@ -6,7 +6,7 @@
     <string name="action_copy">Créer une copie</string>
     <string name="action_delete_checked">Effacer tous cochés</string>
     <string name="action_delete">Effacer</string>
-    <string name="action_edit_list">Modifier liste</string>
+    <string name="action_add_items_on">Ajouter des entrées</string>
     <string name="action_file_change">Changer fichier</string>
     <string name="action_file_create">Créer un nouveau fichier</string>
     <string name="action_file_open">Ouvrir fichier</string>
@@ -27,18 +27,18 @@
     <string name="cancel">Annuler</string>
     <string name="close">Fermer</string>
     <string name="confirm_delete">Confirmation de effacer</string>
-    <string name="confirm_delete_list">Effacer liste \'%1\'?</string>
+    <string name="confirm_delete_list">Effacer liste \'%1$s\'?</string>
     <string name="create_new_list">Créer nouvelle liste</string>
     <string name="csv_format">Valeurs séparées par des virgules</string>
     <string name="edit_list_item">Modifier l\'élément</string>
-    <string name="enter_name_of_new_list">Entrez le nom de la nouvelle liste:</string>
-    <string name="enter_new_name_of_list">Entrez le nouveau nom de la liste:</string>
+    <string name="enter_name_of_new_list">Nom de la nouvelle liste</string>
+    <string name="enter_new_name_of_list">Nouveau nom de la liste</string>
     <string name="failed_access_denied">Accès au fichier refusé</string>
     <string name="failed_cache_load">Impossible de charger le cache</string>
-    <string name="failed_duplicate_list">L\'importation a échoué. Déjà voir %1</string>
+    <string name="failed_duplicate_list">L\'importation a échoué. Déjà voir %1$s</string>
     <string name="failed_file_access">Accès au fichier refusé. Veuillez reconfirmer l\'emplacement du fichier</string>
     <string name="failed_file_load">Impossible de charger à partir du fichier, en fonction du cache</string>
-    <string name="failed_import">L\'importation a échoué: %1</string>
+    <string name="failed_import">L\'importation a échoué: %1$s</string>
     <string name="failed_no_file">Veuillez créer une fichier dans les préférences</string>
     <string name="failed_save_to_cache_and_file">Fichier et cache ont tous deux échoué</string>
     <string name="failed_save_to_cache">L\'enregistrement dans le cache a échoué. Les modifications récentes peuvent être perdues!</string>
@@ -58,7 +58,7 @@
     <string name="help_warn_duplicate_item">Avertir lorsqu\'un élément en double est sur le point d\'être ajouté à la liste</string>
     <string name="help_warn_duplicate_list">Avertir des noms de liste en double</string>
     <string name="json_format">JSON</string>
-    <string name="new_item_hint">Nouvel élément de liste</string>
+    <string name="new_item_hint">Nouvel élément</string>
     <string name="no_lists_yet">Aucune liste pour le moment…</string>
     <string name="ok">OK</string>
     <string name="option_checked_at_end">Vérifié en bas</string>
@@ -76,18 +76,19 @@
     <string name="share_format">Format à Partager</string>
     <string name="similar_item_already_in_list">Entrée similaire trouvée</string>
     <string name="similar_item_x_already_in_list">Entrée similaire \'%1$s\' déjà présente. Ajouter un autre \'%2$s\'?</string>
-    <string name="snack_deleted">%d entrées supprimées</string>
+    <string name="snack_deleted">%$d entrées effacées</string>
     <string name="snack_file_changed">Fichier changé</string>
     <string name="snack_file_created">Nouveau fichier créé</string>
-    <string name="snack_imported">Importé %1</string>
+    <string name="snack_imported">Importé %1$s</string>
     <string name="snack_imported_nothing">Importé rien</string>
     <string name="snack_no_cache">Aucun cache trouvé sur cet appareil. Un sera créé la prochaine fois que vous apporterez un changement.</string>
     <string name="snack_no_deleted_items">Aucun élément supprimé</string>
-    <string name="snack_restored">%d entrées restaurées</string>
+    <string name="snack_restored">%1$d entrées restaurées</string>
     <string name="text_size_default">Défaut</string>
     <string name="text_size_large">Grand</string>
     <string name="text_size_medium">Moyen</string>
     <string name="text_size_small">Petit</string>
     <string name="action_about">About</string>
+    <string name="action_add_items_off">Désactiver l\'ajout</string>
 </resources>
 

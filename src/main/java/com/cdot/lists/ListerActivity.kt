@@ -225,28 +225,6 @@ abstract class ListerActivity : AppCompatActivity() {
         Log.d(TAG, "onNewIntent " + intent.data)
     }
 
-    public override fun onResume() {
-        super.onResume()
-        // Are we opening from a data source?
-        if (Intent.ACTION_VIEW == intent.action && intent.data != null) {
-            // If we are able to load from this URI, then the cache should be ignored
-            if (lister.getUri(Lister.PREF_FILE_URI) != intent.data) {
-                Log.d(TAG, "onResume new URI from Intent " + lister.getUri(Lister.PREF_FILE_URI))
-                lister.setUri(Lister.PREF_FILE_URI, intent.data)
-                lister.unloadLists()
-            } else
-                Log.d(TAG, "onResume same URI from Intent==Prefs " + lister.getUri(Lister.PREF_FILE_URI))
-        } else
-            Log.d(TAG, "onResume URI from Prefs " + lister.getUri(Lister.PREF_FILE_URI))
-        ensureListsLoaded(
-                null,
-                object : FailCallback {
-                    override fun failed(code: Int, vararg args: Any): Boolean {
-                        return reportIndefinite(code, *args)
-                    }
-                })
-    }
-
     public override fun onActivityResult(requestCode: Int, resultCode: Int, intent: Intent?) {
         if (requestCode == REQUEST_PREFERENCES) {
             // Result of a PreferenceActivity invocation; preferences may have changed, we need

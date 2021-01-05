@@ -34,13 +34,16 @@ import com.cdot.lists.R
 /**
  * Handle shared preferences
  */
-class SharedPreferencesFragment(private val mLister: Lister) : PreferencesFragment() {
+class SharedPreferencesFragment(private val lister: Lister) : PreferencesFragment() {
+    private var aboutClickCountdown = 0
+    private var lastAboutClick = 0L
+
     private fun initBoolPref(name: String) {
         val cbPref = findPreference<CheckBoxPreference>(name)!!
-        cbPref.isChecked = mLister.getBool(name)
+        cbPref.isChecked = lister.getBool(name)
         cbPref.onPreferenceChangeListener = Preference.OnPreferenceChangeListener { preference: Preference?, newValue: Any ->
             Log.d(TAG, "setting $name to $newValue")
-            mLister.setBool(name, newValue as Boolean)
+            lister.setBool(name, newValue as Boolean)
             true
         }
     }
@@ -59,14 +62,14 @@ class SharedPreferencesFragment(private val mLister: Lister) : PreferencesFragme
         initBoolPref(Lister.PREF_DISABLE_FILE)
 
         val textSizePref = findPreference<IntListPreference>(Lister.PREF_TEXT_SIZE_INDEX)!!
-        val textSizeIndex = mLister.getInt(Lister.PREF_TEXT_SIZE_INDEX)
+        val textSizeIndex = lister.getInt(Lister.PREF_TEXT_SIZE_INDEX)
         textSizePref.intValue = textSizeIndex
         textSizePref.summary = resources.getStringArray(R.array.text_size_options)[textSizeIndex]
         textSizePref.onPreferenceChangeListener = Preference.OnPreferenceChangeListener { preference: Preference, value: Any ->
             val ival = value.toString().toInt()
             Log.d(TAG, "setting text size to $ival")
             preference.summary = resources.getStringArray(R.array.text_size_options)[ival]
-            mLister.setInt(Lister.PREF_TEXT_SIZE_INDEX, ival)
+            lister.setInt(Lister.PREF_TEXT_SIZE_INDEX, ival)
             true
         }
 
@@ -74,19 +77,41 @@ class SharedPreferencesFragment(private val mLister: Lister) : PreferencesFragme
         changeStorePref.onPreferenceClickListener = Preference.OnPreferenceClickListener {
             handleStoreClick(Intent.ACTION_OPEN_DOCUMENT, ListerActivity.REQUEST_CHANGE_STORE)
         }
-        changeStorePref.setTitle(if (mLister.getUri(Lister.PREF_FILE_URI) != null) R.string.action_file_change else R.string.action_file_open)
-        changeStorePref.setSummary(if (mLister.getUri(Lister.PREF_FILE_URI) != null) R.string.help_file_change else R.string.help_file_open)
+        changeStorePref.setTitle(if (lister.getUri(Lister.PREF_FILE_URI) != null) R.string.action_file_change else R.string.action_file_open)
+        changeStorePref.setSummary(if (lister.getUri(Lister.PREF_FILE_URI) != null) R.string.help_file_change else R.string.help_file_open)
 
         val createStorePref = findPreference<Preference>("action_create_uri")!!
         createStorePref.onPreferenceClickListener = Preference.OnPreferenceClickListener {
             handleStoreClick(Intent.ACTION_CREATE_DOCUMENT, ListerActivity.REQUEST_CREATE_STORE)
         }
 
-        findPreference<CheckBoxPreference>(Lister.PREF_DISABLE_CACHE)!!.isVisible = BuildConfig.DEBUG
-        findPreference<CheckBoxPreference>(Lister.PREF_DISABLE_FILE)!!.isVisible = BuildConfig.DEBUG
+        findPreference<CheckBoxPreference>(Lister.PREF_DISABLE_CACHE)?.isVisible = lister.getBool(Lister.PREF_DEBUG)
+        findPreference<CheckBoxPreference>(Lister.PREF_DISABLE_FILE)?.isVisible = lister.getBool(Lister.PREF_DEBUG)
 
+        // Tooch the about button repeatedly until it switches on/off debugger state
         val aboutPref = findPreference<Preference>("action_about")!!
-        aboutPref.summary = resources.getString(R.string.app_name) + " " + resources.getString(R.string.version_info, BuildConfig.VERSION_NAME, BuildConfig.BUILD_TIME)
+        val usualMess = resources.getString(R.string.app_name) + " " + resources.getString(R.string.version_info, BuildConfig.VERSION_NAME, BuildConfig.BUILD_TIME)
+        aboutPref.summary = usualMess
+        aboutPref.onPreferenceClickListener = Preference.OnPreferenceClickListener {
+            val now = System.currentTimeMillis()
+            if (now - lastAboutClick < 1000) {
+                val mess = if (--aboutClickCountdown <= 0) {
+                    lister.setBool(Lister.PREF_DEBUG, !lister.getBool(Lister.PREF_DEBUG))
+                    findPreference<CheckBoxPreference>(Lister.PREF_DISABLE_CACHE)?.isVisible = lister.getBool(Lister.PREF_DEBUG)
+                    findPreference<CheckBoxPreference>(Lister.PREF_DISABLE_FILE)?.isVisible = lister.getBool(Lister.PREF_DEBUG)
+                    resources.getString(R.string.debug_toggled, lister.getBool(Lister.PREF_DEBUG).toString())
+                } else
+                    resources.getString(R.string.debug_countdown, aboutClickCountdown, (!lister.getBool(Lister.PREF_DEBUG)).toString())
+                Log.d(TAG, mess)
+                //Toast.makeText(activity, mess, Toast.LENGTH_SHORT).show()
+                aboutPref.summary = mess
+            } else {
+                aboutClickCountdown = 4
+                aboutPref.summary = usualMess
+            }
+            lastAboutClick = now
+            true
+        }
     }
 
     private fun handleStoreClick(action: String, request: Int): Boolean {
@@ -94,7 +119,7 @@ class SharedPreferencesFragment(private val mLister: Lister) : PreferencesFragme
         intent.addCategory(Intent.CATEGORY_OPENABLE)
         intent.flags = Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION or Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
         if (Build.VERSION.SDK_INT >= 26) {
-            val bs = mLister.getUri(Lister.PREF_FILE_URI)
+            val bs = lister.getUri(Lister.PREF_FILE_URI)
             if (bs != null) intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, bs)
         }
         // You would have thought to use intent.type = "application/json", but files saved using this
