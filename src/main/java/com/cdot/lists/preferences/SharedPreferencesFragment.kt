@@ -41,7 +41,7 @@ class SharedPreferencesFragment(private val lister: Lister) : PreferencesFragmen
     private fun initBoolPref(name: String) {
         val cbPref = findPreference<CheckBoxPreference>(name)!!
         cbPref.isChecked = lister.getBool(name)
-        cbPref.onPreferenceChangeListener = Preference.OnPreferenceChangeListener { preference: Preference?, newValue: Any ->
+        cbPref.onPreferenceChangeListener = Preference.OnPreferenceChangeListener { _: Preference?, newValue: Any ->
             Log.d(TAG, "setting $name to $newValue")
             lister.setBool(name, newValue as Boolean)
             true
@@ -55,8 +55,6 @@ class SharedPreferencesFragment(private val lister: Lister) : PreferencesFragmen
         initBoolPref(Lister.PREF_STRIKE_CHECKED)
         initBoolPref(Lister.PREF_LEFT_HANDED)
         initBoolPref(Lister.PREF_ENTIRE_ROW_TOGGLES)
-        initBoolPref(Lister.PREF_ALWAYS_SHOW)
-        initBoolPref(Lister.PREF_STAY_AWAKE)
         initBoolPref(Lister.PREF_WARN_DUPLICATE)
         initBoolPref(Lister.PREF_DISABLE_CACHE)
         initBoolPref(Lister.PREF_DISABLE_FILE)

@@ -81,14 +81,14 @@ class ChecklistsActivity : EntryListActivity() {
         // Are we opening from a data source?
         if (Intent.ACTION_VIEW == intent.action && intent.data != null) {
             // If we are able to load from this URI, then the cache should be ignored
-            if (lister.getUri(Lister.PREF_FILE_URI) != intent.data) {
-                Log.d(TAG, "onResume new URI from Intent " + lister.getUri(Lister.PREF_FILE_URI))
-                lister.setUri(Lister.PREF_FILE_URI, intent.data)
+            if (lister.getUri(PREF_FILE_URI) != intent.data) {
+                Log.d(TAG, "onResume new URI from Intent " + lister.getUri(PREF_FILE_URI))
+                lister.setUri(PREF_FILE_URI, intent.data)
                 lister.unloadLists()
             } else
-                Log.d(TAG, "onResume same URI from Intent==Prefs " + lister.getUri(Lister.PREF_FILE_URI))
+                Log.d(TAG, "onResume same URI from Intent==Prefs " + lister.getUri(PREF_FILE_URI))
         } else
-            Log.d(TAG, "onResume URI from Prefs " + lister.getUri(Lister.PREF_FILE_URI))
+            Log.d(TAG, "onResume URI from Prefs " + lister.getUri(PREF_FILE_URI))
         ensureListsLoaded(
                 object : Lister.SuccessCallback {
                     override fun succeeded(data: Any?) {
@@ -149,7 +149,7 @@ class ChecklistsActivity : EntryListActivity() {
                 editText.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_AUTO_COMPLETE or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
                 editText.isSingleLine = true
                 builder.setView(editText)
-                builder.setPositiveButton(R.string.ok) { dialogInterface: DialogInterface?, i: Int ->
+                builder.setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
                     val text = editText.text.toString().trim { it <= ' ' }
                     if (text.isNotEmpty()) {
                         if (!lister.getBool(Lister.PREF_WARN_DUPLICATE)) {

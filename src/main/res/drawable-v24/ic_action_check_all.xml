@@ -6,7 +6,7 @@
   <path
       android:pathData="M0.66218,0.66721L2.69991,0.66721v1.78783L0.66218,2.45505Z"
       android:strokeLineJoin="round"
-      android:strokeWidth="0.22045606"
+      android:strokeWidth="0.4"
       android:fillColor="?android:attr/colorControlNormal"
       android:strokeColor="?android:attr/colorControlNormal"
       android:fillType="nonZero"
@@ -14,14 +14,14 @@
   <path
       android:pathData="m0.91209,1.465 l0.45657,0.65842 1.08615,-1.21111"
       android:strokeLineJoin="miter"
-      android:strokeWidth="0.26454729"
+      android:strokeWidth="0.4"
       android:strokeColor="?android:attr/colorBackground"
       android:fillType="evenOdd"
       android:strokeLineCap="butt"/>
   <path
       android:pathData="m2.17892,2.29636h2.03773v1.78783h-2.03773z"
       android:strokeLineJoin="round"
-      android:strokeWidth="0.22045606"
+      android:strokeWidth="0.4"
       android:fillColor="?android:attr/colorControlNormal"
       android:strokeColor="?android:attr/colorControlNormal"
       android:fillType="nonZero"
@@ -29,14 +29,14 @@
   <path
       android:pathData="m2.42883,3.09415 l0.45657,0.65842 1.08615,-1.2111"
       android:strokeLineJoin="miter"
-      android:strokeWidth="0.26454729"
+      android:strokeWidth="0.4"
       android:strokeColor="?android:attr/colorBackground"
       android:fillType="evenOdd"
       android:strokeLineCap="butt"/>
   <path
       android:pathData="m3.69565,3.92554h2.03773v1.78783h-2.03773z"
       android:strokeLineJoin="round"
-      android:strokeWidth="0.22045606"
+      android:strokeWidth="0.4"
       android:fillColor="?android:attr/colorControlNormal"
       android:strokeColor="?android:attr/colorControlNormal"
       android:fillType="nonZero"
@@ -44,7 +44,7 @@
   <path
       android:pathData="m3.94556,4.72333 l0.45657,0.65842 1.08615,-1.2111"
       android:strokeLineJoin="miter"
-      android:strokeWidth="0.26454729"
+      android:strokeWidth="0.4"
       android:strokeColor="?android:attr/colorBackground"
       android:fillType="evenOdd"
       android:strokeLineCap="butt"/>

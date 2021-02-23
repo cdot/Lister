@@ -111,4 +111,6 @@
     <string name="action_about">About</string>
     <string name="debug_countdown" translatable="false">%1$d touches away from debug %2$s</string>
     <string name="debug_toggled" translatable="false">Debug %1$s</string>
+    <string name="action_pin">Pin</string>
+    <string name="action_unpin">Unpin</string>
 </resources>

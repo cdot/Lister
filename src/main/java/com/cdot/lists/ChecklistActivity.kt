@@ -20,13 +20,11 @@ package com.cdot.lists
 
 import android.content.DialogInterface
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.text.InputType
 import android.util.Log
-import android.view.KeyEvent
-import android.view.Menu
-import android.view.MenuItem
-import android.view.View
+import android.view.*
 import android.view.inputmethod.EditorInfo
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
@@ -42,17 +40,21 @@ import org.json.JSONException
  */
 class ChecklistActivity : EntryListActivity() {
     private lateinit var binding: ChecklistActivityBinding // init in onCreate
+    private var isPinned: Boolean = false
+
     override lateinit var list: EntryList  // init in onCreate
 
     override fun onSaveInstanceState(state: Bundle) {
         super.onSaveInstanceState(state)
         state.putInt(UID_EXTRA, list.sessionUID)
+        state.putInt(PINNED, if (isPinned) 1 else 0)
     }
 
     override fun onRestoreInstanceState(state: Bundle) {
         super.onRestoreInstanceState(state)
         val uid = state.getInt(UID_EXTRA)
         if (uid > 0) list = lister.lists.findBySessionUID(uid) as EntryList
+        isPinned = (state.getInt(PINNED) == 1)
     }
 
     override fun onCreate(state: Bundle?) {
@@ -65,7 +67,7 @@ class ChecklistActivity : EntryListActivity() {
         Log.d(TAG, "onCreate list $list")
         makeAdapter()
         binding.addItemET.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_AUTO_COMPLETE or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
-        binding.addItemET.setOnEditorActionListener { textView: TextView?, i: Int, keyEvent: KeyEvent? ->
+        binding.addItemET.setOnEditorActionListener { _: TextView?, i: Int, _: KeyEvent? ->
             if (i == EditorInfo.IME_ACTION_DONE) {
                 val text = binding.addItemET.text.toString()
                 if (text.trim { it <= ' ' }.isNotEmpty()) {
@@ -86,6 +88,7 @@ class ChecklistActivity : EntryListActivity() {
         if (list.size() == 0) enableAddingMode()
         setContentView(binding.root)
         supportActionBar!!.title = list.text
+        pin()
     }
 
     override val helpAsset: Int = R.raw.checklist_help
@@ -111,15 +114,16 @@ class ChecklistActivity : EntryListActivity() {
 
     override fun onPrepareOptionsMenu(menu: Menu): Boolean {
         super.onPrepareOptionsMenu(menu)
-        val it = menu.findItem(R.id.action_add_items)
-        if (isInAddingMode) {
-            it.setIcon(R.drawable.ic_action_item_add_off)
-            it.setTitle(R.string.action_item_add_off)
+        val pinned = menu.findItem(R.id.action_pin)
+        if (isPinned) {
+            pinned.setIcon(R.drawable.ic_action_unpin)
+            pinned.setTitle(R.string.action_unpin)
         } else {
-            it.setIcon(R.drawable.ic_action_item_add_on)
-            it.setTitle(R.string.action_item_add_on)
+            pinned.setIcon(R.drawable.ic_action_pin)
+            pinned.setTitle(R.string.action_pin)
         }
-        menu.findItem(R.id.action_preferences).isEnabled = !isInAddingMode
+
+        menu.findItem(R.id.action_preferences).isEnabled = !addItemTextView.isShown
         menu.findItem(R.id.action_check_all).isEnabled = (list as Checklist).countFlaggedEntries(ChecklistItem.IS_DONE) < list.size()
         menu.findItem(R.id.action_uncheck_all).isEnabled = (list as Checklist).countFlaggedEntries(ChecklistItem.IS_DONE) > 0
         menu.findItem(R.id.action_undo_delete).isEnabled = list.removeCount > 0
@@ -133,6 +137,14 @@ class ChecklistActivity : EntryListActivity() {
         if (super.onOptionsItemSelected(menuItem)) return true
         val checklist = list as Checklist
         when (menuItem.itemId) {
+
+            R.id.action_pin -> {
+                isPinned = !isPinned
+                Log.d(TAG, if (isPinned) "Pinning" else "Unpinning")
+                pin()
+                messageHandler.sendMessage(messageHandler.obtainMessage(MESSAGE_UPDATE_DISPLAY))
+            }
+
             R.id.action_check_all -> if (checklist.setFlagOnAll(ChecklistItem.IS_DONE, true)) {
                 list.notifyChangeListeners()
                 Log.d(TAG, "check all")
@@ -164,7 +176,7 @@ class ChecklistActivity : EntryListActivity() {
                 editText.isSingleLine = true
                 editText.setText(list.text)
                 builder.setView(editText)
-                builder.setPositiveButton(R.string.ok) { dialogInterface: DialogInterface?, i: Int ->
+                builder.setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
                     Log.d(TAG, "list renamed")
                     list.text = editText.text.toString()
                     lister.lists.notifyChangeListeners()
@@ -247,6 +259,32 @@ class ChecklistActivity : EntryListActivity() {
         binding.addItemET.setText("")
         binding.itemListView.smoothScrollToPosition(displayOrder.indexOf(item))
         checkpoint()
+    }
+
+    override fun onAttachedToWindow() {
+        // onAttachedToWindow is called after onResume (and it happens only once per lifecycle).
+        // ActivityThread.handleResumeActivity call will add DecorView to the current WindowManger
+        // which will in turn call WindowManagerGlobal.addView() which than traverse all the views
+        // and call onAttachedToWindow on each view.
+        pin()
+    }
+
+    // Do whatever is needed to keep the app in front of the lock screen
+    private fun pin() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1)
+            setShowWhenLocked(isPinned)
+        else {
+            if (isPinned)
+                window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED)
+            else
+                window.clearFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED)
+        }
+
+        // Do what is needed to keep the device awake while the app is active
+        if (isPinned)
+            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        else
+            window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
     companion object {

@@ -2,6 +2,12 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
+        android:id="@+id/action_pin"
+        android:icon="@drawable/ic_action_pin"
+        android:orderInCategory="10"
+        android:title="@string/action_pin"
+        app:showAsAction="always" />
+    <item
         android:id="@+id/action_save"
         android:icon="@drawable/ic_action_save"
         android:orderInCategory="10"
@@ -15,7 +21,7 @@
         app:showAsAction="ifRoom" />
     <item
         android:id="@+id/action_alpha_sort"
-        android:icon="@drawable/ic_action_alpha_sort_on"
+        android:icon="@drawable/ic_action_sort"
         android:orderInCategory="20"
         android:title="@string/action_alpha_sort_on"
         app:showAsAction="ifRoom" />

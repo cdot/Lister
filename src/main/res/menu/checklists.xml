@@ -15,7 +15,7 @@
         app:showAsAction="ifRoom" />
     <item
         android:id="@+id/action_alpha_sort"
-        android:icon="@drawable/ic_action_alpha_sort_on"
+        android:icon="@drawable/ic_action_sort"
         android:orderInCategory="30"
         android:title="@string/action_alpha_sort_on"
         app:showAsAction="ifRoom" />

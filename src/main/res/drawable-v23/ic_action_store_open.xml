@@ -6,7 +6,7 @@
   <path
       android:pathData="M4.4268,4.476C3.5783,4.4379 2.848,5.399 2.8283,6.1602v12.6025,0L19.5353,10.9798V9.7951,8.0726C19.505,7.6492 19.0483,7.1707 18.5159,7.2162L10.4945,7.1308 10.0504,5.4463C9.9137,5.0606 9.4504,4.5326 8.7482,4.5045Z"
       android:strokeLineJoin="miter"
-      android:strokeWidth="0.62894273"
+      android:strokeWidth="0.4"
       android:fillColor="#000000"
       android:strokeColor="#FFFFFF"
       android:fillType="evenOdd"
@@ -14,7 +14,7 @@
   <path
       android:pathData="m2.9714,18.4347c-0.3511,0.972 -0.0691,1.0985 0.5624,1.0847H16.883c1.0853,-0.038 1.5786,-0.5614 2.1015,-1.3417l3.1079,-6.0232c0.2368,-0.6185 -0.2664,-1.1513 -0.6216,-1.1704L8.832,10.9557c-0.7301,0.019 -1.1938,0.1522 -1.5688,0.7422z"
       android:strokeLineJoin="miter"
-      android:strokeWidth="0.62894273"
+      android:strokeWidth="0.4"
       android:fillColor="#ffffff"
       android:strokeColor="#000000"
       android:fillType="evenOdd"

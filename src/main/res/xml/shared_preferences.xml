@@ -26,16 +26,6 @@
         android:title="@string/option_left_hand"
         android:summary="@string/help_left_hand" />
 
-    <CheckBoxPreference
-        android:key="showListInFrontOfLockScreen"
-        android:title="@string/option_overlap_lock"
-        android:summary="@string/help_overlap_lock" />
-
-    <CheckBoxPreference
-        android:key="stayAwake"
-        android:title="@string/option_stay_awake"
-        android:summary="@string/help_stay_awake"/>
-
     <com.cdot.lists.preferences.IntListPreference
         android:key="textSizeIndex"
         android:entries="@array/text_size_options"

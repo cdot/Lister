@@ -28,7 +28,6 @@ import android.os.Looper
 import android.provider.DocumentsContract
 import android.util.Log
 import android.view.View
-import android.view.WindowManager
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.cdot.lists.Lister.FailCallback
@@ -74,35 +73,11 @@ abstract class ListerActivity : AppCompatActivity() {
      */
     protected open val helpAsset: Int = 0
 
-    // Do whatever is needed to keep the app in front of the lock screen
-    internal fun configureShowOverLockScreen() {
-        val show = lister.getBool(Lister.PREF_ALWAYS_SHOW)
-
-        // None of this achieves anything on my Moto G8 Plus with Android 10, but works fine on a
-        // G6 running Android 9.
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1)
-            setShowWhenLocked(show)
-        else {
-            if (show)
-                window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED)
-            else
-                window.clearFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED)
-        }
-    }
-
-    // Do whatever is needed to keep the device awake while the app is active
-    internal fun configureStayAwake() {
-        if (lister.getBool(Lister.PREF_STAY_AWAKE))
-            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        else
-            window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-    }
-
     private fun handleUriAccessDenied() {
         val builder = AlertDialog.Builder(this)
         builder.setTitle(R.string.failed_access_denied)
         builder.setMessage(R.string.failed_file_access)
-        builder.setPositiveButton(R.string.ok) { dialogInterface: DialogInterface?, i: Int ->
+        builder.setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
             val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
             // Callers must include CATEGORY_OPENABLE in the Intent to obtain URIs that can be opened with ContentResolver#openFileDescriptor(Uri, String)
             intent.addCategory(Intent.CATEGORY_OPENABLE)
@@ -170,10 +145,10 @@ abstract class ListerActivity : AppCompatActivity() {
             if (ps.isNotEmpty()) {
                 // Note use of spread (*) operator to pass varargs array as varargs
                 Snackbar.make(rootView!!, resources.getString(code, *ps), duration)
-                        .setAction(R.string.close) { x: View? -> }.show()
+                        .setAction(R.string.close) { }.show()
             } else {
                 Snackbar.make(rootView!!, code, duration)
-                        .setAction(R.string.close) { x: View? -> }.show()
+                        .setAction(R.string.close) { }.show()
             }
         }
         return true
@@ -209,15 +184,6 @@ abstract class ListerActivity : AppCompatActivity() {
         super.onRestoreInstanceState(state)
         if (lister.lists.size() == 0)
             lister.lists.fromJSON(state.getString(JSON_EXTRA)!!)
-    }
-
-    override fun onAttachedToWindow() {
-        // onAttachedToWindow is called after onResume (and it happens only once per lifecycle).
-        // ActivityThread.handleResumeActivity call will add DecorView to the current WindowManger
-        // which will in turn call WindowManagerGlobal.addView() which than traverse all the views
-        // and call onAttachedToWindow on each view.
-        configureShowOverLockScreen()
-        configureStayAwake()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -326,5 +292,6 @@ abstract class ListerActivity : AppCompatActivity() {
         @JvmField
         val UID_EXTRA = "$CLASS_NAME.uid_extra"
         val JSON_EXTRA = "$CLASS_NAME.json_extra"
+        val PINNED = "$CLASS_NAME.pinned"
     }
 }

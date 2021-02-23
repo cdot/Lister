@@ -237,7 +237,7 @@ abstract class EntryListItem internal constructor(t: String) {
     }
 
     override fun toString(): String {
-        return TAG + ":" + sessionUID + "(" + text + ")"
+        return "$TAG:$sessionUID($text)"
     }
 
     companion object {
@@ -245,7 +245,7 @@ abstract class EntryListItem internal constructor(t: String) {
 
         // Rather than allowing names to be null, we choose to use a unique name for otherwise
         // namelists EntryListItems
-        val NO_NAME = "\bM\r Lis\te\r\b" // Very, very unlikely to encounter this!
+        const val NO_NAME = "\bM\r Lis\te\r\b" // Very, very unlikely to encounter this!
 
         // UID's are assigned when an item is created. They allow us to track list entries
         // across activities (list item text need not be unique). UIDs are not serialised.

@@ -45,12 +45,16 @@ import java.util.*
  */
 abstract class EntryListActivity : ListerActivity(), EntryListItem.ChangeListener {
 
+    @JvmField
     protected var arrayAdapter: EntryListAdapter? = null
 
+    // The item currently being moved
     @JvmField
     @Transient
     var movingItem: EntryListItem? = null
 
+    // The entry currently moving. This is a temporary view that exists only while the
+    // item is being dragged.
     @Transient
     private var movingView: EntryListItemView? = null
 
@@ -58,8 +62,9 @@ abstract class EntryListActivity : ListerActivity(), EntryListItem.ChangeListene
     abstract val list: EntryList
     abstract val listView: ListView
 
-    // When in edit mode, sorting and moving checked items is disabled
-    protected var isInAddingMode = false
+    // The view used to add new items. We are in "adding mode" if this is non-null and is shown
+    // This only applies to checklists, but is managed here in case we decide to add it to the
+    // checklists activity at some point.
     abstract val addItemTextView : TextView
 
     // Set the common bindings, obtained from the ViewBinding, and create the array adapter
@@ -99,7 +104,10 @@ abstract class EntryListActivity : ListerActivity(), EntryListItem.ChangeListene
         get() {
             val dl: MutableList<EntryListItem> = ArrayList<EntryListItem>()
             dl.addAll(list.children)
-            if (isInAddingMode) return dl // unsorted list
+            try {
+                if (addItemTextView.isShown) return dl
+            } catch (_ : NoSuchElementException) {}
+            // unsorted list
             if (list.getFlag(EntryList.DISPLAY_SORTED))
                 dl.sortWith { o1, o2 -> o1.text.compareTo(o2.text, ignoreCase = true) }
             return dl
@@ -113,8 +121,7 @@ abstract class EntryListActivity : ListerActivity(), EntryListItem.ChangeListene
     abstract fun addItem(str: String)
 
     protected fun enableAddingMode() {
-        if (isInAddingMode) return
-        isInAddingMode = true
+        if (addItemTextView.isShown) return
         addItemTextView.visibility = View.VISIBLE
         addItemTextView.isFocusable = true
         addItemTextView.isFocusableInTouchMode = true
@@ -125,8 +132,7 @@ abstract class EntryListActivity : ListerActivity(), EntryListItem.ChangeListene
     }
 
     protected fun disableAddingMode() {
-        if (!isInAddingMode) return
-        isInAddingMode = false
+        if (!addItemTextView.isShown) return
         addItemTextView.visibility = View.INVISIBLE
         val inputMethodManager = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
         inputMethodManager.hideSoftInputFromWindow((currentFocus ?: addItemTextView).windowToken, 0)
@@ -134,7 +140,7 @@ abstract class EntryListActivity : ListerActivity(), EntryListItem.ChangeListene
     }
 
     protected fun toggleAddingMode() {
-        if (isInAddingMode) disableAddingMode() else enableAddingMode()
+        if (addItemTextView.isShown) disableAddingMode() else enableAddingMode()
     }
 
     /**
@@ -147,7 +153,7 @@ abstract class EntryListActivity : ListerActivity(), EntryListItem.ChangeListene
         val builder = AlertDialog.Builder(this)
         builder.setTitle(R.string.similar_item_already_in_list)
         builder.setMessage(getString(R.string.similar_item_x_already_in_list, similar, proposed))
-        builder.setPositiveButton(R.string.ok) { dialogInterface: DialogInterface?, i: Int -> addItem(proposed) }
+        builder.setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int -> addItem(proposed) }
         builder.setNegativeButton(R.string.cancel, null)
         builder.show()
     }
@@ -176,7 +182,7 @@ abstract class EntryListActivity : ListerActivity(), EntryListItem.ChangeListene
         // Check the item can be moved
         if (movingItem == null) return super.dispatchTouchEvent(motionEvent)
         val movingItem = movingItem!!
-        if (!(movingItem.parent?.childrenAreMoveable ?: true)) return super.dispatchTouchEvent(motionEvent)
+        if (movingItem.parent?.childrenAreMoveable == false) return super.dispatchTouchEvent(motionEvent)
 
         // get screen position of the ListView and the Activity
         val iArr = IntArray(2)
@@ -273,21 +279,23 @@ abstract class EntryListActivity : ListerActivity(), EntryListItem.ChangeListene
 
         val alphaSort = menu.findItem(R.id.action_alpha_sort)
         if (list.getFlag(EntryList.DISPLAY_SORTED)) {
-            alphaSort.setIcon(R.drawable.ic_action_alpha_sort_off)
+            alphaSort.setIcon(R.drawable.ic_action_unsort)
             alphaSort.setTitle(R.string.action_alpha_sort_off)
         } else {
-            alphaSort.setIcon(R.drawable.ic_action_alpha_sort_on)
+            alphaSort.setIcon(R.drawable.ic_action_sort)
             alphaSort.setTitle(R.string.action_alpha_sort_on)
         }
 
         val adding = menu.findItem(R.id.action_add_items)
-        if (isInAddingMode) {
-            adding.setIcon(R.drawable.ic_action_item_add_off)
-            adding.setTitle(R.string.action_add_items_off)
-        } else {
-            adding.setIcon(R.drawable.ic_action_item_add_on)
-            adding.setTitle(R.string.action_add_items_on)
-        }
+        try {
+            if (addItemTextView.isShown) {
+                adding.setIcon(R.drawable.ic_action_item_add_off)
+                adding.setTitle(R.string.action_add_items_off)
+            } else {
+                adding.setIcon(R.drawable.ic_action_item_add_on)
+                adding.setTitle(R.string.action_add_items_on)
+            }
+        } catch (_ : NoSuchElementException) {}
 
         val save = menu.findItem(R.id.action_save)
         save.isVisible = lister.getBool(Lister.PREF_LAST_STORE_FAILED)
@@ -300,17 +308,20 @@ abstract class EntryListActivity : ListerActivity(), EntryListItem.ChangeListene
      */
     inner class EntryListAdapter internal constructor(act: AppCompatActivity?) : ArrayAdapter<EntryListItem?>(act!!, 0) {
         override fun getView(i: Int, convertView: View?, viewGroup: ViewGroup): View {
+            //Log.d(TAG, "getView")
             val dl = displayOrder // get sorted list
-            if (i < dl.size) {
-                val itemView = if (convertView == null) makeItemView(dl[i], false) else convertView as EntryListItemView
-                itemView.item = dl[i]
-                itemView.updateView()
-                return itemView
-            } else if (convertView != null)
-                return convertView
-            else {
-                // Sometimes on startup we get here, with list size 0 and item index 1. Why?
-                throw Error("Empty display order")
+            return when {
+                i < dl.size -> {
+                    val itemView = if (convertView == null) makeItemView(dl[i], false) else convertView as EntryListItemView
+                    itemView.item = dl[i]
+                    itemView.updateView()
+                    itemView
+                }
+                convertView != null -> convertView
+                else -> {
+                    // Sometimes on startup we get here, with list size 0 and item index 1. Why?
+                    throw Error("Empty display order")
+                }
             }
         }
 
@@ -321,7 +332,7 @@ abstract class EntryListActivity : ListerActivity(), EntryListItem.ChangeListene
 
     /**
      * Share the list e.g. to email in JSON format
-     * @param the list to share. We can't use the list for this view, as it might have some
+     * @param list the list to share. We can't use the list for this view, as it might have some
      * preprocessing before it's ready to share
      */
     internal fun share(list: EntryList, listName: String) {
@@ -341,7 +352,7 @@ abstract class EntryListActivity : ListerActivity(), EntryListItem.ChangeListene
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
         builder.setView(picker)
-        builder.setPositiveButton(R.string.ok) { dialog: DialogInterface?, id: Int ->
+        builder.setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
             doShare(list, listName, resources.getStringArray(R.array.share_format_mimetype)[mPlace])
         }
         builder.setNegativeButton(R.string.cancel, null)

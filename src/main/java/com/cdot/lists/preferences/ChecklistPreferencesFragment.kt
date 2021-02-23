@@ -41,7 +41,7 @@ class ChecklistPreferencesFragment(private var theList: Checklist) : Preferences
             val cbPref = findPreference<CheckBoxPreference>(k)
             if (cbPref != null) {
                 cbPref.isChecked = theList.getFlag(k)
-                cbPref.onPreferenceChangeListener = Preference.OnPreferenceChangeListener { preference: Preference?, newValue: Any ->
+                cbPref.onPreferenceChangeListener = Preference.OnPreferenceChangeListener { _: Preference?, newValue: Any ->
                     Log.d(TAG, "setting $k to $newValue")
                     if (newValue as Boolean) theList.setFlag(k) else theList.clearFlag(k)
                     (activity as PreferencesActivity?)!!.checkpoint()

@@ -338,12 +338,10 @@ class Lister : Application() {
 
     companion object {
         // Shared Preferences
-        const val PREF_ALWAYS_SHOW = "showListInFrontOfLockScreen"
         const val PREF_GREY_CHECKED = "greyCheckedItems"
         const val PREF_ENTIRE_ROW_TOGGLES = "entireRowTogglesItem"
         const val PREF_LAST_STORE_FAILED = "lastStoreSaveFailed"
         const val PREF_LEFT_HANDED = "checkBoxOnLeftSide"
-        const val PREF_STAY_AWAKE = "stayAwake"
         const val PREF_STRIKE_CHECKED = "strikeThroughCheckedItems"
         const val PREF_TEXT_SIZE_INDEX = "textSizeIndex"
         const val PREF_FILE_URI = "backingStore"
@@ -366,13 +364,11 @@ class Lister : Application() {
             init {
                 put(PREF_TEXT_SIZE_INDEX, TEXT_SIZE_DEFAULT)
                 put(PREF_FILE_URI, null)
-                put(PREF_ALWAYS_SHOW, false)
                 put(PREF_GREY_CHECKED, true)
                 put(PREF_WARN_DUPLICATE, true)
                 put(PREF_ENTIRE_ROW_TOGGLES, true)
                 put(PREF_LAST_STORE_FAILED, false)
                 put(PREF_LEFT_HANDED, false)
-                put(PREF_STAY_AWAKE, false)
                 put(PREF_STRIKE_CHECKED, true)
                 put(PREF_DISABLE_FILE, false)
                 put(PREF_DISABLE_CACHE, false)
